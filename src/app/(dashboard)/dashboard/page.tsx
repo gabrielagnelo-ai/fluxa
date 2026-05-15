@@ -1,0 +1,57 @@
+import { CreditCard, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
+import { CreditAnalysis } from "@/components/dashboard/credit-analysis";
+import { FinanceCharts } from "@/components/dashboard/finance-charts";
+import { GoalsEvolution } from "@/components/dashboard/goals-evolution";
+import { KpiCard } from "@/components/dashboard/kpi-card";
+import { PeriodFilter } from "@/components/dashboard/period-filter";
+import { ProjectionCard } from "@/components/dashboard/projection-card";
+import { PageHeader } from "@/components/layout/page-header";
+import { creditOrigins, expensesByCategory, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions } from "@/services/dashboard-service";
+import { getCurrentBalanceUntil, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
+import { getPeriodLabel, getPeriodRange } from "@/utils/period";
+
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const period = getPeriodRange(await searchParams);
+  const [transactions, goals] = await Promise.all([getDashboardTransactions(period), getGoalsForCurrentUser()]);
+  const currentBalance = await getCurrentBalanceUntil(period.end);
+  const periodSummary = summarizeTransactions(transactions);
+  const projection = projectPeriod(transactions, period);
+
+  return (
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Dados do PostgreSQL"
+        title="Dashboard financeiro"
+        description={`Receitas, despesas, economia, gráficos e projeção usam o período filtrado: ${getPeriodLabel(period)}. O saldo atual é acumulado até o fim do período, como em um extrato bancário.`}
+        actions={<PeriodFilter start={period.start} end={period.end} />}
+      />
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard label="Saldo acumulado" value={currentBalance} icon={CreditCard} tone="bg-blue-500/10 text-blue-500" />
+        <KpiCard label="Receitas do período" value={periodSummary.income} icon={TrendingUp} tone="bg-emerald-500/10 text-emerald-600" />
+        <KpiCard label="Despesas do período" value={periodSummary.expenses} icon={TrendingDown} tone="bg-red-500/10 text-red-600" />
+        <KpiCard label="Economia do período" value={periodSummary.savings} icon={PiggyBank} tone="bg-blue-500/10 text-blue-600" />
+      </section>
+
+      <ProjectionCard {...projection} />
+      <CreditAnalysis origins={creditOrigins(transactions)} />
+      <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(transactions)} />
+      <GoalsEvolution
+        goals={goals.map((goal) => ({
+          id: goal.id,
+          name: goal.name,
+          targetAmount: Number(goal.targetAmount),
+          contributedAmount: goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0),
+          contributions: goal.contributions.map((contribution) => ({
+            date: contribution.date.toISOString(),
+            amount: Number(contribution.amount)
+          }))
+        }))}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum GoalStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+model User {
+  id           String        @id @default(uuid())
+  supabaseId   String        @unique
+  name         String?
+  email        String        @unique
+  transactions Transaction[]
+  categories   Category[]
+  budgets      Budget[]
+  spendingPlans SpendingPlan[]
+  goals        Goal[]
+  goalMarkers  GoalMarker[]
+  goalContributions GoalContribution[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  color        String
+  icon         String
+  keywords     String[]      @default([])
+  transactions Transaction[]
+  budgets      Budget[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([userId, name])
+  @@map("categories")
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  date        DateTime
+  description String
+  amount      Decimal         @db.Decimal(12, 2)
+  type        TransactionType
+  source      String?
+  importId    String?
+  categoryLocked Boolean      @default(false)
+  goalContributions GoalContribution[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId, date])
+  @@index([categoryId])
+  @@map("transactions")
+}
+
+model Budget {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  amount     Decimal  @db.Decimal(12, 2)
+  month      Int
+  year       Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, categoryId, month, year])
+  @@map("budgets")
+}
+
+model SpendingPlan {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month          Int
+  year           Int
+  monthlyIncome  Decimal  @db.Decimal(12, 2)
+  model          String
+  needsPercent   Int
+  wantsPercent   Int
+  savingsPercent Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, month, year])
+  @@index([userId, year, month])
+  @@map("spending_plans")
+}
+
+model Goal {
+  id            String     @id @default(uuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  targetAmount  Decimal    @db.Decimal(12, 2)
+  currentAmount Decimal    @default(0) @db.Decimal(12, 2)
+  dueDate       DateTime?
+  status        GoalStatus @default(ACTIVE)
+  markers       GoalMarker[]
+  contributions GoalContribution[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("goals")
+}
+
+model GoalMarker {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalId    String
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  keyword   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, keyword])
+  @@index([goalId])
+  @@map("goal_markers")
+}
+
+model GoalContribution {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalId        String
+  goal          Goal        @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  amount        Decimal     @db.Decimal(12, 2)
+  date          DateTime
+  createdAt     DateTime    @default(now())
+
+  @@unique([goalId, transactionId])
+  @@index([userId, date])
+  @@map("goal_contributions")
+}
