@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { FluxaLogo } from "@/components/brand/fluxa-logo";
 
+export const preferredRegion = "gru1";
+
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_520px]">

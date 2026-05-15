@@ -140,20 +140,20 @@ export async function getCurrentBalanceUntil(end: Date) {
   const userId = await getCurrentUserId();
   if (!userId) return 0;
 
-  const transactions = await prisma.transaction.findMany({
+  const totals = await prisma.transaction.groupBy({
+    by: ["type"],
     where: {
       userId,
       date: { lte: end }
     },
-    select: {
-      amount: true,
-      type: true
+    _sum: {
+      amount: true
     }
   });
 
-  return transactions.reduce((balance, transaction) => {
-    const amount = Number(transaction.amount);
-    return transaction.type === "INCOME" ? balance + amount : balance - amount;
+  return totals.reduce((balance, total) => {
+    const amount = Number(total._sum.amount ?? 0);
+    return total.type === "INCOME" ? balance + amount : balance - amount;
   }, 0);
 }
 

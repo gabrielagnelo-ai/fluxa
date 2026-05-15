@@ -3,6 +3,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "gru1";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
