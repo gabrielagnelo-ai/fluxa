@@ -2,10 +2,11 @@ import { isDatabaseConfigured, prisma } from "@/lib/prisma";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { normalizeText } from "@/lib/utils";
 import { defaultCategoryRules } from "@/services/category-service";
+import { cache } from "react";
 import type { ParsedTransaction } from "@/types/finance";
 import type { PeriodRange } from "@/utils/period";
 
-export async function getCurrentUserId() {
+export const getCurrentUserId = cache(async () => {
   if (!isDatabaseConfigured()) return null;
 
   try {
@@ -23,22 +24,32 @@ export async function getCurrentUserId() {
           }
         });
 
-        const user = existingUser
-          ? await prisma.user.update({
+        if (existingUser) {
+          const nextEmail = data.user.email ?? existingUser.email;
+          const nextName = data.user.user_metadata?.name ?? existingUser.name;
+          const needsUpdate = existingUser.supabaseId !== data.user.id || existingUser.email !== nextEmail || existingUser.name !== nextName;
+
+          if (!needsUpdate) return existingUser.id;
+
+          const user = await prisma.user.update({
               where: { id: existingUser.id },
               data: {
                 supabaseId: data.user.id,
-                email: data.user.email ?? existingUser.email,
-                name: data.user.user_metadata?.name ?? existingUser.name
-              }
-            })
-          : await prisma.user.create({
-              data: {
-                supabaseId: data.user.id,
-                email: data.user.email ?? "sem-email@local",
-                name: data.user.user_metadata?.name
+                email: nextEmail,
+                name: nextName
               }
             });
+
+          return user.id;
+        }
+
+        const user = await prisma.user.create({
+          data: {
+            supabaseId: data.user.id,
+            email: data.user.email ?? "sem-email@local",
+            name: data.user.user_metadata?.name
+          }
+        });
 
         await ensureDefaultCategories(user.id);
 
@@ -53,7 +64,7 @@ export async function getCurrentUserId() {
   }
 
   return null;
-}
+});
 
 export async function ensureDefaultCategories(userId: string) {
   const existingCategories = await prisma.category.findMany({
@@ -164,6 +175,14 @@ export async function getCategoriesForCurrentUser() {
   const userId = await getCurrentUserId();
   if (!userId) return [];
 
+  const categories = await prisma.category.findMany({
+    where: { userId },
+    orderBy: { name: "asc" }
+  });
+
+  if (categories.length > 0) return categories;
+
+  await ensureDefaultCategories(userId);
   return prisma.category.findMany({
     where: { userId },
     orderBy: { name: "asc" }
