@@ -5,7 +5,7 @@ import { secureLogger } from "@/lib/security/logger";
 import { redact } from "@/lib/security/redaction";
 
 const BELVO_SCOPES = "read_institutions,write_links,read_links,read_consents,write_consents,write_consent_callback,delete_consents";
-const BELVO_RESOURCES = ["ACCOUNTS", "TRANSACTIONS", "OWNERS", "BILLS"];
+const BELVO_RESOURCES = ["OWNERS", "ACCOUNTS", "TRANSACTIONS"];
 const CONSENT_SCOPES = ["REGISTER", "ACCOUNTS", "CREDIT_CARDS", "CREDIT_OPERATIONS"];
 
 function getBelvoBaseUrl() {
@@ -58,6 +58,7 @@ export async function createBelvoWidgetUrl({
       id: secretId,
       password: secretPassword,
       scopes: BELVO_SCOPES,
+      credentials_storage: "365d",
       fetch_resources: BELVO_RESOURCES,
       stale_in: "90d",
       widget: {
@@ -112,6 +113,10 @@ export async function createBelvoWidgetUrl({
   widgetUrl.searchParams.set("access_token", data.access);
   widgetUrl.searchParams.set("locale", "pt");
   widgetUrl.searchParams.set("integration_type", "openfinance");
+  widgetUrl.searchParams.set("country_codes", "BR");
+  widgetUrl.searchParams.set("institution_types", "retail");
+  widgetUrl.searchParams.set("access_mode", "recurrent");
+  widgetUrl.searchParams.set("resources", BELVO_RESOURCES.join(","));
 
   return widgetUrl.toString();
 }

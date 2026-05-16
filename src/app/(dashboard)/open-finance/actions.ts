@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { redirect } from "next/navigation";
 import { createBelvoWidgetUrl, revokeBelvoConnections } from "@/services/belvo-service";
 import { getCurrentUserId } from "@/services/finance-data-service";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -34,6 +35,25 @@ export async function generateBelvoWidget(formData: FormData) {
       error: error instanceof Error ? error.message : "Não foi possível iniciar a conexão com a Belvo."
     };
   }
+}
+
+export async function connectBelvoAndRedirect(formData: FormData) {
+  const parsed = connectSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return;
+
+  let widgetUrl: string | null = null;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+    const rateLimit = checkRateLimit(`belvo-widget:${userId}`, { limit: 5, windowMs: 10 * 60 * 1000 });
+    if (!rateLimit.allowed) return;
+
+    widgetUrl = await createBelvoWidgetUrl({ ...parsed.data, userId });
+  } catch (error) {
+    secureLogger.error("Belvo direct redirect failed", { error });
+  }
+
+  if (widgetUrl) redirect(widgetUrl);
 }
 
 export async function disconnectBelvoBank() {

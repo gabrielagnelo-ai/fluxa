@@ -1,17 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { ExternalLink, Landmark, ShieldCheck } from "lucide-react";
-import { disconnectBelvoBank, generateBelvoWidget } from "@/app/(dashboard)/open-finance/actions";
+import { Landmark, ShieldCheck } from "lucide-react";
+import { connectBelvoAndRedirect, disconnectBelvoBank } from "@/app/(dashboard)/open-finance/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export function BelvoConnectForm({ configured }: { configured: boolean }) {
-  const [state, action, pending] = useActionState(
-    async (_previousState: { error?: string; success?: string; widgetUrl?: string } | undefined, formData: FormData) => generateBelvoWidget(formData),
-    undefined
-  );
   const [disconnectState, disconnectAction, disconnectPending] = useActionState(
     async () => disconnectBelvoBank(),
     undefined as { error?: string; success?: string } | undefined
@@ -55,7 +51,7 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
           </span>
         </CardHeader>
         <CardContent>
-          <form action={action} className="grid gap-3 md:grid-cols-2">
+          <form action={connectBelvoAndRedirect} className="grid gap-3 md:grid-cols-2">
             <Input name="name" placeholder="Nome completo igual ao banco" required />
             <Input name="cpf" placeholder="CPF" inputMode="numeric" required />
             <select name="consentDays" defaultValue="183" className="h-10 rounded-md border border-border bg-background px-3 text-sm">
@@ -64,26 +60,14 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
               <option value="275">9 meses</option>
               <option value="366">12 meses</option>
             </select>
-            <Button disabled={!configured || pending}>{pending ? "Gerando..." : "Gerar widget Belvo"}</Button>
+            <Button disabled={!configured}>Conectar banco</Button>
             {!configured && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive md:col-span-2">
                 Configure BELVO_SECRET_ID e BELVO_SECRET_PASSWORD no ambiente para testar.
               </p>
             )}
-            {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive md:col-span-2">{state.error}</p>}
-            {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary md:col-span-2">{state.success}</p>}
-            {state?.widgetUrl && (
-              <a
-                href={state.widgetUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition hover:-translate-y-0.5 hover:shadow-glow md:col-span-2"
-              >
-                Abrir Hosted Widget
-                <ExternalLink className="size-4" />
-              </a>
-            )}
           </form>
+
         </CardContent>
       </Card>
 
