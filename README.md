@@ -38,6 +38,14 @@ OPENROUTER_MODEL="openrouter/free"
 
 Sem essa chave, a aba Inteligência usa uma análise local baseada nos mesmos dados agregados.
 
+Para habilitar cotações de mercado na aba Investimentos, crie uma chave em `brapi.dev` e preencha:
+
+```bash
+BRAPI_TOKEN="sua-chave"
+```
+
+Sem essa chave, o Fluxa tenta consultar as cotações públicas e mostra uma mensagem caso o limite da API seja atingido.
+
 4. Gere o Prisma Client e aplique as migrations:
 
 ```bash

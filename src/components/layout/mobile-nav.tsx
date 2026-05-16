@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, Calculator, Home, Upload, WalletCards } from "lucide-react";
+import { BriefcaseBusiness, Calculator, Home, Upload, WalletCards } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/dashboard", label: "Início", icon: Home },
   { href: "/import", label: "Importar", icon: Upload },
   { href: "/transactions", label: "Gastos", icon: WalletCards },
+  { href: "/investments", label: "Invest.", icon: BriefcaseBusiness },
   { href: "/planning", label: "Plano", icon: Calculator },
-  { href: "/insights", label: "IA", icon: Bot }
 ];
 
 export function MobileNav() {

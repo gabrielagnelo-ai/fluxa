@@ -2,6 +2,7 @@ import { CreditCard, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
 import { CreditAnalysis } from "@/components/dashboard/credit-analysis";
 import { FinanceCharts } from "@/components/dashboard/finance-charts";
 import { GoalsEvolution } from "@/components/dashboard/goals-evolution";
+import { InvestmentSummaryCard } from "@/components/dashboard/investment-summary-card";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { ProjectionCard } from "@/components/dashboard/projection-card";
@@ -9,6 +10,7 @@ import { WeeklyExpenseInsight } from "@/components/dashboard/weekly-expense-insi
 import { PageHeader } from "@/components/layout/page-header";
 import { creditOrigins, expensesByCategory, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions, weeklyExpenseInsight } from "@/services/dashboard-service";
 import { getCurrentBalanceUntil, getDashboardEvolutionTransactions, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
+import { buildInvestmentOverview, getInvestmentsForCurrentUser } from "@/services/investment-service";
 import { getPeriodLabel, getPeriodRange } from "@/utils/period";
 
 export default async function DashboardPage({
@@ -17,15 +19,17 @@ export default async function DashboardPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const period = getPeriodRange(await searchParams);
-  const [transactions, evolutionTransactions, goals, currentBalance] = await Promise.all([
+  const [transactions, evolutionTransactions, goals, currentBalance, investments] = await Promise.all([
     getDashboardTransactions(period),
     getDashboardEvolutionTransactions(period.end),
     getGoalsForCurrentUser(),
-    getCurrentBalanceUntil(period.end)
+    getCurrentBalanceUntil(period.end),
+    getInvestmentsForCurrentUser()
   ]);
   const periodSummary = summarizeTransactions(transactions);
   const projection = projectPeriod(transactions, period);
   const weeklyInsight = weeklyExpenseInsight(evolutionTransactions, period.end);
+  const investmentOverview = buildInvestmentOverview(investments);
 
   return (
     <div className="space-y-5">
@@ -47,8 +51,11 @@ export default async function DashboardPage({
         <ProjectionCard {...projection} />
         <WeeklyExpenseInsight {...weeklyInsight} />
       </section>
+      <section className="grid gap-4 xl:grid-cols-[420px_1fr]">
+        <InvestmentSummaryCard {...investmentOverview} />
+        <CreditAnalysis origins={creditOrigins(transactions)} />
+      </section>
       <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} />
-      <CreditAnalysis origins={creditOrigins(transactions)} />
       <GoalsEvolution
         goals={goals.map((goal) => ({
           id: goal.id,

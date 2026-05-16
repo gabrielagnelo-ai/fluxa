@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bot, Calculator, Flag, Home, LogOut, PanelLeftClose, PanelLeftOpen, Settings, Upload, WalletCards } from "lucide-react";
+import { BarChart3, Bot, BriefcaseBusiness, Calculator, Flag, Home, LogOut, PanelLeftClose, PanelLeftOpen, Settings, Upload, WalletCards } from "lucide-react";
 import { signOut } from "@/app/actions";
 import { FluxaLogo } from "@/components/brand/fluxa-logo";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const items = [
   { href: "/import", label: "Importar", icon: Upload },
   { href: "/transactions", label: "Transacoes", icon: WalletCards },
   { href: "/goals", label: "Metas", icon: Flag },
+  { href: "/investments", label: "Investimentos", icon: BriefcaseBusiness },
   { href: "/planning", label: "Planejamento", icon: Calculator },
   { href: "/insights", label: "Inteligencia", icon: Bot },
   { href: "/settings", label: "Ajustes", icon: Settings }

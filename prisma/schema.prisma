@@ -25,6 +25,17 @@ enum CategoryLimitType {
   GOAL
 }
 
+enum InvestmentAssetType {
+  FIXED_INCOME
+  STOCK
+  FII
+  ETF
+  FUND
+  CRYPTO
+  CASH
+  OTHER
+}
+
 model User {
   id           String        @id @default(uuid())
   supabaseId   String        @unique
@@ -33,6 +44,7 @@ model User {
   transactions Transaction[]
   categories   Category[]
   budgets      Budget[]
+  investments  InvestmentAsset[]
   categoryLimits CategoryLimit[]
   spendingPlans SpendingPlan[]
   goals        Goal[]
@@ -42,6 +54,27 @@ model User {
   updatedAt    DateTime      @updatedAt
 
   @@map("users")
+}
+
+model InvestmentAsset {
+  id             String              @id @default(uuid())
+  userId         String
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  ticker         String?
+  type           InvestmentAssetType
+  institution    String?
+  quantity       Decimal?            @db.Decimal(18, 8)
+  averagePrice   Decimal?            @db.Decimal(12, 2)
+  investedAmount Decimal             @db.Decimal(12, 2)
+  currentAmount  Decimal             @db.Decimal(12, 2)
+  acquiredAt     DateTime?
+  notes          String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([userId, type])
+  @@map("investment_assets")
 }
 
 model Category {
