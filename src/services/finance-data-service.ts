@@ -1,6 +1,7 @@
 import { isDatabaseConfigured, prisma } from "@/lib/prisma";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { normalizeText } from "@/lib/utils";
+import { secureLogger } from "@/lib/security/logger";
 import { defaultCategoryRules } from "@/services/category-service";
 import { cache } from "react";
 import type { ParsedTransaction } from "@/types/finance";
@@ -59,7 +60,7 @@ export const getCurrentUserId = cache(async () => {
       return null;
     }
   } catch (error) {
-    console.error(error);
+    secureLogger.error("Current user lookup failed", { error });
     return null;
   }
 

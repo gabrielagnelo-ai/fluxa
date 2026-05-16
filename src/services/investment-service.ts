@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { secureLogger } from "@/lib/security/logger";
 import { getCurrentUserId } from "@/services/finance-data-service";
 import { investmentTypeColors, investmentTypeLabels } from "@/constants/investments";
 
@@ -141,7 +142,7 @@ export async function getMarketQuotes(tickers: string[]) {
       error: null
     };
   } catch (error) {
-    console.error(error);
+    secureLogger.error("Market quotes fetch failed", { error });
     return {
       ...fallback,
       error: "Cotações indisponíveis agora. Configure BRAPI_TOKEN ou tente novamente em alguns minutos."

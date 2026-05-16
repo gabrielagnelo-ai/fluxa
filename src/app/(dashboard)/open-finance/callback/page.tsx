@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { CheckCircle2, CircleAlert, CircleSlash } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { registerBelvoConnectionFromCallback } from "@/lib/belvo/server";
+import { secureLogger } from "@/lib/security/logger";
+import { getCurrentUserId } from "@/services/finance-data-service";
 
 const statusCopy = {
   success: {
@@ -29,6 +32,15 @@ export default async function OpenFinanceCallbackPage({
   const status = String(params?.status ?? "event") as keyof typeof statusCopy;
   const copy = statusCopy[status] ?? statusCopy.event;
   const Icon = copy.icon;
+  const userId = await getCurrentUserId();
+
+  if (status === "success" && userId && params) {
+    try {
+      await registerBelvoConnectionFromCallback(userId, params);
+    } catch (error) {
+      secureLogger.error("Belvo callback registration failed", { error });
+    }
+  }
 
   return (
     <div className="space-y-5">

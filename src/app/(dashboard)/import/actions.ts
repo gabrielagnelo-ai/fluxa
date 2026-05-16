@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isDatabaseConfigured, prisma } from "@/lib/prisma";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { secureLogger } from "@/lib/security/logger";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { sanitizeTransactionForAI } from "@/lib/security/redaction";
 import { normalizeText } from "@/lib/utils";
 import { categorizeDescription, defaultCategoryRules } from "@/services/category-service";
 import { ensureDefaultCategories } from "@/services/finance-data-service";
@@ -107,7 +110,7 @@ export async function parsePdfStatement(formData: FormData) {
 
     return { transactions };
   } catch (error) {
-    console.error(error);
+    secureLogger.error("Import action failed", { error });
     return { error: "Não foi possível ler este PDF. Se ele for digitalizado por imagem, protegido por senha ou tiver layout fora do padrão, exporte o extrato em CSV/XLSX." };
   } finally {
     await parser?.destroy();
@@ -187,10 +190,7 @@ async function callGeminiClassifier({
                 goals: goalOptions,
                 transactions: transactionChunk.map(({ transaction, index }) => ({
                   index,
-                  date: transaction.date,
-                  description: transaction.description,
-                  amount: transaction.amount,
-                  type: transaction.type,
+                  ...sanitizeTransactionForAI(transaction),
                   currentCategory: transaction.category
                 }))
               })
@@ -264,10 +264,7 @@ async function callOpenRouterClassifier({
             goals: goalOptions,
             transactions: transactionChunk.map(({ transaction, index }) => ({
               index,
-              date: transaction.date,
-              description: transaction.description,
-              amount: transaction.amount,
-              type: transaction.type,
+              ...sanitizeTransactionForAI(transaction),
               currentCategory: transaction.category
             }))
           })
@@ -309,6 +306,8 @@ export async function classifyImportedTransactions(payload: unknown) {
       : null;
 
     if (!user) return { error: "Faça login antes de classificar importações com IA." };
+    const rateLimit = checkRateLimit(`ai-classify:${user.id}`, { limit: 10, windowMs: 10 * 60 * 1000 });
+    if (!rateLimit.allowed) return { error: "Muitas classificações em sequência. Aguarde alguns minutos e tente novamente." };
 
     await ensureDefaultCategories(user.id);
 
@@ -415,7 +414,7 @@ export async function classifyImportedTransactions(payload: unknown) {
       createdCategories: Array.from(createdCategories.entries()).map(([name, keywords]) => ({ name, keywords }))
     };
   } catch (error) {
-    console.error(error);
+    secureLogger.error("Import action failed", { error });
     return { error: "Não foi possível classificar agora. Verifique a conexão com Supabase/Gemini e tente novamente." };
   }
 }

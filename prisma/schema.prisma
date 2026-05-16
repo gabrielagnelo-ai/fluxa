@@ -36,6 +36,21 @@ enum InvestmentAssetType {
   OTHER
 }
 
+enum ConsentStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+  EXPIRED
+  ERROR
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  REJECTED
+  FAILED
+}
+
 model User {
   id           String        @id @default(uuid())
   supabaseId   String        @unique
@@ -50,10 +65,64 @@ model User {
   goals        Goal[]
   goalMarkers  GoalMarker[]
   goalContributions GoalContribution[]
+  bankConnections BankConnection[]
+  consents     OpenFinanceConsent[]
+  webhookEvents WebhookEvent[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@map("users")
+}
+
+model BankConnection {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String
+  institutionName String?
+  accountMask     String?
+  linkIdHash      String?
+  status          ConsentStatus @default(PENDING)
+  lastSyncedAt     DateTime?
+  disconnectedAt  DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId, provider])
+  @@map("bank_connections")
+}
+
+model OpenFinanceConsent {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String
+  belvoLinkIdHash String?
+  status          ConsentStatus @default(PENDING)
+  scopes          String[]      @default([])
+  createdAt       DateTime      @default(now())
+  revokedAt       DateTime?
+  expiresAt       DateTime?
+
+  @@index([userId, provider, status])
+  @@map("open_finance_consents")
+}
+
+model WebhookEvent {
+  id                 String        @id @default(uuid())
+  userId             String?
+  user               User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider           String
+  eventId            String
+  eventType          String
+  processedAt        DateTime?
+  rawPayloadRedacted Json?
+  status             WebhookStatus @default(RECEIVED)
+  createdAt          DateTime      @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider, eventType])
+  @@map("webhook_events")
 }
 
 model InvestmentAsset {

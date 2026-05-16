@@ -52,6 +52,7 @@ Para testar Open Finance com Belvo Hosted Widget, configure:
 BELVO_ENVIRONMENT="sandbox"
 BELVO_SECRET_ID="seu-secret-id"
 BELVO_SECRET_PASSWORD="seu-secret-password"
+BELVO_WEBHOOK_SECRET="um-segredo-para-validar-webhook"
 ```
 
 Use `BELVO_ENVIRONMENT="production"` apenas quando a conta Belvo estiver certificada/liberada para produção.

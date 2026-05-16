@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { ExternalLink, Landmark, ShieldCheck } from "lucide-react";
-import { generateBelvoWidget } from "@/app/(dashboard)/open-finance/actions";
+import { disconnectBelvoBank, generateBelvoWidget } from "@/app/(dashboard)/open-finance/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,36 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
     async (_previousState: { error?: string; success?: string; widgetUrl?: string } | undefined, formData: FormData) => generateBelvoWidget(formData),
     undefined
   );
+  const [disconnectState, disconnectAction, disconnectPending] = useActionState(
+    async () => disconnectBelvoBank(),
+    undefined as { error?: string; success?: string } | undefined
+  );
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
+      <Card className="xl:col-span-2">
+        <CardHeader>
+          <h2 className="font-semibold">Antes de conectar</h2>
+          <p className="text-sm text-muted-foreground">
+            O Fluxa solicitará consentimento explícito para acessar contas, saldos, transações, titularidade e faturas via Belvo/Open Finance.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border border-border bg-muted/20 p-3">
+            <p className="font-medium">Finalidade</p>
+            <p className="mt-1 text-sm text-muted-foreground">Organização financeira, categorização de gastos e visão consolidada.</p>
+          </div>
+          <div className="rounded-lg border border-border bg-muted/20 p-3">
+            <p className="font-medium">Minimização</p>
+            <p className="mt-1 text-sm text-muted-foreground">O Fluxa salva apenas dados necessários para dashboard, transações e análises.</p>
+          </div>
+          <div className="rounded-lg border border-border bg-muted/20 p-3">
+            <p className="font-medium">Controle</p>
+            <p className="mt-1 text-sm text-muted-foreground">Você pode desconectar o banco e impedir novas sincronizações a qualquer momento.</p>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -78,6 +105,15 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
             <p className="font-medium text-foreground">Próxima etapa</p>
             <p className="mt-1">Salvar o link/consentimento no banco e buscar contas/transações para transformar em lançamentos do Fluxa.</p>
           </div>
+          <form action={disconnectAction} className="rounded-lg border border-border bg-muted/20 p-3">
+            <p className="font-medium text-foreground">Revogação local</p>
+            <p className="mt-1">Desconectar bloqueia novas sincronizações no Fluxa. A revogação definitiva também deve ser feita no fluxo da instituição/Belvo.</p>
+            <Button className="mt-3 bg-red-500 text-white hover:shadow-none" disabled={disconnectPending}>
+              {disconnectPending ? "Desconectando..." : "Desconectar banco"}
+            </Button>
+            {disconnectState?.error && <p className="mt-2 text-xs text-red-400">{disconnectState.error}</p>}
+            {disconnectState?.success && <p className="mt-2 text-xs text-emerald-400">{disconnectState.success}</p>}
+          </form>
         </CardContent>
       </Card>
     </div>

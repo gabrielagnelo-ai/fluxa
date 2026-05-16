@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { secureLogger } from "@/lib/security/logger";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 const authSchema = z.object({
@@ -75,7 +76,7 @@ export async function signUp(formData: FormData) {
         });
       }
     } catch (error) {
-      console.error(error);
+      secureLogger.error("Signup local user sync failed", { error });
     }
   }
 

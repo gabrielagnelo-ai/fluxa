@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { secureLogger } from "@/lib/security/logger";
+import { redact } from "@/lib/security/redaction";
 import { formatCurrency } from "@/lib/utils";
 import { creditOrigins } from "@/services/dashboard-service";
 import { getCurrentUserId } from "@/services/finance-data-service";
@@ -80,7 +82,7 @@ export async function getInsightContext(period: PeriodRange): Promise<InsightCon
       creditOrigins: creditOrigins(transactions.map((transaction) => ({
         id: transaction.id,
         date: transaction.date.toISOString(),
-        description: transaction.description,
+        description: String(redact(transaction.description)),
         amount: Number(transaction.amount),
         type: transaction.type,
         category: transaction.category?.name ?? "Outros"
@@ -100,7 +102,7 @@ export async function getInsightContext(period: PeriodRange): Promise<InsightCon
       })
     };
   } catch (error) {
-    console.error(error);
+    secureLogger.error("Insight context failed", { error });
     return emptyContext;
   }
 }
