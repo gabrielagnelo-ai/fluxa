@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BriefcaseBusiness, Home, Landmark, Upload, WalletCards } from "lucide-react";
+import { BriefcaseBusiness, Home, Upload, WalletCards, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -10,7 +10,7 @@ const items = [
   { href: "/import", label: "Importar", icon: Upload },
   { href: "/transactions", label: "Gastos", icon: WalletCards },
   { href: "/investments", label: "Invest.", icon: BriefcaseBusiness },
-  { href: "/open-finance", label: "Banco", icon: Landmark }
+  { href: "/insights", label: "IA", icon: Bot }
 ];
 
 export function MobileNav() {

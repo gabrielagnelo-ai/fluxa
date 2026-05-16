@@ -51,6 +51,13 @@ enum WebhookStatus {
   FAILED
 }
 
+enum WhatsAppMessageStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
 model User {
   id           String        @id @default(uuid())
   supabaseId   String        @unique
@@ -68,10 +75,45 @@ model User {
   bankConnections BankConnection[]
   consents     OpenFinanceConsent[]
   webhookEvents WebhookEvent[]
+  whatsappLinks WhatsAppLink[]
+  whatsappMessages WhatsAppMessage[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@map("users")
+}
+
+model WhatsAppLink {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneHash     String   @unique
+  phoneLast4    String?
+  displayName   String?
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@map("whatsapp_links")
+}
+
+model WhatsAppMessage {
+  id              String                @id @default(uuid())
+  userId          String?
+  user            User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  providerMessageId String              @unique
+  phoneHash       String
+  direction       String
+  textRedacted    String?
+  status          WhatsAppMessageStatus @default(RECEIVED)
+  error           String?
+  transactionId   String?
+  createdAt       DateTime              @default(now())
+  processedAt     DateTime?
+
+  @@index([phoneHash, createdAt])
+  @@map("whatsapp_messages")
 }
 
 model BankConnection {

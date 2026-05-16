@@ -15,7 +15,11 @@ const serverEnvSchema = z.object({
   BELVO_SECRET_ID: z.string().min(1).optional(),
   BELVO_SECRET_PASSWORD: z.string().min(1).optional(),
   BELVO_WEBHOOK_SECRET: z.string().min(1).optional(),
-  DATA_ENCRYPTION_KEY: z.string().min(32).optional()
+  DATA_ENCRYPTION_KEY: z.string().min(32).optional(),
+  WHATSAPP_VERIFY_TOKEN: z.string().min(1).optional(),
+  WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().min(1).optional(),
+  WHATSAPP_DEFAULT_USER_EMAIL: z.string().email().optional()
 });
 
 let cachedEnv: z.infer<typeof serverEnvSchema> | null = null;

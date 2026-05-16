@@ -57,6 +57,21 @@ BELVO_WEBHOOK_SECRET="um-segredo-para-validar-webhook"
 
 Use `BELVO_ENVIRONMENT="production"` apenas quando a conta Belvo estiver certificada/liberada para produção.
 
+Para testar registro de gastos por WhatsApp Cloud API:
+
+```bash
+WHATSAPP_VERIFY_TOKEN="um-token-que-voce-cria"
+WHATSAPP_ACCESS_TOKEN="token-temporario-ou-permanente-da-meta"
+WHATSAPP_PHONE_NUMBER_ID="id-do-numero-de-teste"
+WHATSAPP_DEFAULT_USER_EMAIL="email-do-usuario-no-fluxa"
+```
+
+Webhook da Meta:
+
+```text
+https://seu-dominio/api/whatsapp/webhook
+```
+
 4. Gere o Prisma Client e aplique as migrations:
 
 ```bash
