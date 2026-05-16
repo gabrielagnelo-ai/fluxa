@@ -46,6 +46,16 @@ BRAPI_TOKEN="sua-chave"
 
 Sem essa chave, o Fluxa tenta consultar as cotações públicas e mostra uma mensagem caso o limite da API seja atingido.
 
+Para testar Open Finance com Belvo Hosted Widget, configure:
+
+```bash
+BELVO_ENVIRONMENT="sandbox"
+BELVO_SECRET_ID="seu-secret-id"
+BELVO_SECRET_PASSWORD="seu-secret-password"
+```
+
+Use `BELVO_ENVIRONMENT="production"` apenas quando a conta Belvo estiver certificada/liberada para produção.
+
 4. Gere o Prisma Client e aplique as migrations:
 
 ```bash
