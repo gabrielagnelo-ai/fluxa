@@ -2,10 +2,19 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/services/finance-data-service";
 
 const essentialCategories = new Set(["iFood", "RU UTFPR", "Restaurante", "Mercado", "Transporte", "Combustível", "Moradia", "Energia", "Água", "Aluguel", "Condomínio"]);
+const hiddenPlanningCategories = new Set(["Receita"]);
+const fixedPlanningCategories = new Set(["Aluguel", "Energia", "Água", "Condomínio", "Academia", "Assinatura"]);
+const goalPlanningCategories = new Set(["Reserva", "Meta", "Investimento"]);
 
 function groupCategory(categoryName: string) {
   if (essentialCategories.has(categoryName)) return "needs" as const;
   return "wants" as const;
+}
+
+function inferLimitType(categoryName: string) {
+  if (fixedPlanningCategories.has(categoryName)) return "FIXED" as const;
+  if (goalPlanningCategories.has(categoryName)) return "GOAL" as const;
+  return "VARIABLE" as const;
 }
 
 function emptyOverview(month: number, year: number) {
@@ -19,7 +28,15 @@ function emptyOverview(month: number, year: number) {
       { key: "wants" as const, name: "Desejos", planned: 0, actual: 0, percent: 0 },
       { key: "savings" as const, name: "Metas e reserva", planned: 0, actual: 0, percent: 0 }
     ],
-    categoryLimits: []
+    categoryLimits: [],
+    limitSummary: {
+      plannedTotal: 0,
+      actualWithLimit: 0,
+      difference: 0,
+      overLimitCount: 0,
+      plannedCount: 0,
+      spentCount: 0
+    }
   };
 }
 
@@ -81,23 +98,34 @@ export async function getPlanningOverview(date = new Date()) {
     });
 
   const limitByCategory = new Map(limits.map((limit) => [limit.categoryId, limit]));
-  const categoryLimits = categories.map((category) => {
-    const limit = limitByCategory.get(category.id);
-    const planned = Number(limit?.amount ?? 0);
-    const actualAmount = actualByCategory.get(category.id) ?? 0;
-    const difference = planned - actualAmount;
-    const usage = planned > 0 ? Math.round((actualAmount / planned) * 100) : 0;
+  const categoryLimits = categories
+    .filter((category) => !hiddenPlanningCategories.has(category.name))
+    .map((category) => {
+      const limit = limitByCategory.get(category.id);
+      const planned = Number(limit?.amount ?? 0);
+      const actualAmount = actualByCategory.get(category.id) ?? 0;
+      const difference = planned - actualAmount;
+      const usage = planned > 0 ? Math.round((actualAmount / planned) * 100) : 0;
 
-    return {
-      categoryId: category.id,
-      categoryName: category.name,
-      planned,
-      actual: actualAmount,
-      difference,
-      usage,
-      type: limit?.type ?? "VARIABLE"
-    };
-  });
+      return {
+        categoryId: category.id,
+        categoryName: category.name,
+        planned,
+        actual: actualAmount,
+        difference,
+        usage,
+        type: limit?.type ?? inferLimitType(category.name)
+      };
+    });
+  const plannedLimits = categoryLimits.filter((item) => item.planned > 0);
+  const limitSummary = {
+    plannedTotal: plannedLimits.reduce((sum, item) => sum + item.planned, 0),
+    actualWithLimit: plannedLimits.reduce((sum, item) => sum + item.actual, 0),
+    difference: plannedLimits.reduce((sum, item) => sum + item.difference, 0),
+    overLimitCount: plannedLimits.filter((item) => item.actual > item.planned).length,
+    plannedCount: plannedLimits.length,
+    spentCount: categoryLimits.filter((item) => item.actual > 0).length
+  };
 
   return {
     month,
@@ -136,6 +164,7 @@ export async function getPlanningOverview(date = new Date()) {
         percent: savingsPercent
       }
     ],
-    categoryLimits
+    categoryLimits,
+    limitSummary
   };
 }

@@ -1,14 +1,16 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Calculator, PiggyBank, Target } from "lucide-react";
+import { useActionState, useMemo, useState } from "react";
+import { AlertTriangle, Calculator, CheckCircle2, PiggyBank, Target, WalletCards } from "lucide-react";
 import { saveCategoryLimits, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
 import { FluxaLogo } from "@/components/brand/fluxa-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { economicModels } from "@/constants/economic-models";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+
+type LimitFilter = "all" | "planned" | "spent" | "over";
 
 type PlanningOverview = {
   month: number;
@@ -37,12 +39,27 @@ type PlanningOverview = {
     usage: number;
     type: "FIXED" | "VARIABLE" | "GOAL";
   }[];
+  limitSummary: {
+    plannedTotal: number;
+    actualWithLimit: number;
+    difference: number;
+    overLimitCount: number;
+    plannedCount: number;
+    spentCount: number;
+  };
 };
 
 const limitTypeLabels = {
   FIXED: "Fixo",
   VARIABLE: "Variável",
   GOAL: "Meta/reserva"
+};
+
+const filterLabels: Record<LimitFilter, string> = {
+  all: "Todas",
+  planned: "Com limite",
+  spent: "Com gasto",
+  over: "Estouradas"
 };
 
 export function EconomicPlanManager({ overview }: { overview: PlanningOverview }) {
@@ -55,11 +72,21 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
     undefined
   );
   const [selectedModel, setSelectedModel] = useState(overview.plan?.model ?? "50/30/20");
+  const [limitFilter, setLimitFilter] = useState<LimitFilter>("spent");
   const isCustom = selectedModel === "custom";
   const selectedPreset = economicModels.find((model) => model.id === selectedModel) ?? economicModels[0];
   const needsPercent = overview.plan?.needsPercent ?? selectedPreset.needsPercent;
   const wantsPercent = overview.plan?.wantsPercent ?? selectedPreset.wantsPercent;
   const savingsPercent = overview.plan?.savingsPercent ?? selectedPreset.savingsPercent;
+
+  const visibleLimits = useMemo(() => {
+    return overview.categoryLimits.filter((item) => {
+      if (limitFilter === "planned") return item.planned > 0;
+      if (limitFilter === "spent") return item.planned > 0 || item.actual > 0;
+      if (limitFilter === "over") return item.planned > 0 && item.actual > item.planned;
+      return true;
+    });
+  }, [overview.categoryLimits, limitFilter]);
 
   return (
     <div className="space-y-5">
@@ -142,7 +169,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
       </section>
 
       <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <CardHeader className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <h2 className="font-semibold">Limites por categoria</h2>
             <p className="text-sm text-muted-foreground">
@@ -154,61 +181,91 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent>
-          <form action={limitAction} className="space-y-4">
+          <form action={limitAction} className="space-y-5">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-sm">
-                <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+
+            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <LimitSummaryCard icon={WalletCards} label="Previsto no mês" value={formatCurrency(overview.limitSummary.plannedTotal)} detail={`${overview.limitSummary.plannedCount} categoria(s) com limite`} />
+              <LimitSummaryCard icon={Target} label="Realizado com limite" value={formatCurrency(overview.limitSummary.actualWithLimit)} detail="Gasto nas categorias planejadas" />
+              <LimitSummaryCard
+                icon={overview.limitSummary.difference < 0 ? AlertTriangle : CheckCircle2}
+                label="Saldo dos limites"
+                value={formatCurrency(overview.limitSummary.difference)}
+                detail={overview.limitSummary.difference < 0 ? "Acima do previsto" : "Ainda disponível"}
+                tone={overview.limitSummary.difference < 0 ? "danger" : "success"}
+              />
+              <LimitSummaryCard
+                icon={AlertTriangle}
+                label="Categorias estouradas"
+                value={String(overview.limitSummary.overLimitCount)}
+                detail={`${overview.limitSummary.spentCount} categoria(s) com gasto no mês`}
+                tone={overview.limitSummary.overLimitCount > 0 ? "danger" : "success"}
+              />
+            </section>
+
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-background/50 p-1">
+                {(Object.keys(filterLabels) as LimitFilter[]).map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setLimitFilter(filter)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground",
+                      limitFilter === filter && "bg-primary text-primary-foreground shadow-[0_0_18px_rgba(37,99,235,0.2)] hover:text-primary-foreground"
+                    )}
+                  >
+                    {filterLabels[filter]}
+                  </button>
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">Use Todas para definir limite em uma categoria sem gasto neste mês.</p>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full min-w-[880px] text-sm">
+                <thead className="bg-background/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr className="border-b border-border">
-                    <th className="py-3 font-medium">Categoria</th>
-                    <th className="font-medium">Tipo</th>
-                    <th className="font-medium">Limite do mês</th>
-                    <th className="text-right font-medium">Realizado</th>
-                    <th className="text-right font-medium">Diferença</th>
-                    <th className="font-medium">Uso</th>
+                    <th className="px-4 py-3 font-medium">Categoria</th>
+                    <th className="px-4 font-medium">Tipo</th>
+                    <th className="px-4 font-medium">Limite do mês</th>
+                    <th className="px-4 text-right font-medium">Realizado</th>
+                    <th className="px-4 text-right font-medium">Diferença</th>
+                    <th className="px-4 font-medium">Uso</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {overview.categoryLimits.map((item) => {
+                  {visibleLimits.map((item) => {
                     const overLimit = item.planned > 0 && item.actual > item.planned;
                     const hasLimit = item.planned > 0;
 
                     return (
                       <tr key={item.categoryId} className="border-b border-border/60 last:border-0">
-                        <td className="py-3 font-medium">
+                        <td className="px-4 py-3 font-medium">
                           <input type="hidden" name="categoryId" value={item.categoryId} />
                           {item.categoryName}
                         </td>
-                        <td>
-                          <select name="type" defaultValue={item.type} className="h-9 rounded-md border border-border bg-background px-2">
+                        <td className="px-4">
+                          <select name="type" defaultValue={item.type} className="h-9 w-36 rounded-md border border-border bg-background px-2">
                             {Object.entries(limitTypeLabels).map(([value, label]) => (
-                              <option key={value} value={value}>{label}</option>
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
                             ))}
                           </select>
                         </td>
-                        <td>
-                          <Input
-                            name="amount"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            defaultValue={item.planned || ""}
-                            placeholder="0,00"
-                            className="max-w-36"
-                          />
+                        <td className="px-4">
+                          <Input name="amount" type="number" min="0" step="0.01" defaultValue={item.planned || ""} placeholder="0,00" className="max-w-36" />
                         </td>
-                        <td className="text-right font-semibold">{formatCurrency(item.actual)}</td>
-                        <td className={overLimit ? "text-right font-semibold text-red-500" : "text-right font-semibold text-emerald-500"}>
+                        <td className="px-4 text-right font-semibold">{formatCurrency(item.actual)}</td>
+                        <td className={cn("px-4 text-right font-semibold", !hasLimit && "text-muted-foreground", hasLimit && (overLimit ? "text-red-500" : "text-emerald-500"))}>
                           {hasLimit ? formatCurrency(item.difference) : "-"}
                         </td>
-                        <td className="min-w-44">
+                        <td className="min-w-44 px-4">
                           <div className="flex items-center gap-2">
                             <div className="h-2 flex-1 rounded-full bg-background">
-                              <div
-                                className={overLimit ? "h-2 rounded-full bg-red-500" : "h-2 rounded-full bg-emerald-500"}
-                                style={{ width: `${hasLimit ? Math.min(100, item.usage) : 0}%` }}
-                              />
+                              <div className={overLimit ? "h-2 rounded-full bg-red-500" : "h-2 rounded-full bg-emerald-500"} style={{ width: `${hasLimit ? Math.min(100, item.usage) : 0}%` }} />
                             </div>
                             <span className="w-12 text-right text-xs text-muted-foreground">{hasLimit ? `${item.usage}%` : "-"}</span>
                           </div>
@@ -218,9 +275,11 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                   })}
                 </tbody>
               </table>
+              {visibleLimits.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground">Nenhuma categoria encontrada para este filtro.</p>}
             </div>
+
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">Deixe o valor zerado para não usar limite nessa categoria.</p>
+              <p className="text-sm text-muted-foreground">Deixe o valor zerado para remover o limite da categoria.</p>
               <Button disabled={limitPending}>{limitPending ? "Salvando..." : "Salvar limites"}</Button>
             </div>
             {limitState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{limitState.error}</p>}
@@ -228,6 +287,35 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function LimitSummaryCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone = "neutral"
+}: {
+  icon: typeof Target;
+  label: string;
+  value: string;
+  detail: string;
+  tone?: "neutral" | "success" | "danger";
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-background/45 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <strong className={cn("mt-1 block text-xl", tone === "success" && "text-emerald-500", tone === "danger" && "text-red-500")}>{value}</strong>
+        </div>
+        <span className={cn("grid size-9 place-items-center rounded-lg bg-primary/10 text-primary", tone === "success" && "bg-emerald-500/10 text-emerald-500", tone === "danger" && "bg-red-500/10 text-red-500")}>
+          <Icon className="size-4" />
+        </span>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">{detail}</p>
     </div>
   );
 }
