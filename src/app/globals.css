@@ -46,3 +46,16 @@ body {
 ::selection {
   background: hsl(var(--primary) / 0.22);
 }
+
+.recharts-default-tooltip {
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.75rem !important;
+  background: hsl(var(--background) / 0.96) !important;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.recharts-tooltip-label,
+.recharts-tooltip-item {
+  color: hsl(var(--foreground)) !important;
+}

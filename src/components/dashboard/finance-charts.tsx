@@ -13,11 +13,16 @@ type EvolutionData = { month: string; receitas: number; despesas: number; saldo:
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color?: string }>; label?: string }) {
   if (!active || !payload?.length) return null;
 
+  const orderedPayload = [...payload].sort((a, b) => {
+    const order = ["Receitas", "Despesas", "Saldo"];
+    return order.indexOf(a.name) - order.indexOf(b.name);
+  });
+
   return (
-    <div className="rounded-lg border border-border bg-background/95 px-3 py-2 text-xs shadow-xl backdrop-blur">
-      {label && <p className="mb-2 font-medium text-foreground">{label}</p>}
+    <div className="rounded-lg border border-border bg-[#0B1220]/95 px-3 py-2 text-xs shadow-2xl shadow-black/30 backdrop-blur">
+      {label && <p className="mb-2 font-medium capitalize text-foreground">{label}</p>}
       <div className="space-y-1.5">
-        {payload.map((item) => (
+        {orderedPayload.map((item) => (
           <div key={item.name} className="flex min-w-44 items-center justify-between gap-4">
             <span className="flex items-center gap-2 text-muted-foreground">
               <span className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
@@ -33,8 +38,9 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 
 function formatAxisCurrency(value: number) {
   const abs = Math.abs(Number(value));
-  if (abs >= 1000) return `R$ ${(Number(value) / 1000).toFixed(abs >= 10000 ? 0 : 1)}k`;
-  return `R$ ${Number(value).toFixed(0)}`;
+  const prefix = Number(value) < 0 ? "-" : "";
+  if (abs >= 1000) return `${prefix}R$${(abs / 1000).toFixed(abs >= 10000 ? 0 : 1)}k`;
+  return `${prefix}R$${abs.toFixed(0)}`;
 }
 
 export function FinanceCharts({
@@ -186,7 +192,7 @@ export function FinanceCharts({
                 </defs>
                 <CartesianGrid stroke="#334155" strokeDasharray="3 3" vertical={false} opacity={0.45} />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12 }} tickFormatter={formatAxisCurrency} width={64} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12 }} tickFormatter={formatAxisCurrency} width={72} />
                 <Tooltip content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ paddingTop: 10 }} iconType="circle" formatter={(value) => <span className="text-sm text-muted-foreground">{value}</span>} />
                 <Area type="monotone" dataKey="receitas" name="Receitas" stroke="#10B981" fill="url(#incomeGradient)" strokeWidth={3} dot={false} activeDot={{ r: 5 }} />
