@@ -115,3 +115,64 @@ export function projectPeriod(transactions: ParsedTransaction[], period: PeriodR
     projectedSavings: Math.max(0, projectedNetBalance)
   };
 }
+
+function startOfWeekMonday(date: Date) {
+  const start = new Date(date);
+  const day = start.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function isSameDay(left: Date, right: Date) {
+  return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth() && left.getDate() === right.getDate();
+}
+
+export function weeklyExpenseInsight(transactions: ParsedTransaction[], fallbackDate = new Date()) {
+  const expenses = transactions.filter((transaction) => transaction.type === "EXPENSE");
+  const referenceDate = expenses.length
+    ? expenses.reduce((latest, transaction) => {
+        const date = new Date(transaction.date);
+        return date > latest ? date : latest;
+      }, new Date(expenses[0].date))
+    : fallbackDate;
+  const weekStart = startOfWeekMonday(referenceDate);
+  const previousWeekStart = addDays(weekStart, -7);
+  const labels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
+  const days = labels.map((label, index) => {
+    const date = addDays(weekStart, index);
+    const amount = expenses.filter((transaction) => isSameDay(new Date(transaction.date), date)).reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    return {
+      label,
+      amount,
+      date: date.toISOString()
+    };
+  });
+  const total = days.reduce((sum, day) => sum + day.amount, 0);
+  const previousTotal = expenses
+    .filter((transaction) => {
+      const date = new Date(transaction.date);
+      return date >= previousWeekStart && date < weekStart;
+    })
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const difference = total - previousTotal;
+  const trendPercent = previousTotal > 0 ? Math.round((Math.abs(difference) / previousTotal) * 100) : total > 0 ? 100 : 0;
+
+  return {
+    total,
+    previousTotal,
+    difference,
+    trendPercent,
+    increased: difference > 0,
+    decreased: difference < 0,
+    days
+  };
+}

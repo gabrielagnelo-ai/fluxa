@@ -5,8 +5,9 @@ import { GoalsEvolution } from "@/components/dashboard/goals-evolution";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { ProjectionCard } from "@/components/dashboard/projection-card";
+import { WeeklyExpenseInsight } from "@/components/dashboard/weekly-expense-insight";
 import { PageHeader } from "@/components/layout/page-header";
-import { creditOrigins, expensesByCategory, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions } from "@/services/dashboard-service";
+import { creditOrigins, expensesByCategory, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions, weeklyExpenseInsight } from "@/services/dashboard-service";
 import { getCurrentBalanceUntil, getDashboardEvolutionTransactions, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
 import { getPeriodLabel, getPeriodRange } from "@/utils/period";
 
@@ -24,6 +25,7 @@ export default async function DashboardPage({
   ]);
   const periodSummary = summarizeTransactions(transactions);
   const projection = projectPeriod(transactions, period);
+  const weeklyInsight = weeklyExpenseInsight(evolutionTransactions, period.end);
 
   return (
     <div className="space-y-5">
@@ -41,7 +43,10 @@ export default async function DashboardPage({
         <KpiCard label="Economia do período" value={periodSummary.savings} icon={PiggyBank} tone="bg-blue-500/10 text-blue-600" />
       </section>
 
-      <ProjectionCard {...projection} />
+      <section className="grid gap-4 xl:grid-cols-[1fr_420px]">
+        <ProjectionCard {...projection} />
+        <WeeklyExpenseInsight {...weeklyInsight} />
+      </section>
       <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} />
       <CreditAnalysis origins={creditOrigins(transactions)} />
       <GoalsEvolution
