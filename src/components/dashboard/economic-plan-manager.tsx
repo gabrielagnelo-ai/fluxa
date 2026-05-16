@@ -3,7 +3,6 @@
 import { useActionState, useMemo, useState } from "react";
 import { AlertTriangle, Calculator, CheckCircle2, PiggyBank, Target, WalletCards } from "lucide-react";
 import { saveCategoryLimits, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
-import { FluxaLogo } from "@/components/brand/fluxa-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -92,12 +91,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
     <div className="space-y-5">
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-3">
-            <FluxaLogo className="scale-90 origin-left" />
-            <div>
-              <h2 className="font-semibold">Modelo econômico mensal</h2>
-              <p className="text-sm text-muted-foreground">Defina sua renda base e compare o gasto real com uma divisão saudável.</p>
-            </div>
+          <div>
+            <h2 className="font-semibold">Modelo econômico mensal</h2>
+            <p className="text-sm text-muted-foreground">Defina sua renda base e compare o gasto real com uma divisão saudável.</p>
           </div>
           <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
             <Calculator className="size-5" />
