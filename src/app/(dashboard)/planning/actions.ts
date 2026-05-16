@@ -66,3 +66,73 @@ export async function upsertSpendingPlan(formData: FormData) {
   revalidatePath("/dashboard");
   return { success: "Planejamento salvo." };
 }
+
+const limitTypeSchema = z.enum(["FIXED", "VARIABLE", "GOAL"]);
+
+export async function saveCategoryLimits(formData: FormData) {
+  const month = z.coerce.number().int().min(1).max(12).safeParse(formData.get("month"));
+  const year = z.coerce.number().int().min(2020).max(2100).safeParse(formData.get("year"));
+  const categoryIds = formData.getAll("categoryId").map(String);
+  const amounts = formData.getAll("amount").map(String);
+  const types = formData.getAll("type").map(String);
+
+  if (!month.success || !year.success) return { error: "Período inválido." };
+  if (categoryIds.length !== amounts.length || categoryIds.length !== types.length) return { error: "Limites inválidos." };
+
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "Faça login para salvar limites." };
+
+  const categories = await prisma.category.findMany({
+    where: { userId, id: { in: categoryIds } },
+    select: { id: true }
+  });
+  const allowedCategoryIds = new Set(categories.map((category) => category.id));
+  const operations = categoryIds.flatMap((categoryId, index) => {
+    if (!allowedCategoryIds.has(categoryId)) return [];
+
+    const amount = Number(amounts[index]);
+    const type = limitTypeSchema.safeParse(types[index]);
+    if (!Number.isFinite(amount) || amount < 0 || !type.success) return [];
+
+    if (amount === 0) {
+      return prisma.categoryLimit.deleteMany({
+        where: {
+          userId,
+          categoryId,
+          month: month.data,
+          year: year.data
+        }
+      });
+    }
+
+    return prisma.categoryLimit.upsert({
+      where: {
+        userId_categoryId_month_year: {
+          userId,
+          categoryId,
+          month: month.data,
+          year: year.data
+        }
+      },
+      update: {
+        amount,
+        type: type.data
+      },
+      create: {
+        userId,
+        categoryId,
+        month: month.data,
+        year: year.data,
+        amount,
+        type: type.data
+      }
+    });
+  });
+
+  await prisma.$transaction(operations);
+
+  revalidatePath("/planning");
+  revalidatePath("/dashboard");
+  revalidatePath("/insights");
+  return { success: "Limites por categoria salvos." };
+}

@@ -8,36 +8,48 @@ function groupCategory(categoryName: string) {
   return "wants" as const;
 }
 
+function emptyOverview(month: number, year: number) {
+  return {
+    month,
+    year,
+    plan: null,
+    actualIncome: 0,
+    groups: [
+      { key: "needs" as const, name: "Necessidades", planned: 0, actual: 0, percent: 0 },
+      { key: "wants" as const, name: "Desejos", planned: 0, actual: 0, percent: 0 },
+      { key: "savings" as const, name: "Metas e reserva", planned: 0, actual: 0, percent: 0 }
+    ],
+    categoryLimits: []
+  };
+}
+
 export async function getPlanningOverview(date = new Date()) {
   const userId = await getCurrentUserId();
   const month = date.getMonth() + 1;
   const year = date.getFullYear();
 
-  if (!userId) {
-    return {
-      month,
-      year,
-      plan: null,
-      actualIncome: 0,
-      groups: [
-        { key: "needs" as const, name: "Necessidades", planned: 0, actual: 0, percent: 0 },
-        { key: "wants" as const, name: "Desejos", planned: 0, actual: 0, percent: 0 },
-        { key: "savings" as const, name: "Metas e reserva", planned: 0, actual: 0, percent: 0 }
-      ]
-    };
-  }
+  if (!userId) return emptyOverview(month, year);
 
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
-  const [plan, transactions, contributions] = await Promise.all([
+  const [plan, transactions, contributions, categories, limits] = await Promise.all([
     prisma.spendingPlan.findUnique({ where: { userId_month_year: { userId, month, year } } }),
     prisma.transaction.findMany({
       where: { userId, date: { gte: start, lt: end } },
-      include: { category: true, goalContributions: true }
+      include: { category: true }
     }),
     prisma.goalContribution.findMany({
       where: { userId, date: { gte: start, lt: end } },
       select: { amount: true, transactionId: true }
+    }),
+    prisma.category.findMany({
+      where: { userId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true }
+    }),
+    prisma.categoryLimit.findMany({
+      where: { userId, month, year },
+      select: { categoryId: true, amount: true, type: true }
     })
   ]);
 
@@ -52,13 +64,40 @@ export async function getPlanningOverview(date = new Date()) {
     wants: 0,
     savings: contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0)
   };
+  const actualByCategory = new Map<string, number>();
 
   transactions
-    .filter((transaction) => transaction.type === "EXPENSE" && !savingsTransactionIds.has(transaction.id))
+    .filter((transaction) => transaction.type === "EXPENSE")
     .forEach((transaction) => {
-      const group = groupCategory(transaction.category?.name ?? "Outros");
-      actual[group] += Number(transaction.amount);
+      const amount = Number(transaction.amount);
+      if (transaction.categoryId) {
+        actualByCategory.set(transaction.categoryId, (actualByCategory.get(transaction.categoryId) ?? 0) + amount);
+      }
+
+      if (!savingsTransactionIds.has(transaction.id)) {
+        const group = groupCategory(transaction.category?.name ?? "Outros");
+        actual[group] += amount;
+      }
     });
+
+  const limitByCategory = new Map(limits.map((limit) => [limit.categoryId, limit]));
+  const categoryLimits = categories.map((category) => {
+    const limit = limitByCategory.get(category.id);
+    const planned = Number(limit?.amount ?? 0);
+    const actualAmount = actualByCategory.get(category.id) ?? 0;
+    const difference = planned - actualAmount;
+    const usage = planned > 0 ? Math.round((actualAmount / planned) * 100) : 0;
+
+    return {
+      categoryId: category.id,
+      categoryName: category.name,
+      planned,
+      actual: actualAmount,
+      difference,
+      usage,
+      type: limit?.type ?? "VARIABLE"
+    };
+  });
 
   return {
     month,
@@ -96,6 +135,7 @@ export async function getPlanningOverview(date = new Date()) {
         actual: actual.savings,
         percent: savingsPercent
       }
-    ]
+    ],
+    categoryLimits
   };
 }

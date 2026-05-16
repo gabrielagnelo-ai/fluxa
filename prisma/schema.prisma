@@ -19,6 +19,12 @@ enum GoalStatus {
   COMPLETED
 }
 
+enum CategoryLimitType {
+  FIXED
+  VARIABLE
+  GOAL
+}
+
 model User {
   id           String        @id @default(uuid())
   supabaseId   String        @unique
@@ -27,6 +33,7 @@ model User {
   transactions Transaction[]
   categories   Category[]
   budgets      Budget[]
+  categoryLimits CategoryLimit[]
   spendingPlans SpendingPlan[]
   goals        Goal[]
   goalMarkers  GoalMarker[]
@@ -47,6 +54,7 @@ model Category {
   keywords     String[]      @default([])
   transactions Transaction[]
   budgets      Budget[]
+  categoryLimits CategoryLimit[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -90,6 +98,24 @@ model Budget {
 
   @@unique([userId, categoryId, month, year])
   @@map("budgets")
+}
+
+model CategoryLimit {
+  id         String            @id @default(uuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  amount     Decimal           @db.Decimal(12, 2)
+  type       CategoryLimitType @default(VARIABLE)
+  month      Int
+  year       Int
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, year, month])
+  @@map("category_limits")
 }
 
 model SpendingPlan {
