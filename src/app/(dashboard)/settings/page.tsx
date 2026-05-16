@@ -6,36 +6,36 @@ import { getCategoriesForCurrentUser } from "@/services/finance-data-service";
 
 const integrationStatus = [
   {
-    title: "IA para analise financeira",
-    description: "Ativa na aba Inteligencia. Usa dados agregados do periodo e nao envia descricoes individuais das transacoes.",
+    title: "IA para análise financeira",
+    description: "Ativa na aba Inteligência. Usa dados agregados do período e não envia descrições individuais das transações.",
     status: "Ativo",
     icon: Bot,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
-    title: "IA para classificar importacoes",
-    description: "Ativa na importacao. O botao Classificar com IA sugere categorias, cria grupos e pode relacionar metas.",
+    title: "IA para classificar importações",
+    description: "Ativa na importação. O botão Classificar com IA sugere categorias, cria grupos e pode relacionar metas.",
     status: "Ativo",
     icon: CheckCircle2,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
-    title: "Notificacoes de orcamento e metas",
-    description: "Parcial. Hoje existem alertas internos na aba Inteligencia; ainda falta email, push e central de lidos.",
+    title: "Notificações de orçamento e metas",
+    description: "Parcial. Hoje existem alertas internos na aba Inteligência; ainda falta email, push e central de lidos.",
     status: "Parcial",
     icon: Clock3,
     tone: "bg-amber-400/10 text-amber-400"
   },
   {
-    title: "Previsao por categoria e recorrencia",
-    description: "Parcial. O dashboard projeta o periodo; ainda falta motor historico por categoria e recorrencias.",
+    title: "Previsão por categoria e recorrência",
+    description: "Parcial. O dashboard projeta o período; ainda falta motor histórico por categoria e recorrências.",
     status: "Parcial",
     icon: Clock3,
     tone: "bg-amber-400/10 text-amber-400"
   },
   {
     title: "Open Finance",
-    description: "Futuro. Ainda nao ha consentimento bancario, tokens por instituicao ou sincronizacao automatica.",
+    description: "Futuro. Ainda não há consentimento bancário, tokens por instituição ou sincronização automática.",
     status: "Futuro",
     icon: LockKeyhole,
     tone: "bg-muted text-muted-foreground"
@@ -48,9 +48,9 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Categorizacao, seguranca e integracoes"
+        eyebrow="Categorização, segurança e integrações"
         title="Ajustes"
-        description="Gerencie identificadores automaticos e acompanhe o status das integracoes do Fluxa."
+        description="Gerencie identificadores automáticos e acompanhe o status das integrações do Fluxa."
       />
 
       <CategoryKeywordsManager
@@ -65,8 +65,8 @@ export default async function SettingsPage() {
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="font-semibold">Integracoes e inteligencia</h2>
-              <p className="text-sm text-muted-foreground">O que ja esta ativo no Fluxa e o que ainda e evolucao futura.</p>
+              <h2 className="font-semibold">Integrações e inteligência</h2>
+              <p className="text-sm text-muted-foreground">O que já está ativo no Fluxa e o que ainda é evolução futura.</p>
             </div>
             <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
               <PlugZap className="size-5" />

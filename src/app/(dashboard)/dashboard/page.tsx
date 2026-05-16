@@ -28,9 +28,9 @@ export default async function DashboardPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Dados do PostgreSQL"
+        eyebrow="Visão geral"
         title="Dashboard financeiro"
-        description={`Receitas, despesas, economia, gráficos e projeção usam o período filtrado: ${getPeriodLabel(period)}. O saldo atual é acumulado até o fim do período, como em um extrato bancário.`}
+        description={`Resumo de ${getPeriodLabel(period)} com saldo acumulado, fluxo do mês, categorias, metas e projeções. O saldo acumulado considera todas as transações até o fim do período selecionado.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
 
@@ -42,8 +42,8 @@ export default async function DashboardPage({
       </section>
 
       <ProjectionCard {...projection} />
-      <CreditAnalysis origins={creditOrigins(transactions)} />
       <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} />
+      <CreditAnalysis origins={creditOrigins(transactions)} />
       <GoalsEvolution
         goals={goals.map((goal) => ({
           id: goal.id,
