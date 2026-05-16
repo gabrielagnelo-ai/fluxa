@@ -45,8 +45,8 @@ export function Sidebar() {
       )}
     >
       <div className={cn("mb-8 flex items-center", collapsed ? "justify-center" : "justify-between")}>
-        <Link href="/dashboard" className={cn("block min-w-0", collapsed && "scale-90")}>
-          <FluxaLogo compact />
+        <Link href="/dashboard" className={cn("block min-w-0 rounded-xl transition hover:opacity-90", collapsed && "scale-95")}>
+          <FluxaLogo compact={collapsed} />
         </Link>
         {!collapsed && (
           <button

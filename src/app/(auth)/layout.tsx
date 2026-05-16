@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_520px]">
       <section className="hidden border-r border-border bg-card/70 px-10 py-12 backdrop-blur-xl lg:flex lg:flex-col lg:justify-between">
-        <FluxaLogo compact />
+        <FluxaLogo />
         <div>
           <p className="text-sm font-medium text-primary">Entenda para onde seu dinheiro vai.</p>
           <h1 className="mt-4 max-w-xl text-5xl font-semibold tracking-normal">Seu dinheiro explicado de forma simples.</h1>

@@ -7,6 +7,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { ProjectionCard } from "@/components/dashboard/projection-card";
 import { WeeklyExpenseInsight } from "@/components/dashboard/weekly-expense-insight";
+import { Logo } from "@/components/branding/logo";
 import { PageHeader } from "@/components/layout/page-header";
 import { creditOrigins, expensesByCategory, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions, weeklyExpenseInsight } from "@/services/dashboard-service";
 import { getCurrentBalanceUntil, getDashboardEvolutionTransactions, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
@@ -34,7 +35,12 @@ export default async function DashboardPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Visão geral"
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
+            <Logo size="sm" compact />
+            Visão geral
+          </span>
+        }
         title="Dashboard financeiro"
         description={`Resumo de ${getPeriodLabel(period)} com saldo acumulado, fluxo do mês, categorias, metas e projeções. O saldo acumulado considera todas as transações até o fim do período selecionado.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}

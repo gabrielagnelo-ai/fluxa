@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/branding/logo";
 import { signIn, signUp, resetPassword } from "@/app/actions";
 
 type Mode = "login" | "signup" | "reset";
@@ -26,9 +27,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader>
+      <CardHeader className="items-center text-center">
+        <Logo size="lg" compact className="mb-2 justify-center" />
         <h1 className="text-2xl font-semibold">{title}</h1>
-        <p className="text-sm text-muted-foreground">Use Supabase Auth para proteger seus dados financeiros.</p>
+        <p className="text-sm text-muted-foreground">Entenda para onde seu dinheiro vai.</p>
       </CardHeader>
       <CardContent>
         <form action={action} className="space-y-4">
