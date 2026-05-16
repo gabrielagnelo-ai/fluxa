@@ -7,7 +7,7 @@ import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { ProjectionCard } from "@/components/dashboard/projection-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { creditOrigins, expensesByCategory, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions } from "@/services/dashboard-service";
-import { getCurrentBalanceUntil, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
+import { getCurrentBalanceUntil, getDashboardEvolutionTransactions, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
 import { getPeriodLabel, getPeriodRange } from "@/utils/period";
 
 export default async function DashboardPage({
@@ -16,8 +16,12 @@ export default async function DashboardPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const period = getPeriodRange(await searchParams);
-  const [transactions, goals] = await Promise.all([getDashboardTransactions(period), getGoalsForCurrentUser()]);
-  const currentBalance = await getCurrentBalanceUntil(period.end);
+  const [transactions, evolutionTransactions, goals, currentBalance] = await Promise.all([
+    getDashboardTransactions(period),
+    getDashboardEvolutionTransactions(period.end),
+    getGoalsForCurrentUser(),
+    getCurrentBalanceUntil(period.end)
+  ]);
   const periodSummary = summarizeTransactions(transactions);
   const projection = projectPeriod(transactions, period);
 
@@ -39,7 +43,7 @@ export default async function DashboardPage({
 
       <ProjectionCard {...projection} />
       <CreditAnalysis origins={creditOrigins(transactions)} />
-      <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(transactions)} />
+      <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} />
       <GoalsEvolution
         goals={goals.map((goal) => ({
           id: goal.id,

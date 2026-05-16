@@ -136,6 +136,18 @@ export async function getDashboardTransactions(period: PeriodRange) {
   return transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
+export async function getDashboardEvolutionTransactions(end: Date) {
+  const start = new Date(end.getFullYear(), end.getMonth() - 5, 1);
+  const transactions = await getTransactionsForCurrentUser({
+    period: {
+      start,
+      end
+    }
+  });
+
+  return transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
 export async function getCurrentBalanceUntil(end: Date) {
   const userId = await getCurrentUserId();
   if (!userId) return 0;
@@ -166,6 +178,25 @@ export async function getGoalsForCurrentUser() {
     include: {
       markers: true,
       contributions: true
+    },
+    orderBy: { createdAt: "desc" }
+  });
+}
+
+export async function getGoalOptionsForCurrentUser() {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  return prisma.goal.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      name: true,
+      markers: {
+        select: {
+          keyword: true
+        }
+      }
     },
     orderBy: { createdAt: "desc" }
   });

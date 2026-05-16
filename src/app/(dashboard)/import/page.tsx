@@ -1,9 +1,9 @@
 import { ImportDropzone } from "@/components/import/import-dropzone";
 import { PageHeader } from "@/components/layout/page-header";
-import { getCategoriesForCurrentUser, getGoalsForCurrentUser } from "@/services/finance-data-service";
+import { getCategoriesForCurrentUser, getGoalOptionsForCurrentUser } from "@/services/finance-data-service";
 
 export default async function ImportPage() {
-  const [categories, goals] = await Promise.all([getCategoriesForCurrentUser(), getGoalsForCurrentUser()]);
+  const [categories, goals] = await Promise.all([getCategoriesForCurrentUser(), getGoalOptionsForCurrentUser()]);
 
   return (
     <div className="space-y-5">
