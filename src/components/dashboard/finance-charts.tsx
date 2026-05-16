@@ -73,15 +73,15 @@ export function FinanceCharts({
   }
 
   return (
-    <div className="grid gap-4 2xl:grid-cols-[1fr_1.35fr]">
+    <div className="grid gap-4 2xl:grid-cols-[0.92fr_1.4fr]">
       <Card>
         <CardHeader>
-          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+          <div className="grid gap-3">
             <div>
               <h2 className="font-semibold">Gastos por categoria</h2>
               <p className="text-sm text-muted-foreground">Onde o dinheiro saiu no período.</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:min-w-[22rem]">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
               <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
                 <p className="text-xs text-muted-foreground">Total</p>
                 <strong className="text-sm">{formatCurrency(totalExpenses)}</strong>
@@ -103,8 +103,8 @@ export function FinanceCharts({
               Sem despesas no período.
             </div>
           ) : (
-            <div className="grid gap-5 xl:grid-cols-[18rem_1fr] xl:items-center">
-              <div className="relative mx-auto h-64 w-full max-w-72 sm:h-72">
+            <div className="grid gap-5 2xl:grid-cols-[16rem_1fr] 2xl:items-start">
+              <div className="relative mx-auto h-64 w-full max-w-72 2xl:h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={sortedCategories} dataKey="value" nameKey="name" innerRadius="56%" outerRadius="78%" paddingAngle={4} stroke="#0B1220" strokeWidth={3}>
@@ -123,7 +123,7 @@ export function FinanceCharts({
                 </div>
               </div>
 
-              <div className="grid max-h-[31rem] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <div className="grid max-h-[30rem] gap-3 overflow-y-auto pr-1 md:grid-cols-2 2xl:grid-cols-1">
                 {sortedCategories.map((category, index) => {
                   const percent = totalExpenses > 0 ? Math.round((category.value / totalExpenses) * 100) : 0;
 
