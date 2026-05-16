@@ -1,17 +1,27 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Landmark, ShieldCheck } from "lucide-react";
-import { connectBelvoAndRedirect, disconnectBelvoBank } from "@/app/(dashboard)/open-finance/actions";
+import { disconnectBelvoBank, generateBelvoWidget } from "@/app/(dashboard)/open-finance/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export function BelvoConnectForm({ configured }: { configured: boolean }) {
+  const [connectState, connectAction, connectPending] = useActionState(
+    async (_previousState: { error?: string; success?: string; widgetUrl?: string } | undefined, formData: FormData) => generateBelvoWidget(formData),
+    undefined
+  );
   const [disconnectState, disconnectAction, disconnectPending] = useActionState(
     async () => disconnectBelvoBank(),
     undefined as { error?: string; success?: string } | undefined
   );
+
+  useEffect(() => {
+    if (connectState?.widgetUrl) {
+      window.location.assign(connectState.widgetUrl);
+    }
+  }, [connectState?.widgetUrl]);
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
@@ -51,7 +61,7 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
           </span>
         </CardHeader>
         <CardContent>
-          <form action={connectBelvoAndRedirect} className="grid gap-3 md:grid-cols-2">
+          <form action={connectAction} className="grid gap-3 md:grid-cols-2">
             <Input name="name" placeholder="Nome completo igual ao banco" required />
             <Input name="cpf" placeholder="CPF" inputMode="numeric" required />
             <select name="consentDays" defaultValue="183" className="h-10 rounded-md border border-border bg-background px-3 text-sm">
@@ -60,14 +70,19 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
               <option value="275">9 meses</option>
               <option value="366">12 meses</option>
             </select>
-            <Button disabled={!configured}>Conectar banco</Button>
+            <Button disabled={!configured || connectPending}>{connectPending ? "Abrindo Belvo..." : "Conectar banco"}</Button>
             {!configured && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive md:col-span-2">
                 Configure BELVO_SECRET_ID e BELVO_SECRET_PASSWORD no ambiente para testar.
               </p>
             )}
+            {connectState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive md:col-span-2">{connectState.error}</p>}
+            {connectState?.widgetUrl && (
+              <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary md:col-span-2">
+                Redirecionando para a Belvo...
+              </p>
+            )}
           </form>
-
         </CardContent>
       </Card>
 
