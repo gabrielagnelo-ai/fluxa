@@ -57,7 +57,7 @@ export function FinanceCharts({
   const previousMonth = evolutionData.at(-2);
   const saldoTrend = lastMonth && previousMonth ? lastMonth.saldo - previousMonth.saldo : 0;
 
-  const sortedCategories = useMemo(() => [...categoryData].sort((a, b) => b.value - a.value).slice(0, 7), [categoryData]);
+  const sortedCategories = useMemo(() => [...categoryData].sort((a, b) => b.value - a.value).slice(0, 8), [categoryData]);
 
   useEffect(() => {
     setMounted(true);
@@ -73,17 +73,27 @@ export function FinanceCharts({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[0.95fr_1.45fr]">
+    <div className="grid gap-4 2xl:grid-cols-[1fr_1.35fr]">
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between gap-4">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
             <div>
               <h2 className="font-semibold">Gastos por categoria</h2>
               <p className="text-sm text-muted-foreground">Onde o dinheiro saiu no período.</p>
             </div>
-            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-right">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <strong className="text-sm">{formatCurrency(totalExpenses)}</strong>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:min-w-[22rem]">
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+                <p className="text-xs text-muted-foreground">Total</p>
+                <strong className="text-sm">{formatCurrency(totalExpenses)}</strong>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+                <p className="text-xs text-muted-foreground">Principal</p>
+                <strong className="block truncate text-sm">{largestCategory?.name ?? "-"}</strong>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 max-sm:col-span-2">
+                <p className="text-xs text-muted-foreground">Categorias</p>
+                <strong className="text-sm">{categoryData.length}</strong>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -93,11 +103,11 @@ export function FinanceCharts({
               Sem despesas no período.
             </div>
           ) : (
-            <div className="grid gap-4 xl:grid-cols-[0.9fr_1fr]">
-              <div className="relative h-72">
+            <div className="grid gap-5 xl:grid-cols-[18rem_1fr] xl:items-center">
+              <div className="relative mx-auto h-64 w-full max-w-72 sm:h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={sortedCategories} dataKey="value" nameKey="name" innerRadius={62} outerRadius={92} paddingAngle={4} stroke="#0B1220" strokeWidth={3}>
+                    <Pie data={sortedCategories} dataKey="value" nameKey="name" innerRadius="56%" outerRadius="78%" paddingAngle={4} stroke="#0B1220" strokeWidth={3}>
                       {sortedCategories.map((entry, index) => (
                         <Cell key={entry.name} fill={colors[index % colors.length]} />
                       ))}
@@ -108,23 +118,23 @@ export function FinanceCharts({
                 <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
                   <div>
                     <p className="text-xs text-muted-foreground">Maior gasto</p>
-                    <strong className="block max-w-28 truncate text-sm">{largestCategory?.name}</strong>
+                    <strong className="block max-w-32 truncate text-sm">{largestCategory?.name}</strong>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="grid max-h-[31rem] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                 {sortedCategories.map((category, index) => {
                   const percent = totalExpenses > 0 ? Math.round((category.value / totalExpenses) * 100) : 0;
 
                   return (
-                    <div key={category.name} className="rounded-lg border border-border bg-muted/20 p-3">
+                    <div key={category.name} className="min-w-0 rounded-lg border border-border bg-muted/20 p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-2">
                           <span className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: colors[index % colors.length] }} />
-                          <span className="truncate text-sm font-medium">{category.name}</span>
+                          <span className="truncate text-sm font-medium" title={category.name}>{category.name}</span>
                         </div>
-                        <span className="text-sm font-semibold">{formatCurrency(category.value)}</span>
+                        <span className="shrink-0 text-sm font-semibold">{formatCurrency(category.value)}</span>
                       </div>
                       <div className="mt-2 flex items-center gap-2">
                         <div className="h-1.5 flex-1 rounded-full bg-background">
@@ -168,7 +178,7 @@ export function FinanceCharts({
             )}
           </div>
         </CardHeader>
-        <CardContent className="h-[23rem]">
+        <CardContent className="h-[22rem] sm:h-[24rem] 2xl:h-[31rem]">
           {evolutionData.length === 0 ? (
             <div className="grid h-full place-items-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
               Sem evolução para exibir.
