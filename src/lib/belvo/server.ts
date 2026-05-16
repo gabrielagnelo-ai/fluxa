@@ -58,10 +58,10 @@ export async function createBelvoWidgetUrl({
       id: secretId,
       password: secretPassword,
       scopes: BELVO_SCOPES,
-      credentials_storage: "365d",
       fetch_resources: BELVO_RESOURCES,
-      stale_in: "90d",
+      stale_in: "300d",
       widget: {
+        purpose: "Organização financeira pessoal, categorização de gastos e visão consolidada no Fluxa.",
         openfinance_feature: "consent_link_creation",
         callback_urls: {
           success: `${appUrl}/open-finance/callback?status=success`,
@@ -69,8 +69,8 @@ export async function createBelvoWidgetUrl({
           event: `${appUrl}/open-finance/callback?status=event`
         },
         branding: {
-          company_icon: `${appUrl}/favicon.ico`,
-          company_logo: `${appUrl}/favicon.ico`,
+          company_icon: `${appUrl}/branding/fluxa-fx.svg`,
+          company_logo: `${appUrl}/branding/fluxa-fx.svg`,
           company_name: "Fluxa",
           company_terms_url: appUrl,
           overlay_background_color: "#0B1220",
@@ -84,7 +84,6 @@ export async function createBelvoWidgetUrl({
           }
         ],
         consent: {
-          purpose: "Organização financeira pessoal, análise de gastos e visão consolidada da vida financeira no Fluxa.",
           terms_and_conditions_url: appUrl,
           permissions: CONSENT_SCOPES,
           identification_info: [
@@ -112,11 +111,6 @@ export async function createBelvoWidgetUrl({
   const widgetUrl = new URL("https://widget.belvo.io/");
   widgetUrl.searchParams.set("access_token", data.access);
   widgetUrl.searchParams.set("locale", "pt");
-  widgetUrl.searchParams.set("integration_type", "openfinance");
-  widgetUrl.searchParams.set("country_codes", "BR");
-  widgetUrl.searchParams.set("institution_types", "retail");
-  widgetUrl.searchParams.set("access_mode", "recurrent");
-  widgetUrl.searchParams.set("resources", BELVO_RESOURCES.join(","));
 
   return widgetUrl.toString();
 }
