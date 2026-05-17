@@ -7,10 +7,11 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { ProjectionCard } from "@/components/dashboard/projection-card";
 import { WeeklyExpenseInsight } from "@/components/dashboard/weekly-expense-insight";
+import { WhatsAppRegistrationAlert } from "@/components/dashboard/whatsapp-registration-alert";
 import { Logo } from "@/components/branding/logo";
 import { PageHeader } from "@/components/layout/page-header";
 import { creditOrigins, expensesByCategory, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions, weeklyExpenseInsight } from "@/services/dashboard-service";
-import { getCurrentBalanceUntil, getDashboardEvolutionTransactions, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
+import { getCurrentBalanceUntil, getDashboardEvolutionTransactions, getDashboardTransactions, getGoalsForCurrentUser, getRecentWhatsAppTransactionsForCurrentUser } from "@/services/finance-data-service";
 import { buildInvestmentOverview, getInvestmentsForCurrentUser } from "@/services/investment-service";
 import { getPeriodLabel, getPeriodRange } from "@/utils/period";
 
@@ -20,12 +21,13 @@ export default async function DashboardPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const period = getPeriodRange(await searchParams);
-  const [transactions, evolutionTransactions, goals, currentBalance, investments] = await Promise.all([
+  const [transactions, evolutionTransactions, goals, currentBalance, investments, recentWhatsAppTransactions] = await Promise.all([
     getDashboardTransactions(period),
     getDashboardEvolutionTransactions(period.end),
     getGoalsForCurrentUser(),
     getCurrentBalanceUntil(period.end),
-    getInvestmentsForCurrentUser()
+    getInvestmentsForCurrentUser(),
+    getRecentWhatsAppTransactionsForCurrentUser()
   ]);
   const periodSummary = summarizeTransactions(transactions);
   const projection = projectPeriod(transactions, period);
@@ -45,6 +47,7 @@ export default async function DashboardPage({
         description={`Resumo de ${getPeriodLabel(period)} com saldo acumulado, fluxo do mês, categorias, metas e projeções. O saldo acumulado considera todas as transações até o fim do período selecionado.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
+      <WhatsAppRegistrationAlert transactions={recentWhatsAppTransactions} />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Saldo acumulado" value={currentBalance} icon={CreditCard} tone="bg-blue-500/10 text-blue-500" />

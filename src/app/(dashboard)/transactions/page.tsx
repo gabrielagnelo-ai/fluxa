@@ -1,8 +1,9 @@
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { DeletePeriodTransactionsButton } from "@/components/dashboard/transaction-delete-button";
 import { TransactionsTable } from "@/components/dashboard/transactions-table";
+import { WhatsAppRegistrationAlert } from "@/components/dashboard/whatsapp-registration-alert";
 import { PageHeader } from "@/components/layout/page-header";
-import { getCategoriesForCurrentUser, getTransactionsForCurrentUser } from "@/services/finance-data-service";
+import { getCategoriesForCurrentUser, getRecentWhatsAppTransactionsForCurrentUser, getTransactionsForCurrentUser } from "@/services/finance-data-service";
 import { getPeriodLabel, getPeriodRange } from "@/utils/period";
 
 export default async function TransactionsPage({
@@ -12,9 +13,10 @@ export default async function TransactionsPage({
 }) {
   const period = getPeriodRange(await searchParams);
   const redirectTo = `/transactions?start=${period.start.toISOString().slice(0, 10)}&end=${period.end.toISOString().slice(0, 10)}`;
-  const [transactions, categories] = await Promise.all([
+  const [transactions, categories, recentWhatsAppTransactions] = await Promise.all([
     getTransactionsForCurrentUser({ period }),
-    getCategoriesForCurrentUser()
+    getCategoriesForCurrentUser(),
+    getRecentWhatsAppTransactionsForCurrentUser()
   ]);
 
   return (
@@ -30,6 +32,7 @@ export default async function TransactionsPage({
           </div>
         }
       />
+      <WhatsAppRegistrationAlert transactions={recentWhatsAppTransactions} />
       <TransactionsTable
         transactions={transactions}
         title="Transações do período"

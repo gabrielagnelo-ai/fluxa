@@ -16,17 +16,18 @@ export const getCurrentUserId = cache(async () => {
       const { data } = await supabase.auth.getUser();
 
       if (data.user) {
+        const authEmail = data.user.email?.toLowerCase() ?? "sem-email@local";
         const existingUser = await prisma.user.findFirst({
           where: {
             OR: [
               { supabaseId: data.user.id },
-              { email: data.user.email ?? "sem-email@local" }
+              { email: { equals: authEmail, mode: "insensitive" } }
             ]
           }
         });
 
         if (existingUser) {
-          const nextEmail = data.user.email ?? existingUser.email;
+          const nextEmail = authEmail;
           const nextName = data.user.user_metadata?.name ?? existingUser.name;
           const needsUpdate = existingUser.supabaseId !== data.user.id || existingUser.email !== nextEmail || existingUser.name !== nextName;
 
@@ -47,7 +48,7 @@ export const getCurrentUserId = cache(async () => {
         const user = await prisma.user.create({
           data: {
             supabaseId: data.user.id,
-            email: data.user.email ?? "sem-email@local",
+            email: authEmail,
             name: data.user.user_metadata?.name
           }
         });
@@ -118,6 +119,32 @@ export async function getTransactionsForCurrentUser(options?: { limit?: number; 
     include: { category: true },
     orderBy: { date: "desc" },
     take: options?.limit
+  });
+
+  return transactions.map((transaction) => ({
+    id: transaction.id,
+    date: transaction.date.toISOString(),
+    description: transaction.description,
+    amount: Number(transaction.amount),
+    type: transaction.type,
+    category: transaction.category?.name ?? "Outros",
+    source: transaction.source ?? undefined,
+    importId: transaction.importId ?? undefined
+  }));
+}
+
+export async function getRecentWhatsAppTransactionsForCurrentUser(limit = 3): Promise<ParsedTransaction[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const transactions = await prisma.transaction.findMany({
+    where: {
+      userId,
+      source: "WHATSAPP"
+    },
+    include: { category: true },
+    orderBy: { createdAt: "desc" },
+    take: limit
   });
 
   return transactions.map((transaction) => ({

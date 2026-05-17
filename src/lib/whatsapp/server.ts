@@ -128,7 +128,14 @@ async function findUserByPhone(phone: string) {
 async function getFallbackUser() {
   const fallbackEmail = getServerEnv().WHATSAPP_DEFAULT_USER_EMAIL;
   if (!fallbackEmail) return null;
-  return prisma.user.findUnique({ where: { email: fallbackEmail } });
+  return prisma.user.findFirst({
+    where: {
+      email: {
+        equals: fallbackEmail.toLowerCase(),
+        mode: "insensitive"
+      }
+    }
+  });
 }
 
 async function ensureWhatsAppLink(userId: string, phone: string, displayName?: string) {
@@ -170,7 +177,8 @@ async function saveTransactionFromText(userId: string, text: string) {
       type: parsed.type,
       source: "WHATSAPP",
       categoryLocked: false
-    }
+    },
+    include: { category: true }
   });
 }
 
@@ -247,7 +255,11 @@ async function processInboundTextMessage({
       return;
     }
 
-    await reply(`Registrado no Fluxa: ${transaction.type === "INCOME" ? "entrada" : "gasto"} de ${formatCurrency(Number(transaction.amount))}.`);
+    const date = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(transaction.date);
+    const categoryName = transaction.category?.name ?? "Outros";
+    await reply(
+      `Registrado no Fluxa: ${transaction.type === "INCOME" ? "entrada" : "gasto"} de ${formatCurrency(Number(transaction.amount))} em ${categoryName} (${date}).`
+    );
   } catch (error) {
     secureLogger.error("WhatsApp message processing failed", { error });
     await reply("Nao consegui registrar agora. Tente novamente em alguns minutos.");
