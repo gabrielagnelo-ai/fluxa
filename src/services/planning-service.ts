@@ -20,7 +20,6 @@ function inferLimitType(categoryName: string) {
 
 function groupCategoryByLimit(type?: "FIXED" | "VARIABLE" | "GOAL") {
   if (type === "FIXED") return "needs" as const;
-  if (type === "GOAL") return "savings" as const;
   return "wants" as const;
 }
 
