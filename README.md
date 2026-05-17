@@ -57,7 +57,25 @@ BELVO_WEBHOOK_SECRET="um-segredo-para-validar-webhook"
 
 Use `BELVO_ENVIRONMENT="production"` apenas quando a conta Belvo estiver certificada/liberada para produção.
 
-Para testar registro de gastos por WhatsApp Cloud API:
+Para testar registro de gastos por WhatsApp com Twilio Sandbox:
+
+```bash
+WHATSAPP_PROVIDER="twilio"
+WHATSAPP_DEFAULT_USER_EMAIL="email-do-usuario-no-fluxa"
+TWILIO_ACCOUNT_SID="seu-account-sid"
+TWILIO_AUTH_TOKEN="seu-auth-token"
+TWILIO_WHATSAPP_FROM="whatsapp:+14155238886"
+```
+
+Webhook da Twilio:
+
+```text
+https://seu-dominio/api/whatsapp/webhook
+```
+
+Configure como `POST` em "When a message comes in". O Twilio envia `application/x-www-form-urlencoded` e o Fluxa responde com TwiML.
+
+Para testar registro de gastos por WhatsApp Cloud API da Meta:
 
 ```bash
 WHATSAPP_VERIFY_TOKEN="um-token-que-voce-cria"

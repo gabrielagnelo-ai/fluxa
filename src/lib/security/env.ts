@@ -19,7 +19,11 @@ const serverEnvSchema = z.object({
   WHATSAPP_VERIFY_TOKEN: z.string().min(1).optional(),
   WHATSAPP_ACCESS_TOKEN: z.string().min(1).optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().min(1).optional(),
-  WHATSAPP_DEFAULT_USER_EMAIL: z.string().email().optional()
+  WHATSAPP_DEFAULT_USER_EMAIL: z.string().email().optional(),
+  WHATSAPP_PROVIDER: z.enum(["meta", "twilio"]).default("meta"),
+  TWILIO_ACCOUNT_SID: z.string().min(1).optional(),
+  TWILIO_AUTH_TOKEN: z.string().min(1).optional(),
+  TWILIO_WHATSAPP_FROM: z.string().min(1).optional()
 });
 
 let cachedEnv: z.infer<typeof serverEnvSchema> | null = null;
