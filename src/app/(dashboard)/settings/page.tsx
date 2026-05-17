@@ -1,4 +1,4 @@
-import { Bot, CheckCircle2, Clock3, LockKeyhole, PlugZap } from "lucide-react";
+import { Bot, CheckCircle2, LockKeyhole, PlugZap } from "lucide-react";
 import { CategoryKeywordsManager } from "@/components/dashboard/category-keywords-manager";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -21,17 +21,17 @@ const integrationStatus = [
   },
   {
     title: "Notificações de orçamento e metas",
-    description: "Parcial. Alertas internos ativos; email e push ficam para depois.",
-    status: "Parcial",
-    icon: Clock3,
-    tone: "bg-amber-400/10 text-amber-400"
+    description: "Ativas no dashboard com alertas internos de limites, metas e tendência.",
+    status: "Ativo",
+    icon: CheckCircle2,
+    tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
     title: "Previsão por categoria e recorrência",
-    description: "Parcial. O dashboard estima fechamento; recorrências ficam para evolução.",
-    status: "Parcial",
-    icon: Clock3,
-    tone: "bg-amber-400/10 text-amber-400"
+    description: "Ativa no dashboard com previsão por limite, ritmo atual e gastos recorrentes.",
+    status: "Ativo",
+    icon: CheckCircle2,
+    tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
     title: "Open Finance",
