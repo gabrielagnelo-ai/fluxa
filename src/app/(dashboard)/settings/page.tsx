@@ -7,35 +7,35 @@ import { getCategoriesForCurrentUser } from "@/services/finance-data-service";
 const integrationStatus = [
   {
     title: "IA para análise financeira",
-    description: "Ativa na aba Inteligência. Usa dados agregados do período e não envia descrições individuais das transações.",
+    description: "Ativa na aba Inteligência com dados agregados do período.",
     status: "Ativo",
     icon: Bot,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
     title: "IA para classificar importações",
-    description: "Ativa na importação. O botão Classificar com IA sugere categorias, cria grupos e pode relacionar metas.",
+    description: "Ativa na importação para sugerir categorias e metas.",
     status: "Ativo",
     icon: CheckCircle2,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
     title: "Notificações de orçamento e metas",
-    description: "Parcial. Hoje existem alertas internos na aba Inteligência; ainda falta email, push e central de lidos.",
+    description: "Parcial. Alertas internos ativos; email e push ficam para depois.",
     status: "Parcial",
     icon: Clock3,
     tone: "bg-amber-400/10 text-amber-400"
   },
   {
     title: "Previsão por categoria e recorrência",
-    description: "Parcial. O dashboard projeta o período; ainda falta motor histórico por categoria e recorrências.",
+    description: "Parcial. O dashboard estima fechamento; recorrências ficam para evolução.",
     status: "Parcial",
     icon: Clock3,
     tone: "bg-amber-400/10 text-amber-400"
   },
   {
     title: "Open Finance",
-    description: "Futuro. Ainda não há consentimento bancário, tokens por instituição ou sincronização automática.",
+    description: "Desativado por enquanto para manter o app simples.",
     status: "Futuro",
     icon: LockKeyhole,
     tone: "bg-muted text-muted-foreground"
@@ -48,9 +48,9 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Categorização, segurança e integrações"
+        eyebrow="Regras do Fluxa"
         title="Ajustes"
-        description="Gerencie identificadores automáticos e acompanhe o status das integrações do Fluxa."
+        description="Edite as regras que transformam descrições de extrato e WhatsApp em categorias."
       />
 
       <CategoryKeywordsManager
@@ -65,19 +65,19 @@ export default async function SettingsPage() {
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="font-semibold">Integrações e inteligência</h2>
-              <p className="text-sm text-muted-foreground">O que já está ativo no Fluxa e o que ainda é evolução futura.</p>
+              <h2 className="font-semibold">Recursos ativos</h2>
+              <p className="text-sm text-muted-foreground">Resumo rápido do que já funciona e do que ainda é parcial.</p>
             </div>
             <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
               <PlugZap className="size-5" />
             </span>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-3 lg:grid-cols-2">
+        <CardContent className="grid gap-2 lg:grid-cols-2">
           {integrationStatus.map((item) => (
-            <div key={item.title} className="rounded-lg border border-border bg-muted/20 p-4">
+            <div key={item.title} className="rounded-lg border border-border bg-background/30 p-3">
               <div className="flex items-start gap-3">
-                <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${item.tone}`}>
+                <span className={`grid size-8 shrink-0 place-items-center rounded-md ${item.tone}`}>
                   <item.icon className="size-4" />
                 </span>
                 <div className="min-w-0">
@@ -85,7 +85,7 @@ export default async function SettingsPage() {
                     <h3 className="font-medium">{item.title}</h3>
                     <span className="rounded-md border border-border bg-background px-2 py-0.5 text-xs text-muted-foreground">{item.status}</span>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+                  <p className="mt-1 text-sm leading-5 text-muted-foreground">{item.description}</p>
                 </div>
               </div>
             </div>

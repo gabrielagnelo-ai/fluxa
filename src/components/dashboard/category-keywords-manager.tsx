@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { useMemo, useState, useActionState } from "react";
+import { Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { createCategory, deleteCategory, syncDefaultCategories, updateCategoryKeywords } from "@/app/(dashboard)/settings/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,37 +13,56 @@ type CategoryKeywordItem = {
   keywords: string[];
 };
 
-function CategoryKeywordForm({ category }: { category: CategoryKeywordItem }) {
-  const [state, action, pending] = useActionState(
+function StatusMessage({ state }: { state?: { error?: string; success?: string } }) {
+  if (state?.error) return <p className="text-xs text-destructive">{state.error}</p>;
+  if (state?.success) return <p className="text-xs text-primary">{state.success}</p>;
+  return null;
+}
+
+function CategoryKeywordRow({ category }: { category: CategoryKeywordItem }) {
+  const [updateState, updateAction, updating] = useActionState(
     async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => updateCategoryKeywords(formData),
+    undefined
+  );
+  const [deleteState, deleteAction, deleting] = useActionState(
+    async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => deleteCategory(formData),
     undefined
   );
 
   return (
-    <form action={action} className="space-y-3">
-      <input type="hidden" name="id" value={category.id} />
-      <label className="block text-sm">
-        <span className="mb-1 block font-medium">Categoria</span>
-        <Input name="name" defaultValue={category.name} />
-      </label>
-      <label className="block text-sm">
-        <span className="mb-1 block font-medium">Identificadores</span>
-        <textarea
-          name="keywords"
-          defaultValue={category.keywords.join(", ")}
-          className="min-h-24 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          placeholder="IFD*, IFD, IFOOD"
-        />
-      </label>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button disabled={pending}>
-          <Save className="size-4" />
-          {pending ? "Salvando..." : "Salvar"}
-        </Button>
+    <div className="rounded-lg border border-border bg-background/30 p-3">
+      <form action={updateAction} className="grid gap-3 xl:grid-cols-[220px_1fr_auto] xl:items-start">
+        <input type="hidden" name="id" value={category.id} />
+        <label className="space-y-1">
+          <span className="text-xs font-medium uppercase text-muted-foreground">Categoria</span>
+          <Input name="name" defaultValue={category.name} />
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium uppercase text-muted-foreground">Identificadores</span>
+          <Input name="keywords" defaultValue={category.keywords.join(", ")} placeholder="IFD*, IFOOD, AMI" />
+        </label>
+        <div className="flex gap-2 xl:pt-6">
+          <Button disabled={updating} className="h-10 px-3">
+            <Save className="size-4" />
+            <span className="hidden sm:inline">{updating ? "Salvando..." : "Salvar"}</span>
+          </Button>
+        </div>
+      </form>
+
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-h-4">
+          <StatusMessage state={updateState} />
+          <StatusMessage state={deleteState} />
+        </div>
+        <form action={deleteAction}>
+          <input type="hidden" name="id" value={category.id} />
+          <Button className="h-9 bg-destructive px-3 text-white hover:bg-destructive/90" disabled={deleting}>
+            <Trash2 className="size-4" />
+            {deleting ? "Excluindo..." : "Excluir"}
+          </Button>
+        </form>
       </div>
-      {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
-      {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
-    </form>
+    </div>
   );
 }
 
@@ -54,86 +73,78 @@ function NewCategoryForm() {
   );
 
   return (
-    <form action={action} className="rounded-lg border border-border bg-muted/20 p-4">
-      <div className="grid gap-3 md:grid-cols-[0.6fr_1fr_auto]">
+    <form action={action} className="rounded-lg border border-border bg-muted/20 p-3">
+      <div className="grid gap-3 lg:grid-cols-[240px_1fr_auto]">
         <Input name="name" placeholder="Nova categoria" required />
-        <Input name="keywords" placeholder="Identificadores: IFD*, AMI, SMART FIT" />
+        <Input name="keywords" placeholder="Identificadores separados por vírgula: IFD*, AMI, SMART FIT" />
         <Button disabled={pending}>
           <Plus className="size-4" />
           {pending ? "Criando..." : "Criar"}
         </Button>
       </div>
-      {state?.error && <p className="mt-3 text-sm text-destructive">{state.error}</p>}
-      {state?.success && <p className="mt-3 text-sm text-primary">{state.success}</p>}
+      <div className="mt-2">
+        <StatusMessage state={state} />
+      </div>
     </form>
   );
 }
 
 function SyncCategoriesButton() {
-  const [state, action, pending] = useActionState(
-    async () => syncDefaultCategories(),
-    undefined
-  );
+  const [state, action, pending] = useActionState(async () => syncDefaultCategories(), undefined);
 
   return (
     <form action={action} className="space-y-2">
       <Button className="bg-muted text-foreground hover:bg-muted/80" disabled={pending}>
         <RefreshCw className="size-4" />
-        {pending ? "Sincronizando..." : "Sincronizar categorias padrão"}
+        {pending ? "Sincronizando..." : "Restaurar padrões"}
       </Button>
-      {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-      {state?.success && <p className="text-sm text-primary">{state.success}</p>}
-    </form>
-  );
-}
-
-function DeleteCategoryButton({ id }: { id: string }) {
-  const [state, action, pending] = useActionState(
-    async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => deleteCategory(formData),
-    undefined
-  );
-
-  return (
-    <form action={action} className="space-y-2">
-      <input type="hidden" name="id" value={id} />
-      <Button className="bg-destructive text-white hover:bg-destructive/90" disabled={pending}>
-        <Trash2 className="size-4" />
-        {pending ? "Excluindo..." : "Excluir"}
-      </Button>
-      {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
-      {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
+      <StatusMessage state={state} />
     </form>
   );
 }
 
 export function CategoryKeywordsManager({ categories }: { categories: CategoryKeywordItem[] }) {
+  const [query, setQuery] = useState("");
+  const filteredCategories = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return categories;
+
+    return categories.filter((category) => {
+      const haystack = `${category.name} ${category.keywords.join(" ")}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [categories, query]);
+
   return (
     <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <CardHeader className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 className="font-semibold">Categorias e identificadores</h2>
-            <p className="text-sm text-muted-foreground">
-              Edite categorias e palavras que aparecem no extrato. Exemplo: IFD* em iFood, AMI em RU UTFPR.
-            </p>
+            <p className="text-sm text-muted-foreground">Regras usadas para categorizar importações e mensagens do WhatsApp.</p>
           </div>
           <SyncCategoriesButton />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
         <NewCategoryForm />
-        <div className="grid gap-4 lg:grid-cols-2">
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="relative block w-full sm:max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar categoria ou identificador" />
+          </label>
+          <p className="text-sm text-muted-foreground">
+            {filteredCategories.length} de {categories.length} categoria(s)
+          </p>
+        </div>
+
+        <div className="space-y-2">
           {categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Faça login para editar suas categorias.</p>
+            <p className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">Faça login para editar suas categorias.</p>
+          ) : filteredCategories.length === 0 ? (
+            <p className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">Nenhuma categoria encontrada.</p>
           ) : (
-            categories.map((category) => (
-              <div key={category.id} className="rounded-lg border border-border bg-muted/20 p-4">
-                <CategoryKeywordForm category={category} />
-                <div className="mt-3 border-t border-border pt-3">
-                  <DeleteCategoryButton id={category.id} />
-                </div>
-              </div>
-            ))
+            filteredCategories.map((category) => <CategoryKeywordRow key={category.id} category={category} />)
           )}
         </div>
       </CardContent>

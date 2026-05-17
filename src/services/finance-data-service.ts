@@ -18,7 +18,6 @@ export const getCurrentUserId = cache(async () => {
 
       if (data.user) {
         const user = await ensureUserFromAuthUser(data.user);
-        await ensureDefaultCategories(user.id);
         return user.id;
       }
 
@@ -39,11 +38,9 @@ export async function ensureDefaultCategories(userId: string) {
   });
   const existingNames = new Set(existingCategories.map((category) => category.name));
 
-  await Promise.all(
-    defaultCategoryRules
-      .filter((category) => !existingNames.has(category.name))
-      .map((category) => prisma.category.create({ data: { ...category, userId } }))
-  );
+  if (existingNames.size === 0) {
+    await Promise.all(defaultCategoryRules.map((category) => prisma.category.create({ data: { ...category, userId } })));
+  }
 
   const transportRule = defaultCategoryRules.find((category) => category.name === "Transporte");
   const transportCategory = await prisma.category.findUnique({
