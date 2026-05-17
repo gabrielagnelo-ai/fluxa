@@ -44,7 +44,7 @@ export default async function DashboardPage({
           </span>
         }
         title="Dashboard financeiro"
-        description={`Resumo de ${getPeriodLabel(period)} com saldo acumulado, fluxo do mês, categorias, metas e projeções. O saldo acumulado considera todas as transações até o fim do período selecionado.`}
+        description={`Resumo de ${getPeriodLabel(period)} com saldo acumulado, fluxo do mês, categorias, metas e tendência de fechamento. O saldo acumulado considera todas as transações até o fim do período selecionado.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
       <WhatsAppRegistrationAlert transactions={recentWhatsAppTransactions} />

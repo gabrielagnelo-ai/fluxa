@@ -95,7 +95,14 @@ export function monthlyEvolutionFromTransactions(transactions: ParsedTransaction
 
 export function projectPeriod(transactions: ParsedTransaction[], period: PeriodRange) {
   if (!transactions.length) {
-    return { projectedIncome: 0, projectedExpenses: 0, projectedSavings: 0 };
+    return {
+      projectedIncome: 0,
+      projectedExpenses: 0,
+      projectedSavings: 0,
+      elapsedDays: 0,
+      totalDays: differenceInCalendarDaysInclusive(period.start, period.end),
+      confidence: "Baixa"
+    };
   }
 
   const today = new Date();
@@ -104,15 +111,22 @@ export function projectPeriod(transactions: ParsedTransaction[], period: PeriodR
   const totalDays = differenceInCalendarDaysInclusive(period.start, period.end);
   const summary = summarizeTransactions(transactions);
   const factor = totalDays / elapsedDays;
+  const periodProgress = elapsedDays / totalDays;
 
+  // Receitas costumam ser pontuais, como salário e PIX recebidos. Projetar por média diária
+  // pode inflar o fechamento. Por isso a previsão usa receitas já registradas e projeta só despesas.
   const projectedIncome = summary.income;
   const projectedExpenses = summary.expenses * factor;
   const projectedNetBalance = projectedIncome - projectedExpenses;
+  const confidence = periodProgress >= 0.6 && transactions.length >= 15 ? "Alta" : periodProgress >= 0.35 && transactions.length >= 8 ? "Média" : "Baixa";
 
   return {
     projectedIncome,
     projectedExpenses,
-    projectedSavings: Math.max(0, projectedNetBalance)
+    projectedSavings: Math.max(0, projectedNetBalance),
+    elapsedDays,
+    totalDays,
+    confidence
   };
 }
 
