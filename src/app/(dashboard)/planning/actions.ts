@@ -67,7 +67,7 @@ export async function upsertSpendingPlan(formData: FormData) {
   return { success: "Planejamento salvo." };
 }
 
-const limitTypeSchema = z.enum(["FIXED", "VARIABLE", "GOAL"]);
+const limitTypeSchema = z.enum(["FIXED", "VARIABLE"]);
 
 export async function saveCategoryLimits(formData: FormData) {
   const month = z.coerce.number().int().min(1).max(12).safeParse(formData.get("month"));

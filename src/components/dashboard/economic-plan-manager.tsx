@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Calculator, CheckCircle2, CircleDollarSign, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import { saveCategoryLimits, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
 import { Button } from "@/components/ui/button";
@@ -50,8 +50,7 @@ type PlanningOverview = {
 
 const limitTypeLabels = {
   FIXED: "Fixo",
-  VARIABLE: "Variável",
-  GOAL: "Meta"
+  VARIABLE: "Variável"
 };
 
 const filterLabels: Record<LimitFilter, string> = {
@@ -72,6 +71,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
   );
   const [selectedModel, setSelectedModel] = useState(overview.plan?.model ?? "50/30/20");
   const [limitFilter, setLimitFilter] = useState<LimitFilter>("active");
+  const limitFormRef = useRef<HTMLFormElement>(null);
   const isCustom = selectedModel === "custom";
   const selectedPreset = economicModels.find((model) => model.id === selectedModel) ?? economicModels[0];
   const needsPercent = overview.plan?.needsPercent ?? selectedPreset.needsPercent;
@@ -101,6 +101,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
         return a.categoryName.localeCompare(b.categoryName);
       });
   }, [overview.categoryLimits, limitFilter]);
+  const requestLimitSave = () => {
+    window.setTimeout(() => limitFormRef.current?.requestSubmit(), 0);
+  };
 
   return (
     <div className="space-y-4">
@@ -171,7 +174,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent>
-          <form action={limitAction} className="space-y-4">
+          <form ref={limitFormRef} action={limitAction} className="space-y-4">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
 
@@ -236,7 +239,12 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                           <p className="mt-1 text-xs text-muted-foreground">{status.detail}</p>
                         </td>
                         <td className="px-4">
-                          <select name="type" defaultValue={item.type} className="h-9 w-32 rounded-md border border-border bg-background px-2">
+                          <select
+                            name="type"
+                            defaultValue={item.type === "FIXED" ? "FIXED" : "VARIABLE"}
+                            onChange={requestLimitSave}
+                            className="h-9 w-32 rounded-md border border-border bg-background px-2"
+                          >
                             {Object.entries(limitTypeLabels).map(([value, label]) => (
                               <option key={value} value={value}>
                                 {label}
@@ -245,7 +253,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                           </select>
                         </td>
                         <td className="px-4">
-                          <Input name="amount" type="number" min="0" step="0.01" defaultValue={item.planned || ""} placeholder="0,00" className="max-w-32" />
+                          <Input name="amount" type="number" min="0" step="0.01" defaultValue={item.planned || ""} onBlur={requestLimitSave} placeholder="0,00" className="max-w-32" />
                         </td>
                         <td className="px-4 text-right font-semibold">{formatCurrency(item.actual)}</td>
                         <td className="min-w-56 px-4">
@@ -265,7 +273,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">Valor zero remove o limite da categoria.</p>
+              <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alterações..." : "As mudanças salvam ao alterar o tipo ou sair do campo de valor."}</p>
               <Button disabled={limitPending}>{limitPending ? "Salvando..." : "Salvar limites"}</Button>
             </div>
             {limitState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{limitState.error}</p>}

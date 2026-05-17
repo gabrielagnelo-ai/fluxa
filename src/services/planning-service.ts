@@ -4,7 +4,6 @@ import { getCurrentUserId } from "@/services/finance-data-service";
 
 const hiddenPlanningCategories = new Set(["RECEITA", "SALARIO"]);
 const fixedPlanningCategories = new Set(["ALUGUEL", "ENERGIA", "AGUA", "CONDOMINIO", "ACADEMIA", "ASSINATURA"]);
-const goalPlanningCategories = new Set(["RESERVA", "META", "INVESTIMENTO", "METAS E RESERVA"]);
 
 function categoryKey(categoryName: string) {
   return normalizeText(categoryName);
@@ -14,7 +13,6 @@ function inferLimitType(categoryName: string) {
   const key = categoryKey(categoryName);
 
   if (fixedPlanningCategories.has(key)) return "FIXED" as const;
-  if (goalPlanningCategories.has(key) || key.includes("META") || key.includes("RESERVA")) return "GOAL" as const;
   return "VARIABLE" as const;
 }
 
