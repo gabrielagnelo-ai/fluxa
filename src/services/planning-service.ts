@@ -1,19 +1,38 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeText } from "@/lib/utils";
 import { getCurrentUserId } from "@/services/finance-data-service";
 
-const essentialCategories = new Set(["iFood", "RU UTFPR", "Restaurante", "Mercado", "Transporte", "Combustível", "Moradia", "Energia", "Água", "Aluguel", "Condomínio"]);
-const hiddenPlanningCategories = new Set(["Receita"]);
-const fixedPlanningCategories = new Set(["Aluguel", "Energia", "Água", "Condomínio", "Academia", "Assinatura"]);
-const goalPlanningCategories = new Set(["Reserva", "Meta", "Investimento"]);
+const essentialCategories = new Set([
+  "IFOOD",
+  "RU UTFPR",
+  "RESTAURANTE",
+  "MERCADO",
+  "TRANSPORTE",
+  "COMBUSTIVEL",
+  "MORADIA",
+  "ENERGIA",
+  "AGUA",
+  "ALUGUEL",
+  "CONDOMINIO"
+]);
+
+const hiddenPlanningCategories = new Set(["RECEITA", "SALARIO"]);
+const fixedPlanningCategories = new Set(["ALUGUEL", "ENERGIA", "AGUA", "CONDOMINIO", "ACADEMIA", "ASSINATURA"]);
+const goalPlanningCategories = new Set(["RESERVA", "META", "INVESTIMENTO", "METAS E RESERVA"]);
+
+function categoryKey(categoryName: string) {
+  return normalizeText(categoryName);
+}
 
 function groupCategory(categoryName: string) {
-  if (essentialCategories.has(categoryName)) return "needs" as const;
-  return "wants" as const;
+  return essentialCategories.has(categoryKey(categoryName)) ? ("needs" as const) : ("wants" as const);
 }
 
 function inferLimitType(categoryName: string) {
-  if (fixedPlanningCategories.has(categoryName)) return "FIXED" as const;
-  if (goalPlanningCategories.has(categoryName)) return "GOAL" as const;
+  const key = categoryKey(categoryName);
+
+  if (fixedPlanningCategories.has(key)) return "FIXED" as const;
+  if (goalPlanningCategories.has(key) || key.includes("META") || key.includes("RESERVA")) return "GOAL" as const;
   return "VARIABLE" as const;
 }
 
@@ -99,7 +118,7 @@ export async function getPlanningOverview(date = new Date()) {
 
   const limitByCategory = new Map(limits.map((limit) => [limit.categoryId, limit]));
   const categoryLimits = categories
-    .filter((category) => !hiddenPlanningCategories.has(category.name))
+    .filter((category) => !hiddenPlanningCategories.has(categoryKey(category.name)))
     .map((category) => {
       const limit = limitByCategory.get(category.id);
       const planned = Number(limit?.amount ?? 0);
