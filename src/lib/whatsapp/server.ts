@@ -1,15 +1,21 @@
 import crypto from "crypto";
+import { revalidatePath } from "next/cache";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashSensitiveIdentifier, legacyHashSensitiveIdentifier } from "@/lib/security/crypto";
 import { getServerEnv, requireServerEnv } from "@/lib/security/env";
 import { secureLogger } from "@/lib/security/logger";
 import { redact } from "@/lib/security/redaction";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, normalizeText } from "@/lib/utils";
 import { parseWhatsAppTransaction } from "@/lib/whatsapp/parser";
 import { ensureDefaultCategories } from "@/services/finance-data-service";
 
 type ReplyHandler = (message: string) => Promise<void>;
+
+type GoalMatchResult =
+  | { status: "MATCHED"; goal: { id: string; name: string } }
+  | { status: "NOT_FOUND" }
+  | { status: "AMBIGUOUS"; goals: { id: string; name: string }[] };
 
 type WhatsAppPayload = {
   entry?: Array<{
@@ -150,6 +156,89 @@ async function getFallbackUser() {
   });
 }
 
+function significantGoalTokens(value: string) {
+  const ignored = new Set(["META", "RESERVA", "OBJETIVO", "GUARDAR", "GUARDEI", "APORTE", "APORTEI", "DE", "DA", "DO", "DAS", "DOS", "PARA", "PRA"]);
+  return normalizeText(value)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && !ignored.has(token));
+}
+
+function scoreGoalMatch(query: string, goal: { name: string; markers: { keyword: string }[] }) {
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) return 0;
+
+  const candidates = [goal.name, ...goal.markers.map((marker) => marker.keyword)]
+    .map((candidate) => normalizeText(candidate))
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (candidate === normalizedQuery) return 100;
+  }
+
+  for (const candidate of candidates) {
+    if (candidate.length >= 3 && (candidate.includes(normalizedQuery) || normalizedQuery.includes(candidate))) return 85;
+  }
+
+  const queryTokens = significantGoalTokens(query);
+  if (queryTokens.length === 0) return 0;
+
+  return candidates.reduce((best, candidate) => {
+    const candidateTokens = significantGoalTokens(candidate);
+    if (candidateTokens.length === 0) return best;
+
+    const matches = queryTokens.filter((token) => candidateTokens.includes(token)).length;
+    if (matches === 0) return best;
+
+    const coverage = matches / queryTokens.length;
+    const candidateCoverage = matches / candidateTokens.length;
+    const score = Math.round(45 + coverage * 35 + candidateCoverage * 20);
+    return Math.max(best, score);
+  }, 0);
+}
+
+async function findGoalForContribution(userId: string, goalQuery: string): Promise<GoalMatchResult> {
+  const goals = await prisma.goal.findMany({
+    where: {
+      userId,
+      status: { in: ["ACTIVE", "PAUSED"] }
+    },
+    include: { markers: true }
+  });
+
+  const scored = goals
+    .map((goal) => ({
+      goal: { id: goal.id, name: goal.name },
+      score: scoreGoalMatch(goalQuery, goal)
+    }))
+    .filter((item) => item.score >= 70)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) return { status: "NOT_FOUND" };
+
+  const bestScore = scored[0].score;
+  const tied = scored.filter((item) => item.score === bestScore);
+  if (tied.length > 1 && bestScore < 100) {
+    return { status: "AMBIGUOUS", goals: tied.map((item) => item.goal) };
+  }
+
+  return { status: "MATCHED", goal: scored[0].goal };
+}
+
+async function getGoalContributionCategory(userId: string) {
+  return prisma.category.upsert({
+    where: { userId_name: { userId, name: "Metas e reserva" } },
+    update: {},
+    create: {
+      userId,
+      name: "Metas e reserva",
+      color: "#2563eb",
+      icon: "Flag",
+      keywords: ["META", "RESERVA", "APORTE"]
+    }
+  });
+}
+
 async function ensureWhatsAppLink(userId: string, phone: string, displayName?: string) {
   const normalizedPhone = normalizeWhatsAppPhone(phone);
   const phoneHash = hashSensitiveIdentifier(normalizedPhone);
@@ -176,10 +265,51 @@ async function saveTransactionFromText(userId: string, text: string) {
   if (!parsed) return null;
 
   await ensureDefaultCategories(userId);
+
+  if (parsed.goalQuery) {
+    const goalMatch = await findGoalForContribution(userId, parsed.goalQuery);
+    if (goalMatch.status !== "MATCHED") {
+      return {
+        status: goalMatch.status,
+        goalQuery: parsed.goalQuery,
+        goals: goalMatch.status === "AMBIGUOUS" ? goalMatch.goals : []
+      } as const;
+    }
+
+    const category = await getGoalContributionCategory(userId);
+    const transaction = await prisma.transaction.create({
+      data: {
+        userId,
+        categoryId: category.id,
+        date: parsed.date,
+        description: `WhatsApp - Aporte meta ${goalMatch.goal.name}`,
+        amount: parsed.amount,
+        type: "EXPENSE",
+        source: "WHATSAPP",
+        categoryLocked: true,
+        goalContributions: {
+          create: {
+            userId,
+            goalId: goalMatch.goal.id,
+            amount: parsed.amount,
+            date: parsed.date
+          }
+        }
+      },
+      include: { category: true, goalContributions: { include: { goal: true } } }
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/goals");
+    revalidatePath("/transactions");
+
+    return { status: "PROCESSED", transaction, goal: goalMatch.goal } as const;
+  }
+
   const categories = await prisma.category.findMany({ where: { userId } });
   const category = categories.find((item) => item.name === parsed.category) ?? categories.find((item) => item.name === "Outros");
 
-  return prisma.transaction.create({
+  const transaction = await prisma.transaction.create({
     data: {
       userId,
       categoryId: category?.id,
@@ -192,6 +322,11 @@ async function saveTransactionFromText(userId: string, text: string) {
     },
     include: { category: true }
   });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+
+  return { status: "PROCESSED", transaction } as const;
 }
 
 async function processInboundTextMessage({
@@ -247,7 +382,8 @@ async function processInboundTextMessage({
   }
 
   try {
-    const transaction = await saveTransactionFromText(fallbackUser.id, text);
+    const result = await saveTransactionFromText(fallbackUser.id, text);
+    const transaction = result?.status === "PROCESSED" ? result.transaction : null;
     await prisma.whatsAppMessage.create({
       data: {
         userId: fallbackUser.id,
@@ -257,10 +393,27 @@ async function processInboundTextMessage({
         textRedacted: String(redact(text)),
         status: transaction ? "PROCESSED" : "FAILED",
         transactionId: transaction?.id,
-        error: transaction ? null : "Nao foi possivel extrair valor.",
+        error: transaction
+          ? null
+          : result?.status === "NOT_FOUND"
+            ? `Meta nao encontrada: ${result.goalQuery}`
+            : result?.status === "AMBIGUOUS"
+              ? `Meta ambigua: ${result.goalQuery}`
+              : "Nao foi possivel extrair valor.",
         processedAt: new Date()
       }
     });
+
+    if (result?.status === "NOT_FOUND") {
+      await reply(`Nao encontrei a meta "${result.goalQuery}" no Fluxa. Crie essa meta primeiro ou use o mesmo nome cadastrado.`);
+      return;
+    }
+
+    if (result?.status === "AMBIGUOUS") {
+      const names = result.goals.map((goal) => goal.name).join(", ");
+      await reply(`Encontrei mais de uma meta parecida (${names}). Envie o nome completo da meta para eu registrar o aporte.`);
+      return;
+    }
 
     if (!transaction) {
       await reply("Nao consegui identificar o valor. Tente: Gastei 32 reais no iFood hoje.");
@@ -269,6 +422,12 @@ async function processInboundTextMessage({
 
     const date = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(transaction.date);
     const categoryName = transaction.category?.name ?? "Outros";
+    const goalName = result?.status === "PROCESSED" && "goal" in result ? result.goal?.name ?? null : null;
+    if (goalName) {
+      await reply(`Registrado no Fluxa: aporte de ${formatCurrency(Number(transaction.amount))} na meta ${goalName} (${date}).`);
+      return;
+    }
+
     await reply(
       `Registrado no Fluxa: ${transaction.type === "INCOME" ? "entrada" : "gasto"} de ${formatCurrency(Number(transaction.amount))} em ${categoryName} (${date}).`
     );
