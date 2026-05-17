@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerEnv } from "@/lib/security/env";
+import { isBelvoConfigured } from "@/lib/belvo/server";
 import { secureLogger } from "@/lib/security/logger";
 import { redact } from "@/lib/security/redaction";
 
@@ -13,6 +14,10 @@ function isAuthorized(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isBelvoConfigured()) {
+    return NextResponse.json({ error: "Belvo disabled" }, { status: 404 });
+  }
+
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

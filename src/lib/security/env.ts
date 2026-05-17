@@ -11,6 +11,10 @@ const serverEnvSchema = z.object({
   GEMINI_API_KEY: z.string().min(1).optional(),
   OPENROUTER_API_KEY: z.string().min(1).optional(),
   BRAPI_TOKEN: z.string().min(1).optional(),
+  ENABLE_BELVO: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value === "true"),
   BELVO_ENVIRONMENT: z.enum(["sandbox", "production"]).default("sandbox"),
   BELVO_SECRET_ID: z.string().min(1).optional(),
   BELVO_SECRET_PASSWORD: z.string().min(1).optional(),

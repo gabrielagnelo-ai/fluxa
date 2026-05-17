@@ -2,7 +2,18 @@ import crypto from "crypto";
 import { getServerEnv } from "@/lib/security/env";
 
 export function hashSensitiveIdentifier(value: string) {
-  return crypto.createHash("sha256").update(value).digest("hex");
+  const key = getServerEnv().DATA_ENCRYPTION_KEY;
+  const normalized = value.trim().toLowerCase();
+
+  if (!key) {
+    return crypto.createHash("sha256").update(normalized).digest("hex");
+  }
+
+  return crypto.createHmac("sha256", key).update(normalized).digest("hex");
+}
+
+export function legacyHashSensitiveIdentifier(value: string) {
+  return crypto.createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
 }
 
 export function encryptSensitive(value: string) {

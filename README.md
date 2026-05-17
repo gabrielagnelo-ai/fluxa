@@ -49,6 +49,7 @@ Sem essa chave, o Fluxa tenta consultar as cotações públicas e mostra uma men
 Para testar Open Finance com Belvo Hosted Widget, configure:
 
 ```bash
+ENABLE_BELVO="true"
 BELVO_ENVIRONMENT="sandbox"
 BELVO_SECRET_ID="seu-secret-id"
 BELVO_SECRET_PASSWORD="seu-secret-password"
@@ -74,6 +75,7 @@ https://seu-dominio/api/whatsapp/webhook
 ```
 
 Configure como `POST` em "When a message comes in". O Twilio envia `application/x-www-form-urlencoded` e o Fluxa responde com TwiML.
+Em produção, `TWILIO_AUTH_TOKEN` é obrigatório para validar a assinatura `X-Twilio-Signature`.
 
 Para testar registro de gastos por WhatsApp Cloud API da Meta:
 

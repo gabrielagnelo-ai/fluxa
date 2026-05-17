@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashSensitiveIdentifier } from "@/lib/security/crypto";
+import { hashSensitiveIdentifier, legacyHashSensitiveIdentifier } from "@/lib/security/crypto";
 import { getServerEnv, requireServerEnv } from "@/lib/security/env";
 import { secureLogger } from "@/lib/security/logger";
 import { redact } from "@/lib/security/redaction";
@@ -76,7 +76,13 @@ function getTwilioValidationUrls(request: NextRequest) {
 export function verifyTwilioSignature(request: NextRequest, form: URLSearchParams) {
   const authToken = getServerEnv().TWILIO_AUTH_TOKEN;
   if (!authToken) {
-    secureLogger.warn("TWILIO_AUTH_TOKEN not configured; accepting Twilio webhook without signature validation");
+    const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production";
+    if (isProduction) {
+      secureLogger.error("Twilio webhook rejected because TWILIO_AUTH_TOKEN is not configured in production");
+      return false;
+    }
+
+    secureLogger.warn("TWILIO_AUTH_TOKEN not configured; accepting Twilio webhook without signature validation outside production");
     return true;
   }
 
@@ -117,8 +123,14 @@ async function sendMetaWhatsAppText(to: string, body: string) {
 async function findUserByPhone(phone: string) {
   const normalizedPhone = normalizeWhatsAppPhone(phone);
   const phoneHash = hashSensitiveIdentifier(normalizedPhone);
+  const legacyPhoneHash = legacyHashSensitiveIdentifier(normalizedPhone);
   const link = await prisma.whatsAppLink.findFirst({
-    where: { phoneHash, enabled: true },
+    where: {
+      phoneHash: {
+        in: Array.from(new Set([phoneHash, legacyPhoneHash]))
+      },
+      enabled: true
+    },
     include: { user: true }
   });
 

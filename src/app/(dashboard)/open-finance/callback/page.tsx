@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CheckCircle2, CircleAlert, CircleSlash } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { registerBelvoConnectionFromCallback } from "@/lib/belvo/server";
+import { isBelvoConfigured, registerBelvoConnectionFromCallback } from "@/lib/belvo/server";
 import { secureLogger } from "@/lib/security/logger";
 import { getCurrentUserId } from "@/services/finance-data-service";
 
@@ -29,6 +30,8 @@ export default async function OpenFinanceCallbackPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  if (!isBelvoConfigured()) redirect("/dashboard");
+
   const status = String(params?.status ?? "event") as keyof typeof statusCopy;
   const copy = statusCopy[status] ?? statusCopy.event;
   const Icon = copy.icon;

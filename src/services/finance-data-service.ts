@@ -3,6 +3,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { normalizeText } from "@/lib/utils";
 import { secureLogger } from "@/lib/security/logger";
 import { defaultCategoryRules } from "@/services/category-service";
+import { ensureUserFromAuthUser } from "@/services/user-service";
 import { cache } from "react";
 import type { ParsedTransaction } from "@/types/finance";
 import type { PeriodRange } from "@/utils/period";
@@ -16,45 +17,8 @@ export const getCurrentUserId = cache(async () => {
       const { data } = await supabase.auth.getUser();
 
       if (data.user) {
-        const authEmail = data.user.email?.toLowerCase() ?? "sem-email@local";
-        const existingUser = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { supabaseId: data.user.id },
-              { email: { equals: authEmail, mode: "insensitive" } }
-            ]
-          }
-        });
-
-        if (existingUser) {
-          const nextEmail = authEmail;
-          const nextName = data.user.user_metadata?.name ?? existingUser.name;
-          const needsUpdate = existingUser.supabaseId !== data.user.id || existingUser.email !== nextEmail || existingUser.name !== nextName;
-
-          if (!needsUpdate) return existingUser.id;
-
-          const user = await prisma.user.update({
-              where: { id: existingUser.id },
-              data: {
-                supabaseId: data.user.id,
-                email: nextEmail,
-                name: nextName
-              }
-            });
-
-          return user.id;
-        }
-
-        const user = await prisma.user.create({
-          data: {
-            supabaseId: data.user.id,
-            email: authEmail,
-            name: data.user.user_metadata?.name
-          }
-        });
-
+        const user = await ensureUserFromAuthUser(data.user);
         await ensureDefaultCategories(user.id);
-
         return user.id;
       }
 

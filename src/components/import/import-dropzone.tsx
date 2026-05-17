@@ -6,30 +6,11 @@ import { classifyImportedTransactions, parsePdfStatement, saveImportedTransactio
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { normalizeText } from "@/lib/utils";
+import { defaultCategoryRules } from "@/services/category-service";
 import { parseStatementFile } from "@/services/import-service";
 import type { ParsedTransaction } from "@/types/finance";
 
-const fallbackCategories = [
-  { name: "iFood", keywords: ["IFD*", "IFD", "IFOOD"] },
-  { name: "RU UTFPR", keywords: ["AMI", "RU UTFPR"] },
-  { name: "Restaurante", keywords: ["RESTAURANTE", "LANCHONETE", "MARMITARIA"] },
-  { name: "Mercado", keywords: ["MERCADO", "SUPERMERCADO"] },
-  { name: "Academia", keywords: ["ACADEMIA", "SMART FIT"] },
-  { name: "Suplementos", keywords: ["SUPLEMENTO", "GROWTH"] },
-  { name: "Assinatura", keywords: ["APPLE", "IFOOD CLUB", "SPOTIFY"] },
-  { name: "Limite Garantido", keywords: ["APLICAÇÃO RDB", "APLICACAO RDB", "LIMITE GARANTIDO"] },
-  { name: "Energia", keywords: ["COPEL", "ENERGIA", "LUZ"] },
-  { name: "Água", keywords: ["SANEPAR", "AGUA", "ÁGUA"] },
-  { name: "Aluguel", keywords: ["ALUGUEL", "IMOBILIARIA"] },
-  { name: "Condomínio", keywords: ["CONDOMINIO", "CONDOMÍNIO"] },
-  { name: "Transporte", keywords: ["UBER", "99APP", "99 APP", "99 TAXI", "99POP", "99 POP"] },
-  { name: "Combustível", keywords: ["POSTO"] },
-  { name: "Compras", keywords: ["AMAZON"] },
-  { name: "Moradia", keywords: [] },
-  { name: "Receita", keywords: ["TB SOLAR", "PIX RECEBIDO"] },
-  { name: "Pagamento Pix", keywords: ["TRANSFERÊNCIA ENVIADA PELO PIX", "TRANSFERENCIA ENVIADA PELO PIX", "PIX ENVIADO"] },
-  { name: "Outros", keywords: ["QSM", "QMS"] }
-];
+const fallbackCategories = defaultCategoryRules.map(({ name, keywords }) => ({ name, keywords }));
 
 type CategoryOption = {
   name: string;
@@ -349,3 +330,4 @@ export function ImportDropzone({
     </div>
   );
 }
+

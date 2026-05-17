@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
 import { secureLogger } from "@/lib/security/logger";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { ensureUserFromAuthUser, normalizeEmail } from "@/services/user-service";
 
 const authSchema = z.object({
   email: z.string().email("Informe um email válido."),
@@ -19,7 +19,10 @@ export async function signIn(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword(parsed.data);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizeEmail(parsed.data.email),
+      password: parsed.data.password
+    });
     if (error) return { error: error.message };
   } catch {
     return { error: "Não foi possível conectar ao Supabase Auth agora. Verifique sua internet/VPN/firewall e tente novamente." };
@@ -42,7 +45,7 @@ export async function signUp(formData: FormData) {
   try {
     const supabase = await createClient();
     const result = await supabase.auth.signUp({
-      email: parsed.data.email,
+      email: normalizeEmail(parsed.data.email),
       password: parsed.data.password,
       options: { data: { name: parsed.data.name } }
     });
@@ -56,25 +59,7 @@ export async function signUp(formData: FormData) {
 
   if (data.user) {
     try {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { supabaseId: data.user.id },
-            { email: parsed.data.email }
-          ]
-        }
-      });
-
-      if (existingUser) {
-        await prisma.user.update({
-          where: { id: existingUser.id },
-          data: { supabaseId: data.user.id, name: parsed.data.name, email: parsed.data.email }
-        });
-      } else {
-        await prisma.user.create({
-          data: { supabaseId: data.user.id, name: parsed.data.name, email: parsed.data.email }
-        });
-      }
+      await ensureUserFromAuthUser(data.user);
     } catch (error) {
       secureLogger.error("Signup local user sync failed", { error });
     }
@@ -93,7 +78,7 @@ export async function resetPassword(formData: FormData) {
 
   try {
     const supabase = await createClient();
-    const result = await supabase.auth.resetPasswordForEmail(email.data, {
+    const result = await supabase.auth.resetPasswordForEmail(normalizeEmail(email.data), {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/reset-password`
     });
     error = result.error;

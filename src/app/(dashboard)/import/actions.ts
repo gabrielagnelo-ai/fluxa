@@ -12,6 +12,7 @@ import { normalizeText } from "@/lib/utils";
 import { categorizeDescription, defaultCategoryRules } from "@/services/category-service";
 import { ensureDefaultCategories } from "@/services/finance-data-service";
 import { isGoalContributionExcluded, matchGoalMarker } from "@/services/goal-marker-service";
+import { ensureUserFromAuthUser } from "@/services/user-service";
 
 const transactionSchema = z.object({
   date: z.string(),
@@ -293,17 +294,7 @@ export async function classifyImportedTransactions(payload: unknown) {
     const data = isSupabaseConfigured() ? (await (await createClient()).auth.getUser()).data : { user: null };
     if (isSupabaseConfigured() && !data.user) return { error: "Faça login para classificar importações com IA." };
 
-    const user = data.user
-      ? await prisma.user.upsert({
-          where: { supabaseId: data.user.id },
-          update: { email: data.user.email ?? "sem-email@local" },
-          create: {
-            supabaseId: data.user.id,
-            email: data.user.email ?? "sem-email@local",
-            name: data.user.user_metadata?.name
-          }
-        })
-      : null;
+    const user = data.user ? await ensureUserFromAuthUser(data.user) : null;
 
     if (!user) return { error: "Faça login antes de classificar importações com IA." };
     const rateLimit = checkRateLimit(`ai-classify:${user.id}`, { limit: 10, windowMs: 10 * 60 * 1000 });
@@ -435,17 +426,7 @@ export async function saveImportedTransactions(payload: unknown) {
     return { error: "Faça login para salvar extratos no seu usuário." };
   }
 
-  const user = data.user
-    ? await prisma.user.upsert({
-        where: { supabaseId: data.user.id },
-        update: { email: data.user.email ?? "sem-email@local" },
-        create: {
-          supabaseId: data.user.id,
-          email: data.user.email ?? "sem-email@local",
-          name: data.user.user_metadata?.name
-        }
-      })
-    : null;
+  const user = data.user ? await ensureUserFromAuthUser(data.user) : null;
 
   if (!user) return { error: "Configure o banco e faça login antes de salvar importações." };
 

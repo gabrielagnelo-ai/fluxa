@@ -18,7 +18,7 @@ function getAppUrl() {
 
 export function isBelvoConfigured() {
   const env = getServerEnv();
-  return Boolean(env.BELVO_SECRET_ID && env.BELVO_SECRET_PASSWORD);
+  return Boolean(env.ENABLE_BELVO && env.BELVO_SECRET_ID && env.BELVO_SECRET_PASSWORD);
 }
 
 export async function createBelvoWidgetUrl({
@@ -32,6 +32,10 @@ export async function createBelvoWidgetUrl({
   name: string;
   consentDays?: 92 | 183 | 275 | 366;
 }) {
+  if (!isBelvoConfigured()) {
+    throw new Error("Belvo/Open Finance esta desativado neste ambiente.");
+  }
+
   const secretId = requireServerEnv("BELVO_SECRET_ID");
   const secretPassword = requireServerEnv("BELVO_SECRET_PASSWORD");
   const appUrl = getAppUrl().replace(/\/$/, "");
