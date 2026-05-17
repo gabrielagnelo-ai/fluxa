@@ -2,20 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { normalizeText } from "@/lib/utils";
 import { getCurrentUserId } from "@/services/finance-data-service";
 
-const essentialCategories = new Set([
-  "IFOOD",
-  "RU UTFPR",
-  "RESTAURANTE",
-  "MERCADO",
-  "TRANSPORTE",
-  "COMBUSTIVEL",
-  "MORADIA",
-  "ENERGIA",
-  "AGUA",
-  "ALUGUEL",
-  "CONDOMINIO"
-]);
-
 const hiddenPlanningCategories = new Set(["RECEITA", "SALARIO"]);
 const fixedPlanningCategories = new Set(["ALUGUEL", "ENERGIA", "AGUA", "CONDOMINIO", "ACADEMIA", "ASSINATURA"]);
 const goalPlanningCategories = new Set(["RESERVA", "META", "INVESTIMENTO", "METAS E RESERVA"]);
@@ -24,16 +10,18 @@ function categoryKey(categoryName: string) {
   return normalizeText(categoryName);
 }
 
-function groupCategory(categoryName: string) {
-  return essentialCategories.has(categoryKey(categoryName)) ? ("needs" as const) : ("wants" as const);
-}
-
 function inferLimitType(categoryName: string) {
   const key = categoryKey(categoryName);
 
   if (fixedPlanningCategories.has(key)) return "FIXED" as const;
   if (goalPlanningCategories.has(key) || key.includes("META") || key.includes("RESERVA")) return "GOAL" as const;
   return "VARIABLE" as const;
+}
+
+function groupCategoryByLimit(type?: "FIXED" | "VARIABLE" | "GOAL") {
+  if (type === "FIXED") return "needs" as const;
+  if (type === "GOAL") return "savings" as const;
+  return "wants" as const;
 }
 
 function emptyOverview(month: number, year: number) {
@@ -101,6 +89,7 @@ export async function getPlanningOverview(date = new Date()) {
     savings: contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0)
   };
   const actualByCategory = new Map<string, number>();
+  const limitByCategory = new Map(limits.map((limit) => [limit.categoryId, limit]));
 
   transactions
     .filter((transaction) => transaction.type === "EXPENSE")
@@ -111,12 +100,11 @@ export async function getPlanningOverview(date = new Date()) {
       }
 
       if (!savingsTransactionIds.has(transaction.id)) {
-        const group = groupCategory(transaction.category?.name ?? "Outros");
+        const group = groupCategoryByLimit(transaction.categoryId ? limitByCategory.get(transaction.categoryId)?.type : undefined);
         actual[group] += amount;
       }
     });
 
-  const limitByCategory = new Map(limits.map((limit) => [limit.categoryId, limit]));
   const categoryLimits = categories
     .filter((category) => !hiddenPlanningCategories.has(categoryKey(category.name)))
     .map((category) => {
