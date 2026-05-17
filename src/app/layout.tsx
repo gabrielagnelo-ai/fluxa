@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   description: "Entenda para onde seu dinheiro vai.",
   applicationName: "Fluxa",
   authors: [{ name: "Fluxa" }],
-  keywords: ["Fluxa", "finanças pessoais", "open finance", "organização financeira", "extrato bancário"],
+  keywords: ["Fluxa", "finanças pessoais", "organização financeira", "extrato bancário", "dashboard financeiro"],
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -31,10 +31,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/branding/fluxa-fx.png",
-        width: 512,
-        height: 512,
-        alt: "Logo FX do Fluxa"
+        url: "/branding/fluxa-logo.png",
+        width: 420,
+        height: 160,
+        alt: "Logo do Fluxa"
       }
     ]
   },
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Fluxa",
     description: "Entenda para onde seu dinheiro vai.",
-    images: ["/branding/fluxa-fx.png"]
+    images: ["/branding/fluxa-logo.png"]
   }
 };
 
