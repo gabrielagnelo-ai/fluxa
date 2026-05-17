@@ -159,6 +159,38 @@ export async function getRecentWhatsAppTransactionsForCurrentUser(limit = 3): Pr
   }));
 }
 
+export async function getTransactionUpdateSnapshotForCurrentUser() {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const [latestTransaction, count] = await Promise.all([
+    prisma.transaction.findFirst({
+      where: { userId },
+      include: { category: true },
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.transaction.count({ where: { userId } })
+  ]);
+
+  const latestCreatedAt = latestTransaction?.createdAt.toISOString() ?? "none";
+
+  return {
+    signature: `${count}:${latestCreatedAt}:${latestTransaction?.id ?? "none"}`,
+    count,
+    latest: latestTransaction
+      ? {
+          id: latestTransaction.id,
+          description: latestTransaction.description,
+          amount: Number(latestTransaction.amount),
+          type: latestTransaction.type,
+          category: latestTransaction.category?.name ?? "Outros",
+          source: latestTransaction.source,
+          createdAt: latestCreatedAt
+        }
+      : null
+  };
+}
+
 export async function getDashboardTransactions(period: PeriodRange) {
   const transactions = await getTransactionsForCurrentUser({ period });
   return transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

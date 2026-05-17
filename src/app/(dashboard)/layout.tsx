@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
+import { TransactionRefreshListener } from "@/components/realtime/transaction-refresh-listener";
 
 export const dynamic = "force-dynamic";
 export const preferredRegion = "gru1";
@@ -13,6 +14,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>
       </main>
       <MobileNav />
+      <TransactionRefreshListener />
     </div>
   );
 }
