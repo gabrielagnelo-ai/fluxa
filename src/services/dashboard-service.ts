@@ -1,4 +1,5 @@
 import type { ParsedTransaction } from "@/types/finance";
+import { normalizeText } from "@/lib/utils";
 import { differenceInCalendarDaysInclusive, type PeriodRange } from "@/utils/period";
 
 type CategoryLimitSnapshot = {
@@ -120,6 +121,10 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function categoryKey(name: string) {
+  return normalizeText(name || "Outros");
+}
+
 export function monthlyEvolutionFromTransactions(transactions: ParsedTransaction[]) {
   const grouped = new Map<string, { month: string; receitas: number; despesas: number; saldo: number; date: Date }>();
 
@@ -194,8 +199,26 @@ export function categoryForecast(
   const elapsedDays = differenceInCalendarDaysInclusive(period.start, projectionEnd);
   const totalDays = differenceInCalendarDaysInclusive(period.start, period.end);
   const factor = totalDays / elapsedDays;
-  const limitByCategory = new Map(categoryLimits.map((limit) => [limit.categoryName, limit]));
+  const limitByCategory = new Map<string, CategoryLimitSnapshot>();
+  categoryLimits.forEach((limit) => {
+    const key = categoryKey(limit.categoryName);
+    const current = limitByCategory.get(key);
+    if (!current) {
+      limitByCategory.set(key, limit);
+      return;
+    }
+
+    limitByCategory.set(key, {
+      ...current,
+      planned: current.planned + limit.planned,
+      actual: current.actual + limit.actual,
+      difference: current.difference + limit.difference,
+      usage: current.planned + limit.planned > 0 ? Math.round(((current.actual + limit.actual) / (current.planned + limit.planned)) * 100) : 0,
+      type: current.type === "FIXED" || limit.type === "FIXED" ? "FIXED" : current.type
+    });
+  });
   const currentByCategory = new Map<string, number>();
+  const displayNameByCategory = new Map<string, string>();
   const monthsByCategory = new Map<string, Set<string>>();
   const monthlyTotalsByCategory = new Map<string, Map<string, number>>();
   const currentPeriodKey = monthKey(period.start);
@@ -204,7 +227,9 @@ export function categoryForecast(
     .filter((transaction) => transaction.type === "EXPENSE")
     .forEach((transaction) => {
       const category = transaction.category ?? "Outros";
-      currentByCategory.set(category, (currentByCategory.get(category) ?? 0) + transaction.amount);
+      const key = categoryKey(category);
+      displayNameByCategory.set(key, category);
+      currentByCategory.set(key, (currentByCategory.get(key) ?? 0) + transaction.amount);
     });
 
   historyTransactions
@@ -213,25 +238,29 @@ export function categoryForecast(
       const date = new Date(transaction.date);
       const key = monthKey(date);
       const category = transaction.category ?? "Outros";
+      const categoryMapKey = categoryKey(category);
       if (key === currentPeriodKey) return;
 
-      const months = monthsByCategory.get(category) ?? new Set<string>();
-      months.add(key);
-      monthsByCategory.set(category, months);
+      displayNameByCategory.set(categoryMapKey, displayNameByCategory.get(categoryMapKey) ?? category);
 
-      const monthlyTotals = monthlyTotalsByCategory.get(category) ?? new Map<string, number>();
+      const months = monthsByCategory.get(categoryMapKey) ?? new Set<string>();
+      months.add(key);
+      monthsByCategory.set(categoryMapKey, months);
+
+      const monthlyTotals = monthlyTotalsByCategory.get(categoryMapKey) ?? new Map<string, number>();
       monthlyTotals.set(key, (monthlyTotals.get(key) ?? 0) + transaction.amount);
-      monthlyTotalsByCategory.set(category, monthlyTotals);
+      monthlyTotalsByCategory.set(categoryMapKey, monthlyTotals);
     });
 
   const categories = new Set([...currentByCategory.keys(), ...limitByCategory.keys(), ...monthsByCategory.keys()]);
 
   return Array.from(categories)
-    .map((categoryName) => {
-      const actual = currentByCategory.get(categoryName) ?? 0;
-      const limit = limitByCategory.get(categoryName);
-      const months = monthsByCategory.get(categoryName)?.size ?? 0;
-      const monthlyTotals = Array.from(monthlyTotalsByCategory.get(categoryName)?.values() ?? []);
+    .map((categoryMapKey) => {
+      const limit = limitByCategory.get(categoryMapKey);
+      const categoryName = displayNameByCategory.get(categoryMapKey) ?? limit?.categoryName ?? "Outros";
+      const actual = currentByCategory.get(categoryMapKey) ?? 0;
+      const months = monthsByCategory.get(categoryMapKey)?.size ?? 0;
+      const monthlyTotals = Array.from(monthlyTotalsByCategory.get(categoryMapKey)?.values() ?? []);
       const historicalAverage = monthlyTotals.length > 0 ? monthlyTotals.reduce((sum, value) => sum + value, 0) / monthlyTotals.length : 0;
       const recurring = months >= 2 || limit?.type === "FIXED";
       const projected = recurring ? Math.max(actual, historicalAverage) : actual * factor;
