@@ -286,10 +286,10 @@ export function MarketQuotesPanel({
         </span>
       </CardHeader>
       <CardContent>
-        {error && <p className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+        {error && <p className="mb-4 rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-300">{error}</p>}
         {items.length === 0 ? (
           <div className="grid h-32 place-items-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-            Sem cotações disponíveis agora.
+            Sem cotações ao vivo. Cadastre BRAPI_TOKEN na Vercel para ativar dados de mercado.
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
