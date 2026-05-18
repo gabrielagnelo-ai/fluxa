@@ -17,6 +17,12 @@ type GoalMatchResult =
   | { status: "NOT_FOUND" }
   | { status: "AMBIGUOUS"; goals: { id: string; name: string }[] };
 
+type CategoryMatchCandidate = {
+  id: string;
+  name: string;
+  keywords: string[];
+};
+
 type WhatsAppPayload = {
   entry?: Array<{
     changes?: Array<{
@@ -164,6 +170,115 @@ function significantGoalTokens(value: string) {
     .filter((token) => token.length >= 2 && !ignored.has(token));
 }
 
+function significantCategoryTokens(value: string) {
+  const ignored = new Set([
+    "EU",
+    "GASTEI",
+    "PAGUEI",
+    "COMPREI",
+    "RECEBI",
+    "ENTROU",
+    "GANHEI",
+    "REAIS",
+    "REAL",
+    "HOJE",
+    "ONTEM",
+    "NO",
+    "NA",
+    "NOS",
+    "NAS",
+    "EM",
+    "DE",
+    "DO",
+    "DA",
+    "DOS",
+    "DAS",
+    "PARA",
+    "PRA",
+    "COM"
+  ]);
+
+  return normalizeText(value)
+    .replace(/\d+(?:[.,]\d+)?/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3 && !ignored.has(token));
+}
+
+function scoreCategoryMatch({
+  category,
+  description,
+  originalText,
+  parsedCategory
+}: {
+  category: CategoryMatchCandidate;
+  description: string;
+  originalText: string;
+  parsedCategory: string;
+}) {
+  const normalizedParsedCategory = normalizeText(parsedCategory);
+  const normalizedCategoryName = normalizeText(category.name);
+  const parsedCategoryIsUseful = normalizedParsedCategory.length > 0 && normalizedParsedCategory !== "OUTROS";
+  const haystack = normalizeText(`${description} ${originalText}`);
+  const haystackWithHint = normalizeText(`${description} ${originalText} ${parsedCategoryIsUseful ? parsedCategory : ""}`);
+  const candidates = [category.name, ...category.keywords].map((candidate) => normalizeText(candidate)).filter(Boolean);
+
+  if (parsedCategoryIsUseful && normalizedCategoryName === normalizedParsedCategory) return 100;
+
+  for (const candidate of candidates) {
+    if (candidate.length >= 3 && haystack.includes(candidate)) return 95;
+  }
+
+  for (const candidate of candidates) {
+    if (candidate.length >= 3 && haystackWithHint.includes(candidate)) return 90;
+    if (candidate.length >= 4 && haystackWithHint.split(/\s+/).some((token) => candidate.includes(token) || token.includes(candidate))) return 82;
+  }
+
+  const textTokens = significantCategoryTokens(haystackWithHint);
+  if (textTokens.length === 0) return 0;
+
+  return candidates.reduce((best, candidate) => {
+    const candidateTokens = significantCategoryTokens(candidate);
+    if (candidateTokens.length === 0) return best;
+
+    const matches = textTokens.filter((token) => candidateTokens.some((candidateToken) => candidateToken === token || candidateToken.includes(token) || token.includes(candidateToken))).length;
+    if (matches === 0) return best;
+
+    const coverage = matches / Math.max(1, candidateTokens.length);
+    const score = Math.round(55 + coverage * 25);
+    return Math.max(best, score);
+  }, 0);
+}
+
+function findBestCategoryForWhatsApp({
+  categories,
+  description,
+  originalText,
+  parsedCategory,
+  type
+}: {
+  categories: CategoryMatchCandidate[];
+  description: string;
+  originalText: string;
+  parsedCategory: string;
+  type: "INCOME" | "EXPENSE";
+}) {
+  if (type === "INCOME") {
+    return categories.find((item) => normalizeText(item.name) === "RECEITA") ?? categories.find((item) => normalizeText(item.name) === "OUTROS") ?? null;
+  }
+
+  const scored = categories
+    .filter((category) => normalizeText(category.name) !== "RECEITA")
+    .map((category) => ({
+      category,
+      score: scoreCategoryMatch({ category, description, originalText, parsedCategory })
+    }))
+    .filter((item) => item.score >= 70)
+    .sort((a, b) => b.score - a.score);
+
+  return scored[0]?.category ?? categories.find((item) => normalizeText(item.name) === "OUTROS") ?? null;
+}
+
 function scoreGoalMatch(query: string, goal: { name: string; markers: { keyword: string }[] }) {
   const normalizedQuery = normalizeText(query);
   if (!normalizedQuery) return 0;
@@ -306,8 +421,17 @@ async function saveTransactionFromText(userId: string, text: string) {
     return { status: "PROCESSED", transaction, goal: goalMatch.goal } as const;
   }
 
-  const categories = await prisma.category.findMany({ where: { userId } });
-  const category = categories.find((item) => item.name === parsed.category) ?? categories.find((item) => item.name === "Outros");
+  const categories = await prisma.category.findMany({
+    where: { userId },
+    select: { id: true, name: true, keywords: true }
+  });
+  const category = findBestCategoryForWhatsApp({
+    categories,
+    description: parsed.description,
+    originalText: text,
+    parsedCategory: parsed.category,
+    type: parsed.type
+  });
 
   const transaction = await prisma.transaction.create({
     data: {
