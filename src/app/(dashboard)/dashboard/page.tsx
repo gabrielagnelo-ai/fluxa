@@ -31,7 +31,7 @@ export default async function DashboardPage({
     getCurrentBalanceUntil(period.end),
     getInvestmentsForCurrentUser(),
     getRecentWhatsAppTransactionsForCurrentUser(),
-    getPlanningOverview(period.start)
+    getPlanningOverview(period.end)
   ]);
   const periodSummary = summarizeTransactions(transactions);
   const projection = projectPeriod(transactions, period);
