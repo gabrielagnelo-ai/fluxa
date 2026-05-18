@@ -69,6 +69,114 @@ export async function upsertSpendingPlan(formData: FormData) {
 
 const limitTypeSchema = z.enum(["FIXED", "VARIABLE"]);
 
+function parseMoneyInput(value: string) {
+  const cleaned = value
+    .trim()
+    .replace(/\s/g, "")
+    .replace(/[R$]/g, "");
+
+  let normalized = cleaned;
+
+  if (cleaned.includes(",") && cleaned.includes(".")) {
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (cleaned.includes(",")) {
+    normalized = cleaned.replace(",", ".");
+  } else if ((cleaned.match(/\./g) ?? []).length > 1 || /^\d+\.\d{3}$/.test(cleaned)) {
+    normalized = cleaned.replace(/\./g, "");
+  }
+
+  if (!normalized) return 0;
+  return Number(normalized);
+}
+
+async function persistCategoryLimit({
+  userId,
+  categoryId,
+  month,
+  year,
+  amount,
+  type
+}: {
+  userId: string;
+  categoryId: string;
+  month: number;
+  year: number;
+  amount: number;
+  type: "FIXED" | "VARIABLE";
+}) {
+  const category = await prisma.category.findFirst({
+    where: { id: categoryId, userId },
+    select: { id: true }
+  });
+
+  if (!category) return { error: "Categoria inválida." };
+
+  if (amount === 0) {
+    await prisma.categoryLimit.deleteMany({
+      where: { userId, categoryId, month, year }
+    });
+    return { success: "Limite removido." };
+  }
+
+  await prisma.categoryLimit.upsert({
+    where: {
+      userId_categoryId_month_year: {
+        userId,
+        categoryId,
+        month,
+        year
+      }
+    },
+    update: {
+      amount,
+      type
+    },
+    create: {
+      userId,
+      categoryId,
+      month,
+      year,
+      amount,
+      type
+    }
+  });
+
+  return { success: "Limite salvo." };
+}
+
+const singleLimitSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2020).max(2100),
+  categoryId: z.string().min(1),
+  amount: z.string(),
+  type: limitTypeSchema
+});
+
+export async function saveCategoryLimit(input: z.input<typeof singleLimitSchema>) {
+  const parsed = singleLimitSchema.safeParse(input);
+  if (!parsed.success) return { error: "Limite inválido." };
+
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "Faça login para salvar limites." };
+
+  const amount = parseMoneyInput(parsed.data.amount);
+  if (!Number.isFinite(amount) || amount < 0) return { error: "Informe um valor válido." };
+
+  const result = await persistCategoryLimit({
+    userId,
+    categoryId: parsed.data.categoryId,
+    month: parsed.data.month,
+    year: parsed.data.year,
+    amount,
+    type: parsed.data.type
+  });
+
+  revalidatePath("/planning");
+  revalidatePath("/dashboard");
+  revalidatePath("/insights");
+  return result;
+}
+
 export async function saveCategoryLimits(formData: FormData) {
   const month = z.coerce.number().int().min(1).max(12).safeParse(formData.get("month"));
   const year = z.coerce.number().int().min(2020).max(2100).safeParse(formData.get("year"));
@@ -90,7 +198,7 @@ export async function saveCategoryLimits(formData: FormData) {
   const operations = categoryIds.flatMap((categoryId, index) => {
     if (!allowedCategoryIds.has(categoryId)) return [];
 
-    const amount = Number(amounts[index]);
+    const amount = parseMoneyInput(amounts[index]);
     const type = limitTypeSchema.safeParse(types[index]);
     if (!Number.isFinite(amount) || amount < 0 || !type.success) return [];
 

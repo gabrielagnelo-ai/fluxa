@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, Calculator, CheckCircle2, CircleDollarSign, SlidersHorizontal, type LucideIcon } from "lucide-react";
-import { saveCategoryLimits, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
+import { saveCategoryLimit, saveCategoryLimits, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -71,7 +72,6 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
   );
   const [selectedModel, setSelectedModel] = useState(overview.plan?.model ?? "50/30/20");
   const [limitFilter, setLimitFilter] = useState<LimitFilter>("active");
-  const limitFormRef = useRef<HTMLFormElement>(null);
   const isCustom = selectedModel === "custom";
   const selectedPreset = economicModels.find((model) => model.id === selectedModel) ?? economicModels[0];
   const needsPercent = overview.plan?.needsPercent ?? selectedPreset.needsPercent;
@@ -101,9 +101,6 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
         return a.categoryName.localeCompare(b.categoryName);
       });
   }, [overview.categoryLimits, limitFilter]);
-  const requestLimitSave = () => {
-    window.setTimeout(() => limitFormRef.current?.requestSubmit(), 0);
-  };
 
   return (
     <div className="space-y-4">
@@ -174,7 +171,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent>
-          <form ref={limitFormRef} action={limitAction} className="space-y-4">
+          <form action={limitAction} className="space-y-4">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
 
@@ -228,45 +225,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleLimits.map((item) => {
-                    const status = getLimitStatus(item);
-
-                    return (
-                      <tr key={item.categoryId} className="border-b border-border/60 last:border-0">
-                        <td className="px-4 py-3">
-                          <input type="hidden" name="categoryId" value={item.categoryId} />
-                          <p className="font-medium">{item.categoryName}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{status.detail}</p>
-                        </td>
-                        <td className="px-4">
-                          <select
-                            name="type"
-                            defaultValue={item.type === "FIXED" ? "FIXED" : "VARIABLE"}
-                            onChange={requestLimitSave}
-                            className="h-9 w-32 rounded-md border border-border bg-background px-2"
-                          >
-                            {Object.entries(limitTypeLabels).map(([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-4">
-                          <Input name="amount" type="number" min="0" step="0.01" defaultValue={item.planned || ""} onBlur={requestLimitSave} placeholder="0,00" className="max-w-32" />
-                        </td>
-                        <td className="px-4 text-right font-semibold">{formatCurrency(item.actual)}</td>
-                        <td className="min-w-56 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-2 flex-1 rounded-full bg-background">
-                              <div className={cn("h-2 rounded-full", status.barClass)} style={{ width: `${item.planned > 0 ? Math.min(100, item.usage) : 0}%` }} />
-                            </div>
-                            <span className={cn("w-20 text-right text-xs font-medium", status.textClass)}>{status.label}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {visibleLimits.map((item) => (
+                    <CategoryLimitRow key={item.categoryId} item={item} month={overview.month} year={overview.year} />
+                  ))}
                 </tbody>
               </table>
               {visibleLimits.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground">Nenhuma categoria encontrada neste filtro.</p>}
@@ -282,6 +243,101 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function CategoryLimitRow({
+  item,
+  month,
+  year
+}: {
+  item: PlanningOverview["categoryLimits"][number];
+  month: number;
+  year: number;
+}) {
+  const router = useRouter();
+  const [amount, setAmount] = useState(formatLimitInput(item.planned));
+  const [type, setType] = useState<"FIXED" | "VARIABLE">(item.type === "FIXED" ? "FIXED" : "VARIABLE");
+  const [error, setError] = useState<string>();
+  const [isSaving, startTransition] = useTransition();
+  const status = getLimitStatus(item);
+
+  useEffect(() => {
+    setAmount(formatLimitInput(item.planned));
+    setType(item.type === "FIXED" ? "FIXED" : "VARIABLE");
+  }, [item.categoryId, item.planned, item.type]);
+
+  const save = (next?: { amount?: string; type?: "FIXED" | "VARIABLE" }) => {
+    const payload = {
+      month,
+      year,
+      categoryId: item.categoryId,
+      amount: next?.amount ?? amount,
+      type: next?.type ?? type
+    };
+
+    startTransition(async () => {
+      const result = await saveCategoryLimit(payload);
+      setError(result.error);
+      if (!result.error) router.refresh();
+    });
+  };
+
+  return (
+    <tr className="border-b border-border/60 last:border-0">
+      <td className="px-4 py-3">
+        <input type="hidden" name="categoryId" value={item.categoryId} />
+        <p className="font-medium">{item.categoryName}</p>
+        <p className={cn("mt-1 text-xs", error ? "text-red-400" : "text-muted-foreground")}>{error ?? status.detail}</p>
+      </td>
+      <td className="px-4">
+        <select
+          name="type"
+          value={type}
+          onChange={(event) => {
+            const nextType = event.target.value as "FIXED" | "VARIABLE";
+            setType(nextType);
+            save({ type: nextType });
+          }}
+          disabled={isSaving}
+          className="h-9 w-32 rounded-md border border-border bg-background px-2 disabled:opacity-60"
+        >
+          {Object.entries(limitTypeLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td className="px-4">
+        <Input
+          name="amount"
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+          onBlur={(event) => save({ amount: event.currentTarget.value })}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
+          disabled={isSaving}
+          placeholder="0,00"
+          className="max-w-32 disabled:opacity-60"
+        />
+      </td>
+      <td className="px-4 text-right font-semibold">{formatCurrency(item.actual)}</td>
+      <td className="min-w-56 px-4">
+        <div className="flex items-center gap-3">
+          <div className="h-2 flex-1 rounded-full bg-background">
+            <div className={cn("h-2 rounded-full", status.barClass)} style={{ width: `${item.planned > 0 ? Math.min(100, item.usage) : 0}%` }} />
+          </div>
+          <span className={cn("w-20 text-right text-xs font-medium", isSaving ? "text-primary" : status.textClass)}>{isSaving ? "Salvando" : status.label}</span>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -346,4 +402,13 @@ function getLimitStatus(item: PlanningOverview["categoryLimits"][number]) {
     barClass: "bg-emerald-500",
     textClass: "text-emerald-500"
   };
+}
+
+function formatLimitInput(value: number) {
+  if (value <= 0) return "";
+
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }
