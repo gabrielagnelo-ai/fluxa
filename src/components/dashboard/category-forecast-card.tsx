@@ -10,12 +10,12 @@ type CategoryForecastItem = {
   projectedUsage: number;
   recurring: boolean;
   months: number;
-  status: "over" | "warning" | "ok";
+  status: "leak" | "over" | "warning" | "ok";
 };
 
 export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecastItem[] }) {
   const relevantForecasts = forecasts.filter((item) => item.actual > 0 || item.planned > 0).slice(0, 8);
-  const overCount = forecasts.filter((item) => item.status === "over").length;
+  const riskCount = forecasts.filter((item) => item.status === "leak" || item.status === "over").length;
   const recurringCount = forecasts.filter((item) => item.recurring).length;
 
   return (
@@ -37,7 +37,7 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
         ) : (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
-              <SummaryTile label="Categorias em risco" value={String(overCount)} tone={overCount > 0 ? "danger" : "success"} />
+              <SummaryTile label="Categorias em risco" value={String(riskCount)} tone={riskCount > 0 ? "danger" : "success"} />
               <SummaryTile label="Categorias recorrentes" value={String(recurringCount)} />
               <SummaryTile label="Categorias analisadas" value={String(forecasts.length)} />
             </div>
@@ -45,7 +45,7 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
             <div className="space-y-2">
               {relevantForecasts.map((item) => {
                 const hasLimit = item.planned > 0;
-                const progress = hasLimit ? Math.min(100, item.projectedUsage) : 0;
+                const progress = hasLimit ? Math.min(100, item.projectedUsage) : item.status === "leak" ? 100 : 0;
 
                 return (
                   <div key={item.categoryName} className="rounded-lg border border-border bg-muted/20 p-3">
@@ -60,9 +60,14 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
                             </span>
                           )}
                           {item.status !== "ok" && (
-                            <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs", item.status === "over" ? "bg-red-500/10 text-red-500" : "bg-amber-400/10 text-amber-400")}>
+                            <span
+                              className={cn(
+                                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs",
+                                item.status === "leak" || item.status === "over" ? "bg-red-500/10 text-red-500" : "bg-amber-400/10 text-amber-400"
+                              )}
+                            >
                               <AlertTriangle className="size-3" />
-                              {item.status === "over" ? "acima do limite" : "atenção"}
+                              {item.status === "leak" ? "sem limite" : item.status === "over" ? "acima do limite" : "atenção"}
                             </span>
                           )}
                         </div>
@@ -71,12 +76,15 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
                         </p>
                       </div>
                       <div className="shrink-0 text-left sm:text-right">
-                        <strong>{hasLimit ? `${item.projectedUsage}%` : "-"}</strong>
-                        <p className="text-sm text-muted-foreground">{hasLimit ? `limite ${formatCurrency(item.planned)}` : "sem limite"}</p>
+                        <strong className={item.status === "leak" ? "text-red-500" : undefined}>{hasLimit ? `${item.projectedUsage}%` : "crítico"}</strong>
+                        <p className="text-sm text-muted-foreground">{hasLimit ? `limite ${formatCurrency(item.planned)}` : "sem limite definido"}</p>
                       </div>
                     </div>
                     <div className="mt-3 h-2 rounded-full bg-background">
-                      <div className={cn("h-2 rounded-full", item.status === "over" ? "bg-red-500" : item.status === "warning" ? "bg-amber-400" : "bg-emerald-500")} style={{ width: `${progress}%` }} />
+                      <div
+                        className={cn("h-2 rounded-full", item.status === "leak" || item.status === "over" ? "bg-red-500" : item.status === "warning" ? "bg-amber-400" : "bg-emerald-500")}
+                        style={{ width: `${progress}%` }}
+                      />
                     </div>
                   </div>
                 );

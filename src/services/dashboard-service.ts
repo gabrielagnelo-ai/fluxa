@@ -237,7 +237,8 @@ export function categoryForecast(
       const projected = recurring ? Math.max(actual, historicalAverage) : actual * factor;
       const planned = limit?.planned ?? 0;
       const projectedUsage = planned > 0 ? Math.round((projected / planned) * 100) : 0;
-      const status: "over" | "warning" | "ok" = planned > 0 && projected > planned ? "over" : planned > 0 && projectedUsage >= 80 ? "warning" : "ok";
+      const status: "leak" | "over" | "warning" | "ok" =
+        planned === 0 && actual > 0 ? "leak" : planned > 0 && projected > planned ? "over" : planned > 0 && projectedUsage >= 80 ? "warning" : "ok";
 
       return {
         categoryName,
@@ -252,7 +253,7 @@ export function categoryForecast(
     })
     .filter((item) => item.actual > 0 || item.planned > 0 || item.recurring)
     .sort((a, b) => {
-      const statusWeight = { over: 3, warning: 2, ok: 1 };
+      const statusWeight = { leak: 4, over: 3, warning: 2, ok: 1 };
       const byStatus = statusWeight[b.status] - statusWeight[a.status];
       if (byStatus !== 0) return byStatus;
       return b.projected - a.projected;
@@ -280,6 +281,18 @@ export function internalAlerts({
   const alerts: { id: string; title: string; description: string; severity: "danger" | "warning" | "info" | "success" }[] = [];
 
   forecasts
+    .filter((item) => item.status === "leak")
+    .slice(0, 4)
+    .forEach((item) => {
+      alerts.push({
+        id: `category-leak-${item.categoryName}`,
+        title: `${item.categoryName} sem limite definido`,
+        description: `Já houve ${formatMoney(item.actual)} de gasto sem planejamento. Isso é tratado como vazamento de orçamento.`,
+        severity: "danger"
+      });
+    });
+
+  forecasts
     .filter((item) => item.planned > 0 && item.projected > item.planned)
     .slice(0, 4)
     .forEach((item) => {
@@ -304,7 +317,7 @@ export function internalAlerts({
     });
 
   forecasts
-    .filter((item) => item.recurring && item.planned === 0 && item.projected > 0)
+    .filter((item) => item.recurring && item.planned === 0 && item.projected > 0 && item.status !== "leak")
     .slice(0, 2)
     .forEach((item) => {
       alerts.push({
