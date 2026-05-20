@@ -79,6 +79,18 @@ type BrapiCurrencyResult = {
   updatedAtDate?: string;
 };
 
+type BrapiStockListItem = {
+  stock?: string;
+  name?: string;
+  close?: number | null;
+  change?: number | null;
+  volume?: number | null;
+  market_cap?: number | null;
+  sector?: string | null;
+  type?: string | null;
+  logo?: string | null;
+};
+
 type MarketQuotesResult = {
   quotes: Array<{
     symbol: string;
@@ -100,6 +112,33 @@ type MarketQuotesResult = {
   error: string | null;
 };
 
+export type StockListFilters = {
+  search?: string;
+  type?: string;
+  sector?: string;
+};
+
+export type StockListResult = {
+  stocks: Array<{
+    symbol: string;
+    name: string;
+    price: number;
+    changePercent: number;
+    volume: number;
+    marketCap: number | null;
+    sector: string | null;
+    type: string | null;
+    logoUrl: string | null;
+  }>;
+  indexes: Array<{
+    symbol: string;
+    name: string;
+  }>;
+  availableSectors: string[];
+  availableStockTypes: string[];
+  error: string | null;
+};
+
 async function fetchJson<T>(url: string) {
   const headers: HeadersInit = {};
   const token = process.env.BRAPI_TOKEN;
@@ -113,6 +152,57 @@ async function fetchJson<T>(url: string) {
 
   if (!response.ok) throw new Error(`Brapi responded ${response.status}`);
   return response.json() as Promise<T>;
+}
+
+export async function getStockList(filters: StockListFilters = {}): Promise<StockListResult> {
+  const searchParams = new URLSearchParams({
+    sortOrder: "desc",
+    limit: "10"
+  });
+
+  if (filters.search?.trim()) searchParams.set("search", filters.search.trim());
+  if (filters.type && filters.type !== "all") searchParams.set("type", filters.type);
+  if (filters.sector && filters.sector !== "all") searchParams.set("sector", filters.sector);
+
+  try {
+    const response = await fetchJson<{
+      indexes?: Array<{ stock?: string; name?: string }>;
+      stocks?: BrapiStockListItem[];
+      availableSectors?: string[];
+      availableStockTypes?: string[];
+    }>(`https://brapi.dev/api/quote/list?${searchParams.toString()}`);
+
+    return {
+      stocks: (response.stocks ?? []).map((stock) => ({
+        symbol: stock.stock ?? "-",
+        name: stock.name ?? stock.stock ?? "Ativo",
+        price: Number(stock.close ?? 0),
+        changePercent: Number(stock.change ?? 0),
+        volume: Number(stock.volume ?? 0),
+        marketCap: stock.market_cap == null ? null : Number(stock.market_cap),
+        sector: stock.sector ?? null,
+        type: stock.type ?? null,
+        logoUrl: stock.logo ?? null
+      })),
+      indexes: (response.indexes ?? []).map((index) => ({
+        symbol: index.stock ?? "-",
+        name: index.name ?? index.stock ?? "Indice"
+      })),
+      availableSectors: response.availableSectors ?? [],
+      availableStockTypes: response.availableStockTypes ?? [],
+      error: null
+    };
+  } catch (error) {
+    secureLogger.warn("Brapi stock list fetch failed", { error });
+
+    return {
+      stocks: [],
+      indexes: [],
+      availableSectors: [],
+      availableStockTypes: [],
+      error: "Lista de ativos indisponivel agora. Verifique BRAPI_TOKEN ou tente novamente em alguns minutos."
+    };
+  }
 }
 
 export async function getMarketQuotes(tickers: string[]): Promise<MarketQuotesResult> {
