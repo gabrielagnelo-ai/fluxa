@@ -7,8 +7,8 @@ import { deleteInvestmentAsset, upsertInvestmentAsset } from "@/app/(dashboard)/
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { cn, formatCurrency } from "@/lib/utils";
 import { investmentTypeLabels } from "@/constants/investments";
+import { cn, formatCurrency } from "@/lib/utils";
 
 type InvestmentAsset = {
   id: string;
@@ -102,6 +102,21 @@ function formatLargeNumber(value: number | null) {
   }).format(value);
 }
 
+function getAddAssetHref(symbol: string, name: string) {
+  const params = new URLSearchParams({
+    stockToAdd: symbol,
+    stockName: name
+  });
+
+  return `/investments?${params.toString()}#novo-investimento`;
+}
+
+function warningMessage(error: string | null) {
+  if (!error) return null;
+
+  return <p className="rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-300">{error}</p>;
+}
+
 export function StockDiscoveryPanel({
   data,
   filters
@@ -113,19 +128,21 @@ export function StockDiscoveryPanel({
     sector?: string;
   };
 }) {
+  const hasActiveFilters = Boolean(filters.search || (filters.type && filters.type !== "all") || (filters.sector && filters.sector !== "all"));
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="font-semibold">Radar de ativos</h2>
-          <p className="text-sm text-muted-foreground">Lista da BRAPI para descobrir ações, fundos e BDRs por busca, tipo ou setor.</p>
+          <p className="text-sm text-muted-foreground">Pesquise ativos da BRAPI e envie um ticker direto para o cadastro da carteira.</p>
         </div>
         <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
           <LineChart className="size-5" />
         </span>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_1fr_auto]">
+        <form className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_1fr_auto_auto]">
           <label className="space-y-1 text-sm">
             <span className="text-muted-foreground">Buscar</span>
             <div className="relative">
@@ -161,52 +178,70 @@ export function StockDiscoveryPanel({
           <div className="flex items-end">
             <Button className="w-full lg:w-auto">Filtrar</Button>
           </div>
+
+          {hasActiveFilters && (
+            <div className="flex items-end">
+              <a href="/investments" className="inline-flex h-10 w-full items-center justify-center rounded-md border border-border px-4 text-sm font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground lg:w-auto">
+                Limpar
+              </a>
+            </div>
+          )}
         </form>
 
-        {errorMessage(data.error)}
+        {warningMessage(data.error)}
 
         {data.stocks.length === 0 ? (
           <div className="grid min-h-32 place-items-center rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
             Nenhum ativo encontrado para os filtros atuais.
           </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            {data.stocks.map((stock) => {
-              const positive = stock.changePercent >= 0;
-              const Icon = positive ? TrendingUp : TrendingDown;
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full min-w-[900px] text-sm">
+              <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b border-border">
+                  <th className="px-4 py-3 font-medium">Ativo</th>
+                  <th className="px-4 font-medium">Tipo</th>
+                  <th className="px-4 font-medium">Setor</th>
+                  <th className="px-4 text-right font-medium">Preço</th>
+                  <th className="px-4 text-right font-medium">Variação</th>
+                  <th className="px-4 text-right font-medium">Volume</th>
+                  <th className="px-4 text-right font-medium">Valor mercado</th>
+                  <th className="px-4 text-right font-medium">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.stocks.map((stock) => {
+                  const positive = stock.changePercent >= 0;
+                  const Icon = positive ? TrendingUp : TrendingDown;
 
-              return (
-                <div key={stock.symbol} className="rounded-xl border border-border bg-muted/20 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">{stockTypeLabels[stock.type ?? ""] ?? stock.type ?? "Ativo"}</p>
-                      <h3 className="mt-1 text-lg font-semibold">{stock.symbol}</h3>
-                      <p className="mt-1 line-clamp-2 min-h-8 text-xs text-muted-foreground">{stock.name}</p>
-                    </div>
-                    <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold", positive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500")}>
-                      <Icon className="size-3" />
-                      {positive ? "+" : ""}
-                      {stock.changePercent.toFixed(2)}%
-                    </span>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">Preço</span>
-                      <strong>{formatCurrency(stock.price)}</strong>
-                    </div>
-                    <div className="flex justify-between gap-2 text-xs text-muted-foreground">
-                      <span>Volume</span>
-                      <span>{formatLargeNumber(stock.volume)}</span>
-                    </div>
-                    <div className="flex justify-between gap-2 text-xs text-muted-foreground">
-                      <span>Valor de mercado</span>
-                      <span>{formatLargeNumber(stock.marketCap)}</span>
-                    </div>
-                    <p className="truncate pt-1 text-xs text-muted-foreground">{stock.sector ? sectorLabels[stock.sector] ?? stock.sector : "Sem setor"}</p>
-                  </div>
-                </div>
-              );
-            })}
+                  return (
+                    <tr key={stock.symbol} className="border-b border-border/60 last:border-0">
+                      <td className="px-4 py-3">
+                        <strong className="text-base">{stock.symbol}</strong>
+                        <p className="mt-1 line-clamp-1 max-w-[260px] text-xs text-muted-foreground">{stock.name}</p>
+                      </td>
+                      <td className="px-4 text-muted-foreground">{stockTypeLabels[stock.type ?? ""] ?? stock.type ?? "Ativo"}</td>
+                      <td className="px-4 text-muted-foreground">{stock.sector ? sectorLabels[stock.sector] ?? stock.sector : "-"}</td>
+                      <td className="px-4 text-right font-semibold">{formatCurrency(stock.price)}</td>
+                      <td className="px-4 text-right">
+                        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold", positive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500")}>
+                          <Icon className="size-3" />
+                          {positive ? "+" : ""}
+                          {stock.changePercent.toFixed(2)}%
+                        </span>
+                      </td>
+                      <td className="px-4 text-right text-muted-foreground">{formatLargeNumber(stock.volume)}</td>
+                      <td className="px-4 text-right text-muted-foreground">{formatLargeNumber(stock.marketCap)}</td>
+                      <td className="px-4 text-right">
+                        <a href={getAddAssetHref(stock.symbol, stock.name)} className="inline-flex h-8 items-center justify-center rounded-md bg-primary/10 px-3 text-xs font-semibold text-primary transition hover:bg-primary hover:text-primary-foreground">
+                          Adicionar
+                        </a>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
 
@@ -227,13 +262,15 @@ export function StockDiscoveryPanel({
   );
 }
 
-function errorMessage(error: string | null) {
-  if (!error) return null;
-
-  return <p className="rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-300">{error}</p>;
-}
-
-export function InvestmentManager({ assets, overview }: { assets: InvestmentAsset[]; overview: InvestmentOverview }) {
+export function InvestmentManager({
+  assets,
+  overview,
+  draftAsset
+}: {
+  assets: InvestmentAsset[];
+  overview: InvestmentOverview;
+  draftAsset?: { ticker?: string; name?: string };
+}) {
   const [selectedAsset, setSelectedAsset] = useState<InvestmentAsset | null>(null);
   const [state, action, pending] = useActionState(
     async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => {
@@ -243,6 +280,17 @@ export function InvestmentManager({ assets, overview }: { assets: InvestmentAsse
     },
     undefined
   );
+
+  const draftKey = selectedAsset?.id ?? `${draftAsset?.ticker ?? "new"}-${draftAsset?.name ?? ""}`;
+  const defaultName = selectedAsset?.name ?? draftAsset?.name ?? "";
+  const defaultTicker = selectedAsset?.ticker ?? draftAsset?.ticker ?? "";
+
+  function startEditing(asset: InvestmentAsset) {
+    setSelectedAsset(asset);
+    window.requestAnimationFrame(() => {
+      document.getElementById("novo-investimento")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 
   return (
     <div className="space-y-5">
@@ -284,7 +332,7 @@ export function InvestmentManager({ assets, overview }: { assets: InvestmentAsse
           </CardHeader>
           <CardContent>
             {overview.allocation.length === 0 ? (
-              <div className="grid h-56 place-items-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
+              <div className="grid h-56 place-items-center rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
                 Cadastre seu primeiro investimento para visualizar a alocação.
               </div>
             ) : (
@@ -321,7 +369,9 @@ export function InvestmentManager({ assets, overview }: { assets: InvestmentAsse
                         <strong>{formatCurrency(item.value)}</strong>
                       </div>
                       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{item.count} ativo(s) · {item.share}% da carteira</span>
+                        <span>
+                          {item.count} ativo(s) · {item.share}% da carteira
+                        </span>
                         <span className={item.gain >= 0 ? "text-emerald-500" : "text-red-500"}>
                           {item.gain >= 0 ? "+" : ""}
                           {item.gainPercent.toFixed(2)}%
@@ -337,58 +387,20 @@ export function InvestmentManager({ assets, overview }: { assets: InvestmentAsse
       </section>
 
       <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="font-semibold">{selectedAsset ? "Editar investimento" : "Novo investimento"}</h2>
-            <p className="text-sm text-muted-foreground">Cadastre manualmente ativos e atualize o valor atual para acompanhar sua evolução.</p>
-          </div>
-          {selectedAsset && (
-            <Button type="button" onClick={() => setSelectedAsset(null)} className="bg-muted text-foreground hover:shadow-none">
-              <Plus className="mr-2 size-4" />
-              Novo
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          <form action={action} className="grid gap-3 lg:grid-cols-4">
-            <input type="hidden" name="id" value={selectedAsset?.id ?? ""} />
-            <Input name="name" defaultValue={selectedAsset?.name ?? ""} placeholder="Nome do ativo" required />
-            <Input name="ticker" defaultValue={selectedAsset?.ticker ?? ""} placeholder="Ticker, ex: PETR4" />
-            <select name="type" defaultValue={selectedAsset?.type ?? "FIXED_INCOME"} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
-              {Object.entries(investmentTypeLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <Input name="institution" defaultValue={selectedAsset?.institution ?? ""} placeholder="Banco/corretora" />
-            <Input name="quantity" type="number" min="0" step="0.00000001" defaultValue={selectedAsset?.quantity ?? ""} placeholder="Quantidade" />
-            <Input name="averagePrice" type="number" min="0" step="0.01" defaultValue={selectedAsset?.averagePrice ?? ""} placeholder="Preço médio" />
-            <Input name="investedAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.investedAmount ?? ""} placeholder="Valor aplicado" required />
-            <Input name="currentAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.currentAmount ?? ""} placeholder="Valor atual" required />
-            <Input name="acquiredAt" type="date" defaultValue={selectedAsset?.acquiredAt?.slice(0, 10) ?? ""} />
-            <textarea
-              name="notes"
-              defaultValue={selectedAsset?.notes ?? ""}
-              placeholder="Observações"
-              className="min-h-10 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 lg:col-span-2"
-            />
-            <Button disabled={pending}>{pending ? "Salvando..." : "Salvar investimento"}</Button>
-            {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive lg:col-span-4">{state.error}</p>}
-            {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary lg:col-span-4">{state.success}</p>}
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardHeader>
-          <h2 className="font-semibold">Ativos cadastrados</h2>
-          <p className="text-sm text-muted-foreground">Clique em um ativo para editar. Os valores são os informados por você.</p>
+          <h2 className="font-semibold">Minha carteira</h2>
+          <p className="text-sm text-muted-foreground">Ativos cadastrados manualmente. Clique em um ativo para editar.</p>
         </CardHeader>
         <CardContent>
           {assets.length === 0 ? (
-            <div className="grid h-32 place-items-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-              Nenhum investimento cadastrado.
+            <div className="grid min-h-36 place-items-center rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center">
+              <div>
+                <p className="font-semibold">Sua carteira ainda está vazia.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Cadastre um CDB, Tesouro, ação ou fundo para acompanhar patrimônio e rentabilidade.</p>
+                <a href="#novo-investimento" className="mt-4 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90">
+                  Adicionar primeiro ativo
+                </a>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-border">
@@ -412,7 +424,7 @@ export function InvestmentManager({ assets, overview }: { assets: InvestmentAsse
                     return (
                       <tr key={asset.id} className="border-b border-border/60 last:border-0">
                         <td className="px-4 py-3">
-                          <button type="button" onClick={() => setSelectedAsset(asset)} className="text-left font-semibold transition hover:text-primary">
+                          <button type="button" onClick={() => startEditing(asset)} className="text-left font-semibold transition hover:text-primary">
                             {asset.name}
                           </button>
                           <p className="text-xs text-muted-foreground">{asset.ticker ?? "Sem ticker"}</p>
@@ -446,6 +458,55 @@ export function InvestmentManager({ assets, overview }: { assets: InvestmentAsse
           )}
         </CardContent>
       </Card>
+
+      <details id="novo-investimento" className="group rounded-xl border border-border bg-card p-6" open={assets.length === 0 || Boolean(draftAsset?.ticker) || Boolean(selectedAsset)}>
+        <summary className="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <span>
+            <span className="block font-semibold">{selectedAsset ? "Editar investimento" : "Novo investimento"}</span>
+            <span className="mt-1 block text-sm text-muted-foreground">Preencha o essencial agora. Quantidade, preço médio e observações podem ficar vazios.</span>
+          </span>
+          <span className="inline-flex h-10 items-center justify-center rounded-md border border-border px-4 text-sm font-semibold text-muted-foreground transition group-open:bg-primary/10 group-open:text-primary">
+            {selectedAsset ? "Editando" : "Abrir cadastro"}
+          </span>
+        </summary>
+        <div className="mt-5 border-t border-border pt-5">
+          {selectedAsset && (
+            <div className="mb-4 flex justify-end">
+              <Button type="button" onClick={() => setSelectedAsset(null)} className="bg-muted text-foreground hover:shadow-none">
+                <Plus className="mr-2 size-4" />
+                Novo ativo
+              </Button>
+            </div>
+          )}
+          <form key={draftKey} action={action} className="grid gap-3 lg:grid-cols-4">
+            <input type="hidden" name="id" value={selectedAsset?.id ?? ""} />
+            <Input name="name" defaultValue={defaultName} placeholder="Nome do ativo" required />
+            <Input name="ticker" defaultValue={defaultTicker} placeholder="Ticker, ex: PETR4" />
+            <select name="type" defaultValue={selectedAsset?.type ?? "FIXED_INCOME"} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+              {Object.entries(investmentTypeLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <Input name="institution" defaultValue={selectedAsset?.institution ?? ""} placeholder="Banco/corretora" />
+            <Input name="investedAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.investedAmount ?? ""} placeholder="Valor aplicado" required />
+            <Input name="currentAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.currentAmount ?? ""} placeholder="Valor atual" required />
+            <Input name="quantity" type="number" min="0" step="0.00000001" defaultValue={selectedAsset?.quantity ?? ""} placeholder="Quantidade" />
+            <Input name="averagePrice" type="number" min="0" step="0.01" defaultValue={selectedAsset?.averagePrice ?? ""} placeholder="Preço médio" />
+            <Input name="acquiredAt" type="date" defaultValue={selectedAsset?.acquiredAt?.slice(0, 10) ?? ""} />
+            <textarea
+              name="notes"
+              defaultValue={selectedAsset?.notes ?? ""}
+              placeholder="Observações"
+              className="min-h-10 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 lg:col-span-2"
+            />
+            <Button disabled={pending}>{pending ? "Salvando..." : selectedAsset ? "Salvar alterações" : "Salvar investimento"}</Button>
+            {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive lg:col-span-4">{state.error}</p>}
+            {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary lg:col-span-4">{state.success}</p>}
+          </form>
+        </div>
+      </details>
     </div>
   );
 }
@@ -476,7 +537,7 @@ export function MarketQuotesPanel({
         </span>
       </CardHeader>
       <CardContent>
-        {error && <p className="mb-4 rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-300">{error}</p>}
+        {warningMessage(error)}
         {items.length === 0 ? (
           <div className="grid h-32 place-items-center rounded-lg border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
             Sem cotações ao vivo. Cadastre BRAPI_TOKEN na Vercel para ativar dados de mercado.

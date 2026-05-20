@@ -17,6 +17,10 @@ export default async function InvestmentsPage({
     type: getSingleParam(params?.stockType) ?? "all",
     sector: getSingleParam(params?.stockSector) ?? "all"
   };
+  const draftAsset = {
+    ticker: getSingleParam(params?.stockToAdd),
+    name: getSingleParam(params?.stockName)
+  };
   const assets = await getInvestmentsForCurrentUser();
   const overview = buildInvestmentOverview(assets);
   const stockList = await getStockList(stockFilters);
@@ -28,8 +32,8 @@ export default async function InvestmentsPage({
         title="Investimentos"
         description="Cadastre sua carteira, acompanhe alocação por classe de ativo e veja ativos de referência para apoiar suas decisões."
       />
-      <StockDiscoveryPanel data={stockList} filters={stockFilters} />
       <InvestmentManager
+        draftAsset={draftAsset}
         assets={assets.map((asset) => ({
           id: asset.id,
           name: asset.name,
@@ -45,6 +49,7 @@ export default async function InvestmentsPage({
         }))}
         overview={overview}
       />
+      <StockDiscoveryPanel data={stockList} filters={stockFilters} />
     </div>
   );
 }
