@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { normalizeText } from "@/lib/utils";
+import { salaryAdvanceCredits } from "@/services/dashboard-service";
 import { getCurrentUserId } from "@/services/finance-data-service";
 
 const hiddenPlanningCategories = new Set(["RECEITA", "SALARIO"]);
@@ -22,6 +23,8 @@ function groupCategoryByLimit(type?: "FIXED" | "VARIABLE" | "GOAL") {
 }
 
 function emptyOverview(month: number, year: number) {
+  const nextMonth = new Date(year, month, 1);
+
   return {
     month,
     year,
@@ -40,6 +43,17 @@ function emptyOverview(month: number, year: number) {
       overLimitCount: 0,
       plannedCount: 0,
       spentCount: 0
+    },
+    nextMonthImpact: {
+      monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(nextMonth),
+      baseIncome: 0,
+      salaryAdvanceTotal: 0,
+      salaryAdvanceCount: 0,
+      adjustedIncome: 0,
+      fixedExpenses: 0,
+      fixedCount: 0,
+      leftoverAfterFixed: 0,
+      hasSalaryAdvance: false
     }
   };
 }
@@ -75,6 +89,16 @@ export async function getPlanningOverview(date = new Date()) {
   ]);
 
   const actualIncome = transactions.filter((transaction) => transaction.type === "INCOME").reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const salaryAdvance = salaryAdvanceCredits(
+    transactions.map((transaction) => ({
+      date: transaction.date.toISOString(),
+      description: transaction.description,
+      amount: Number(transaction.amount),
+      type: transaction.type,
+      category: transaction.category?.name,
+      source: transaction.source ?? undefined
+    }))
+  );
   const monthlyIncome = plan ? Number(plan.monthlyIncome) : actualIncome;
   const needsPercent = plan?.needsPercent ?? 50;
   const wantsPercent = plan?.wantsPercent ?? 30;
@@ -130,6 +154,10 @@ export async function getPlanningOverview(date = new Date()) {
     plannedCount: plannedLimits.length,
     spentCount: categoryLimits.filter((item) => item.actual > 0).length
   };
+  const fixedLimits = categoryLimits.filter((item) => item.type === "FIXED" && item.planned > 0);
+  const fixedExpenses = fixedLimits.reduce((sum, item) => sum + item.planned, 0);
+  const adjustedIncome = Math.max(0, monthlyIncome - salaryAdvance.total);
+  const nextMonth = new Date(year, month, 1);
 
   return {
     month,
@@ -169,6 +197,17 @@ export async function getPlanningOverview(date = new Date()) {
       }
     ],
     categoryLimits,
-    limitSummary
+    limitSummary,
+    nextMonthImpact: {
+      monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(nextMonth),
+      baseIncome: monthlyIncome,
+      salaryAdvanceTotal: salaryAdvance.total,
+      salaryAdvanceCount: salaryAdvance.count,
+      adjustedIncome,
+      fixedExpenses,
+      fixedCount: fixedLimits.length,
+      leftoverAfterFixed: adjustedIncome - fixedExpenses,
+      hasSalaryAdvance: salaryAdvance.total > 0
+    }
   };
 }

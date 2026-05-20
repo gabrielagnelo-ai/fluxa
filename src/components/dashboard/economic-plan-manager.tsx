@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Calculator, CheckCircle2, CircleDollarSign, SlidersHorizontal, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Calculator, CheckCircle2, CircleDollarSign, SlidersHorizontal, WalletCards, type LucideIcon } from "lucide-react";
 import { saveCategoryLimit, saveCategoryLimits, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -46,6 +46,17 @@ type PlanningOverview = {
     overLimitCount: number;
     plannedCount: number;
     spentCount: number;
+  };
+  nextMonthImpact: {
+    monthLabel: string;
+    baseIncome: number;
+    salaryAdvanceTotal: number;
+    salaryAdvanceCount: number;
+    adjustedIncome: number;
+    fixedExpenses: number;
+    fixedCount: number;
+    leftoverAfterFixed: number;
+    hasSalaryAdvance: boolean;
   };
 };
 
@@ -159,6 +170,45 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </section>
         </CardContent>
       </Card>
+
+      {overview.nextMonthImpact.hasSalaryAdvance && (
+        <Card className="border-red-500/30 bg-red-500/[0.04]">
+          <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="font-semibold">Impacto no próximo salário</h2>
+              <p className="text-sm text-muted-foreground">
+                Adiantamentos e vales deste mês reduzem a renda disponível em {overview.nextMonthImpact.monthLabel}. A sobra abaixo considera apenas categorias marcadas como Fixo.
+              </p>
+            </div>
+            <span className="grid size-10 place-items-center rounded-lg bg-red-500/10 text-red-500">
+              <WalletCards className="size-5" />
+            </span>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <section className="grid gap-3 md:grid-cols-4">
+              <CompactMetric icon={CircleDollarSign} label="Salário base" value={formatCurrency(overview.nextMonthImpact.baseIncome)} detail="renda mensal configurada" />
+              <CompactMetric
+                icon={AlertTriangle}
+                label="Adiantamento/vale"
+                value={`-${formatCurrency(overview.nextMonthImpact.salaryAdvanceTotal)}`}
+                detail={`${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) identificada(s)`}
+                tone="danger"
+              />
+              <CompactMetric icon={WalletCards} label="Salário ajustado" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="estimado para o próximo mês" />
+              <CompactMetric
+                icon={overview.nextMonthImpact.leftoverAfterFixed < 0 ? AlertTriangle : CheckCircle2}
+                label="Sobra após fixos"
+                value={formatCurrency(overview.nextMonthImpact.leftoverAfterFixed)}
+                detail={`${overview.nextMonthImpact.fixedCount} gasto(s) fixo(s) planejado(s)`}
+                tone={overview.nextMonthImpact.leftoverAfterFixed < 0 ? "danger" : "success"}
+              />
+            </section>
+            <div className="rounded-lg border border-red-500/20 bg-background/35 px-3 py-2 text-sm text-muted-foreground">
+              Isso não altera sua renda salva automaticamente. É uma simulação para você decidir se precisa cortar gastos variáveis ou ajustar limites do próximo mês.
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
