@@ -17,6 +17,12 @@ type GoalSnapshot = {
   contributedAmount: number;
 };
 
+type SalaryAdvanceSnapshot = {
+  total: number;
+  count: number;
+  descriptions: string[];
+};
+
 export function summarizeTransactions(transactions: ParsedTransaction[]) {
   const income = transactions.filter((item) => item.type === "INCOME").reduce((sum, item) => sum + item.amount, 0);
   const expenses = transactions.filter((item) => item.type === "EXPENSE").reduce((sum, item) => sum + item.amount, 0);
@@ -296,18 +302,57 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+function isSalaryAdvance(transaction: ParsedTransaction) {
+  if (transaction.type !== "INCOME") return false;
+
+  const searchable = normalizeText(
+    [transaction.description, transaction.category, transaction.tag].filter(Boolean).join(" ")
+  );
+
+  return (
+    searchable.includes("ADIANTAMENTO") ||
+    searchable.includes("ADIANT SALARIAL") ||
+    searchable.includes("VALE SALARIAL") ||
+    searchable.includes("VALE SALARIO") ||
+    searchable.includes("ANTECIPACAO SALARIAL") ||
+    searchable.includes("ANTECIPACAO DE SALARIO")
+  );
+}
+
+export function salaryAdvanceCredits(transactions: ParsedTransaction[]): SalaryAdvanceSnapshot {
+  const matches = transactions.filter(isSalaryAdvance);
+
+  return {
+    total: matches.reduce((sum, transaction) => sum + transaction.amount, 0),
+    count: matches.length,
+    descriptions: matches.slice(0, 3).map((transaction) => cleanCreditOrigin(transaction.description))
+  };
+}
+
 export function internalAlerts({
   forecasts,
   goals,
   projectedExpenses,
-  projectedIncome
+  projectedIncome,
+  salaryAdvance
 }: {
   forecasts: ReturnType<typeof categoryForecast>;
   goals: GoalSnapshot[];
   projectedExpenses: number;
   projectedIncome: number;
+  salaryAdvance?: SalaryAdvanceSnapshot;
 }) {
   const alerts: { id: string; title: string; description: string; severity: "danger" | "warning" | "info" | "success" }[] = [];
+
+  if (salaryAdvance && salaryAdvance.total > 0) {
+    const examples = salaryAdvance.descriptions.length ? ` Identificado em: ${salaryAdvance.descriptions.join(", ")}.` : "";
+    alerts.push({
+      id: "salary-advance-income",
+      title: "Entrada de adiantamento ou vale salarial",
+      description: `${formatMoney(salaryAdvance.total)} entrou como adiantamento/vale. Trate como alerta crítico, porque esse valor pode faltar no próximo salário ou nos próximos meses.${examples}`,
+      severity: "danger"
+    });
+  }
 
   forecasts
     .filter((item) => item.status === "leak")
@@ -386,6 +431,12 @@ export function internalAlerts({
       severity: "danger"
     });
   }
+
+  alerts.sort((a, b) => {
+    if (a.id === "salary-advance-income") return -1;
+    if (b.id === "salary-advance-income") return 1;
+    return 0;
+  });
 
   return alerts.slice(0, 8);
 }

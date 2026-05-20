@@ -11,7 +11,7 @@ import { ProjectionCard } from "@/components/dashboard/projection-card";
 import { WeeklyExpenseInsight } from "@/components/dashboard/weekly-expense-insight";
 import { Logo } from "@/components/branding/logo";
 import { PageHeader } from "@/components/layout/page-header";
-import { categoryForecast, creditOrigins, expensesByCategory, internalAlerts, monthlyEvolutionFromTransactions, projectPeriod, summarizeTransactions, weeklyExpenseInsight } from "@/services/dashboard-service";
+import { categoryForecast, creditOrigins, expensesByCategory, internalAlerts, monthlyEvolutionFromTransactions, projectPeriod, salaryAdvanceCredits, summarizeTransactions, weeklyExpenseInsight } from "@/services/dashboard-service";
 import { getCurrentBalanceUntil, getDashboardEvolutionTransactions, getDashboardTransactions, getGoalsForCurrentUser } from "@/services/finance-data-service";
 import { buildInvestmentOverview, getInvestmentsForCurrentUser } from "@/services/investment-service";
 import { getPlanningOverview } from "@/services/planning-service";
@@ -45,7 +45,8 @@ export default async function DashboardPage({
     forecasts,
     goals: goalSnapshots,
     projectedExpenses: projection.projectedExpenses,
-    projectedIncome: projection.projectedIncome
+    projectedIncome: projection.projectedIncome,
+    salaryAdvance: salaryAdvanceCredits(transactions)
   });
 
   return (
@@ -58,12 +59,12 @@ export default async function DashboardPage({
           </span>
         }
         title="Dashboard financeiro"
-        description={`Resumo de ${getPeriodLabel(period)} com saldo acumulado, fluxo do mês, categorias, metas e tendência de fechamento. O saldo acumulado considera todas as transações até o fim do período selecionado.`}
+        description={`Resumo de ${getPeriodLabel(period)} com saldo atual, fluxo do mês, categorias, metas e tendência de fechamento. O saldo atual considera entradas menos saídas até o fim do período selecionado.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Saldo acumulado" value={currentBalance} icon={CreditCard} tone="bg-blue-500/10 text-blue-500" />
+        <KpiCard label="Saldo atual" value={currentBalance} icon={CreditCard} tone="bg-blue-500/10 text-blue-500" />
         <KpiCard label="Receitas do período" value={periodSummary.income} icon={TrendingUp} tone="bg-emerald-500/10 text-emerald-600" />
         <KpiCard label="Despesas do período" value={periodSummary.expenses} icon={TrendingDown} tone="bg-red-500/10 text-red-600" />
         <KpiCard label="Economia do período" value={periodSummary.savings} icon={PiggyBank} tone="bg-blue-500/10 text-blue-600" />
