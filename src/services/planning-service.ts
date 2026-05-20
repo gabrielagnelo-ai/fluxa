@@ -17,8 +17,9 @@ function inferLimitType(categoryName: string) {
   return "VARIABLE" as const;
 }
 
-function groupCategoryByLimit(type?: "FIXED" | "VARIABLE" | "GOAL") {
+function groupCategoryByLimit(type?: "FIXED" | "VARIABLE" | "GOAL", categoryName?: string | null) {
   if (type === "FIXED") return "needs" as const;
+  if (!type && categoryName && inferLimitType(categoryName) === "FIXED") return "needs" as const;
   return "wants" as const;
 }
 
@@ -121,7 +122,10 @@ export async function getPlanningOverview(date = new Date()) {
       }
 
       if (!savingsTransactionIds.has(transaction.id)) {
-        const group = groupCategoryByLimit(transaction.categoryId ? limitByCategory.get(transaction.categoryId)?.type : undefined);
+        const group = groupCategoryByLimit(
+          transaction.categoryId ? limitByCategory.get(transaction.categoryId)?.type : undefined,
+          transaction.category?.name
+        );
         actual[group] += amount;
       }
     });
