@@ -16,6 +16,8 @@ type TransactionUpdate = {
   } | null;
 };
 
+const AUTO_DISMISS_MS = 5500;
+
 function cleanDescription(description: string) {
   return description.replace(/^WhatsApp\s+-\s+/i, "");
 }
@@ -56,7 +58,7 @@ export function TransactionRefreshListener() {
 
             if (payload.latest && "Notification" in window && Notification.permission === "granted") {
               new Notification("Fluxa", {
-                body: `${cleanDescription(payload.latest.description)} · ${formatCurrency(payload.latest.amount)}`
+                body: `${cleanDescription(payload.latest.description)} - ${formatCurrency(payload.latest.amount)}`
               });
             }
           }
@@ -78,32 +80,45 @@ export function TransactionRefreshListener() {
 
   useEffect(() => {
     if (!notice) return;
-    const timeoutId = setTimeout(() => setNotice(null), 7000);
+    const timeoutId = setTimeout(() => setNotice(null), AUTO_DISMISS_MS);
     return () => clearTimeout(timeoutId);
   }, [notice]);
 
   if (!notice) return null;
 
   return (
-    <div className="fixed right-4 top-4 z-50 w-[calc(100vw-2rem)] max-w-sm rounded-xl border border-emerald-500/30 bg-card/95 p-4 shadow-glow backdrop-blur-xl">
-      <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-500/15 text-emerald-400">
-          <CheckCircle2 className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">Nova transação registrada</p>
-          <p className="mt-1 truncate text-sm text-muted-foreground">
-            {cleanDescription(notice.description)} · {formatCurrency(notice.amount)} · {notice.category}
-          </p>
+    <div className="fixed right-4 top-4 z-50 w-[calc(100vw-2rem)] max-w-md animate-[toast-enter_240ms_ease-out]">
+      <div className="overflow-hidden rounded-2xl border border-emerald-500/25 bg-[#10251f]/95 shadow-glow backdrop-blur-xl">
+        <div className="flex items-start gap-3 p-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
+            <CheckCircle2 className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold text-foreground">Registro do WhatsApp confirmado</p>
+              <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                Gravado no banco
+              </span>
+            </div>
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+              {cleanDescription(notice.description)}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-emerald-200">
+              {formatCurrency(notice.amount)} <span className="text-muted-foreground">em {notice.category}</span>
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            onClick={() => setNotice(null)}
+            aria-label="Fechar aviso"
+          >
+            <X className="size-4" />
+          </button>
         </div>
-        <button
-          type="button"
-          className="rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          onClick={() => setNotice(null)}
-          aria-label="Fechar aviso"
-        >
-          <X className="size-4" />
-        </button>
+        <div className="h-1 w-full bg-emerald-400/10">
+          <div className="h-full w-full origin-left animate-[toast-progress_5.5s_linear_forwards] bg-emerald-400/70" />
+        </div>
       </div>
     </div>
   );
