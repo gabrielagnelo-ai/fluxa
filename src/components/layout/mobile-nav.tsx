@@ -17,7 +17,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-xl border border-border bg-card/95 p-1 shadow-glow backdrop-blur-xl lg:hidden">
+    <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-2xl border border-white/10 bg-card/75 p-1.5 shadow-glow backdrop-blur-2xl lg:hidden">
       {items.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -25,8 +25,8 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-[11px] transition",
-              active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              "flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] transition duration-200 active:scale-95",
+              active ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:bg-white/[0.08] hover:text-foreground"
             )}
           >
             <item.icon className="size-4" />
