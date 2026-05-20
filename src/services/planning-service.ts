@@ -50,9 +50,9 @@ function emptyOverview(month: number, year: number) {
       salaryAdvanceTotal: 0,
       salaryAdvanceCount: 0,
       adjustedIncome: 0,
-      fixedExpenses: 0,
-      fixedCount: 0,
-      leftoverAfterFixed: 0,
+      plannedExpenses: 0,
+      plannedCount: 0,
+      leftoverAfterPlanned: 0,
       hasSalaryAdvance: false
     }
   };
@@ -154,8 +154,8 @@ export async function getPlanningOverview(date = new Date()) {
     plannedCount: plannedLimits.length,
     spentCount: categoryLimits.filter((item) => item.actual > 0).length
   };
-  const fixedLimits = categoryLimits.filter((item) => item.type === "FIXED" && item.planned > 0);
-  const fixedExpenses = fixedLimits.reduce((sum, item) => sum + item.planned, 0);
+  const plannedNextMonthLimits = categoryLimits.filter((item) => item.planned > 0);
+  const plannedExpenses = plannedNextMonthLimits.reduce((sum, item) => sum + item.planned, 0);
   const adjustedIncome = Math.max(0, monthlyIncome - salaryAdvance.total);
   const nextMonth = new Date(year, month, 1);
 
@@ -204,9 +204,9 @@ export async function getPlanningOverview(date = new Date()) {
       salaryAdvanceTotal: salaryAdvance.total,
       salaryAdvanceCount: salaryAdvance.count,
       adjustedIncome,
-      fixedExpenses,
-      fixedCount: fixedLimits.length,
-      leftoverAfterFixed: adjustedIncome - fixedExpenses,
+      plannedExpenses,
+      plannedCount: plannedNextMonthLimits.length,
+      leftoverAfterPlanned: adjustedIncome - plannedExpenses,
       hasSalaryAdvance: salaryAdvance.total > 0
     }
   };

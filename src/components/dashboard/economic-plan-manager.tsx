@@ -53,9 +53,9 @@ type PlanningOverview = {
     salaryAdvanceTotal: number;
     salaryAdvanceCount: number;
     adjustedIncome: number;
-    fixedExpenses: number;
-    fixedCount: number;
-    leftoverAfterFixed: number;
+    plannedExpenses: number;
+    plannedCount: number;
+    leftoverAfterPlanned: number;
     hasSalaryAdvance: boolean;
   };
 };
@@ -177,7 +177,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             <div>
               <h2 className="font-semibold">Impacto no próximo salário</h2>
               <p className="text-sm text-muted-foreground">
-                Adiantamentos e vales deste mês reduzem a renda disponível em {overview.nextMonthImpact.monthLabel}. A sobra abaixo considera apenas categorias marcadas como Fixo.
+                Adiantamentos e vales deste mês reduzem a renda disponível em {overview.nextMonthImpact.monthLabel}. A sobra abaixo considera todos os limites registrados.
               </p>
             </div>
             <span className="grid size-10 place-items-center rounded-lg bg-red-500/10 text-red-500">
@@ -196,15 +196,15 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               />
               <CompactMetric icon={WalletCards} label="Salário ajustado" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="estimado para o próximo mês" />
               <CompactMetric
-                icon={overview.nextMonthImpact.leftoverAfterFixed < 0 ? AlertTriangle : CheckCircle2}
-                label="Sobra após fixos"
-                value={formatCurrency(overview.nextMonthImpact.leftoverAfterFixed)}
-                detail={`${overview.nextMonthImpact.fixedCount} gasto(s) fixo(s) planejado(s)`}
-                tone={overview.nextMonthImpact.leftoverAfterFixed < 0 ? "danger" : "success"}
+                icon={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? AlertTriangle : CheckCircle2}
+                label="Sobra prevista"
+                value={formatCurrency(overview.nextMonthImpact.leftoverAfterPlanned)}
+                detail={`${overview.nextMonthImpact.plannedCount} limite(s) registrado(s)`}
+                tone={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? "danger" : "success"}
               />
             </section>
             <div className="rounded-lg border border-red-500/20 bg-background/35 px-3 py-2 text-sm text-muted-foreground">
-              Isso não altera sua renda salva automaticamente. É uma simulação para você decidir se precisa cortar gastos variáveis ou ajustar limites do próximo mês.
+              Cálculo: salário base menos adiantamento/vale, depois menos os limites definidos em Planejamento. Isso não altera sua renda salva automaticamente.
             </div>
           </CardContent>
         </Card>
