@@ -212,14 +212,14 @@ export function ImportDropzone({
         <CardHeader>
           <h2 className="font-semibold">Importar extratos</h2>
           <p className="text-sm text-muted-foreground">
-            Tags de categoria e marcadores de meta aparecem na prévia para seleção manual.
+            Envie os arquivos do banco. O Fluxa le as transacoes e deixa voce revisar tudo antes de salvar.
           </p>
         </CardHeader>
         <CardContent>
           <label className="flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 px-5 text-center transition hover:bg-muted">
             <UploadCloud className="mb-3 size-9 text-primary" />
             <span className="font-medium">{reading ? "Lendo arquivos..." : "Selecione CSV, XLSX ou PDF"}</span>
-            <span className="mt-1 text-sm text-muted-foreground">Colunas esperadas: data, descrição e valor.</span>
+            <span className="mt-1 text-sm text-muted-foreground">Pode enviar varios extratos de uma vez.</span>
             <input
               className="sr-only"
               type="file"
@@ -232,9 +232,12 @@ export function ImportDropzone({
               }}
             />
           </label>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Tags disponíveis: {tagOptions.length ? tagOptions.map((tag) => tag.label).join(", ") : "nenhuma tag cadastrada"}
-          </p>
+          <details className="mt-3 rounded-lg border border-border bg-background/30 px-3 py-2 text-sm text-muted-foreground">
+            <summary className="cursor-pointer font-medium text-foreground">Ver palavras que o Fluxa ja conhece</summary>
+            <p className="mt-2 leading-6">
+              {tagOptions.length ? tagOptions.map((tag) => tag.label).join(", ") : "Nenhuma palavra cadastrada ainda."}
+            </p>
+          </details>
           {fileNames.length > 0 && (
             <p className="mt-3 text-sm text-muted-foreground">
               Arquivos na prévia: {Array.from(new Set(fileNames)).join(", ")}
@@ -275,7 +278,7 @@ export function ImportDropzone({
                     <th className="font-medium">Descrição</th>
                     <th className="font-medium">Arquivo</th>
                     <th className="font-medium">Tipo</th>
-                    <th className="font-medium">Tag</th>
+                    <th className="font-medium">Regra usada</th>
                     <th className="font-medium">Categoria</th>
                     <th className="font-medium">Meta</th>
                     <th className="text-right font-medium">Valor</th>
@@ -290,7 +293,7 @@ export function ImportDropzone({
                       <td>{item.type === "INCOME" ? "Entrada" : "Saída"}</td>
                       <td>
                         <select className="h-9 min-w-56 rounded-md border border-border bg-background px-2" value={item.tag ?? ""} onChange={(event) => updateTag(index, event.target.value)}>
-                          <option value="">Nenhuma</option>
+                          <option value="">Nenhuma regra</option>
                           <optgroup label="Categorias">
                             {tagOptions.filter((tag) => tag.type === "category").map((tag) => (
                               <option key={tag.value} value={tag.value}>{tag.label}</option>

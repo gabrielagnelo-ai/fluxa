@@ -6,36 +6,36 @@ import { getCategoriesForCurrentUser } from "@/services/finance-data-service";
 
 const integrationStatus = [
   {
-    title: "IA para análise financeira",
-    description: "Ativa na aba Inteligência com dados agregados do período.",
+    title: "Analise inteligente",
+    description: "Ativa na aba Inteligencia com um resumo simples do periodo.",
     status: "Ativo",
     icon: Bot,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
-    title: "IA para classificar importações",
-    description: "Ativa na importação para sugerir categorias e metas.",
+    title: "Categorias automaticas",
+    description: "Ativa na importacao para sugerir onde cada gasto entra.",
     status: "Ativo",
     icon: CheckCircle2,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
-    title: "Notificações de orçamento e metas",
-    description: "Ativas no dashboard com alertas internos de limites, metas e tendência.",
+    title: "Avisos de orçamento e metas",
+    description: "Ativos no dashboard para mostrar limites, metas e pontos de atencao.",
     status: "Ativo",
     icon: CheckCircle2,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
-    title: "Previsão por categoria e recorrência",
-    description: "Ativa no dashboard com previsão por limite, ritmo atual e gastos recorrentes.",
+    title: "Estimativa por categoria",
+    description: "Ativa no dashboard para mostrar gastos que podem passar do combinado.",
     status: "Ativo",
     icon: CheckCircle2,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
-    title: "Open Finance",
-    description: "Desativado por enquanto para manter o app simples.",
+    title: "Conexao automatica com bancos",
+    description: "Open Finance fica desativado por enquanto para manter o app simples.",
     status: "Futuro",
     icon: LockKeyhole,
     tone: "bg-muted text-muted-foreground"
@@ -50,7 +50,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Regras do Fluxa"
         title="Ajustes"
-        description="Edite as regras que transformam descrições de extrato e WhatsApp em categorias."
+        description="Ajuste como o Fluxa reconhece seus gastos e veja o que ja esta ativo."
       />
 
       <CategoryKeywordsManager
@@ -66,7 +66,7 @@ export default async function SettingsPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-semibold">Recursos ativos</h2>
-              <p className="text-sm text-muted-foreground">Resumo rápido do que já funciona e do que ainda é parcial.</p>
+              <p className="text-sm text-muted-foreground">Resumo rapido do que ja funciona e do que ainda e futuro.</p>
             </div>
             <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
               <PlugZap className="size-5" />

@@ -10,7 +10,7 @@ export default async function GoalsPage() {
       <PageHeader
         eyebrow="Metas financeiras"
         title="Objetivos"
-        description="Crie metas, marcadores de aporte e acompanhe quanto do extrato foi relacionado a cada objetivo."
+        description="Crie metas, acompanhe o dinheiro guardado e ensine o Fluxa como reconhecer depositos para cada objetivo."
       />
       <GoalsManager
         goals={goals.map((goal) => ({

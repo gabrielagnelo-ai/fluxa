@@ -38,7 +38,7 @@ function CategoryKeywordRow({ category }: { category: CategoryKeywordItem }) {
           <Input name="name" defaultValue={category.name} />
         </label>
         <label className="space-y-1">
-          <span className="text-xs font-medium uppercase text-muted-foreground">Identificadores</span>
+          <span className="text-xs font-medium uppercase text-muted-foreground">Como aparece no banco</span>
           <Input name="keywords" defaultValue={category.keywords.join(", ")} placeholder="IFD*, IFOOD, AMI" />
         </label>
         <div className="flex gap-2 xl:pt-6">
@@ -76,7 +76,7 @@ function NewCategoryForm() {
     <form action={action} className="rounded-lg border border-border bg-muted/20 p-3">
       <div className="grid gap-3 lg:grid-cols-[240px_1fr_auto]">
         <Input name="name" placeholder="Nova categoria" required />
-        <Input name="keywords" placeholder="Identificadores separados por vírgula: IFD*, AMI, SMART FIT" />
+        <Input name="keywords" placeholder="Como aparece no banco: IFD*, AMI, SMART FIT" />
         <Button disabled={pending}>
           <Plus className="size-4" />
           {pending ? "Criando..." : "Criar"}
@@ -94,9 +94,17 @@ function SyncCategoriesButton() {
 
   return (
     <form action={action} className="space-y-2">
-      <Button className="bg-muted text-foreground hover:bg-muted/80" disabled={pending}>
+      <Button
+        className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+        disabled={pending}
+        onClick={(event) => {
+          if (!confirm("Restaurar as regras padrao pode recriar categorias que voce removeu. Deseja continuar?")) {
+            event.preventDefault();
+          }
+        }}
+      >
         <RefreshCw className="size-4" />
-        {pending ? "Sincronizando..." : "Restaurar padrões"}
+        {pending ? "Restaurando..." : "Restaurar regras padrao"}
       </Button>
       <StatusMessage state={state} />
     </form>
@@ -120,8 +128,8 @@ export function CategoryKeywordsManager({ categories }: { categories: CategoryKe
       <CardHeader className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold">Categorias e identificadores</h2>
-            <p className="text-sm text-muted-foreground">Regras usadas para categorizar importações e mensagens do WhatsApp.</p>
+            <h2 className="font-semibold">Como o banco escreve seus gastos</h2>
+            <p className="text-sm text-muted-foreground">Diga ao Fluxa quais nomes do extrato ou WhatsApp viram cada categoria. Ex.: IFD* vira iFood.</p>
           </div>
           <SyncCategoriesButton />
         </div>
@@ -131,7 +139,7 @@ export function CategoryKeywordsManager({ categories }: { categories: CategoryKe
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label className="relative block w-full sm:max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar categoria ou identificador" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar categoria ou nome do banco" />
           </label>
           <p className="text-sm text-muted-foreground">
             {filteredCategories.length} de {categories.length} categoria(s)

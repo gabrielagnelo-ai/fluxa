@@ -2,6 +2,7 @@ import { CreditCard, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
 import { CategoryForecastCard } from "@/components/dashboard/category-forecast-card";
 import { CreditAnalysis } from "@/components/dashboard/credit-analysis";
 import { FinanceCharts } from "@/components/dashboard/finance-charts";
+import { FirstStepsCard } from "@/components/dashboard/first-steps-card";
 import { GoalsEvolution } from "@/components/dashboard/goals-evolution";
 import { InternalAlertsCard } from "@/components/dashboard/internal-alerts-card";
 import { InvestmentSummaryCard } from "@/components/dashboard/investment-summary-card";
@@ -41,6 +42,7 @@ export default async function DashboardPage({
     contributedAmount: goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0)
   }));
   const forecasts = categoryForecast(transactions, evolutionTransactions, period, planningOverview.categoryLimits);
+  const shouldShowFirstSteps = evolutionTransactions.length === 0 && transactions.length === 0;
   const alerts = internalAlerts({
     forecasts,
     goals: goalSnapshots,
@@ -62,6 +64,8 @@ export default async function DashboardPage({
         description={`Resumo de ${getPeriodLabel(period)} com saldo atual, fluxo do mês, categorias, metas e tendência de fechamento. O saldo atual considera entradas menos saídas até o fim do período selecionado.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
+
+      {shouldShowFirstSteps && <FirstStepsCard />}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Saldo atual" value={currentBalance} icon={CreditCard} tone="bg-blue-500/10 text-blue-500" />

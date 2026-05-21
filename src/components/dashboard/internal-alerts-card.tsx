@@ -28,8 +28,8 @@ export function InternalAlertsCard({ alerts }: { alerts: AlertItem[] }) {
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-semibold">Alertas financeiros</h2>
-          <p className="text-sm text-muted-foreground">Avisos internos sobre limites, metas e tendência do mês.</p>
+          <h2 className="font-semibold">O que precisa de atencao</h2>
+          <p className="text-sm text-muted-foreground">Sugestoes praticas para evitar surpresa no fim do mes.</p>
         </div>
         <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
           <Bell className="size-5" />
@@ -38,7 +38,7 @@ export function InternalAlertsCard({ alerts }: { alerts: AlertItem[] }) {
       <CardContent>
         {alerts.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-sm text-muted-foreground">
-            Nenhum alerta relevante agora. Defina limites e metas para o Fluxa monitorar automaticamente.
+            Nenhum ponto de atencao agora. Defina valores previstos e metas para o Fluxa acompanhar automaticamente.
           </div>
         ) : (
           <div className="space-y-2">

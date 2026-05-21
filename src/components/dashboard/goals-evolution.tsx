@@ -55,8 +55,8 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-semibold">Evolução das metas</h2>
-          <p className="text-sm text-muted-foreground">Progresso calculado pelos aportes relacionados na importação.</p>
+          <h2 className="font-semibold">Evolucao das metas</h2>
+          <p className="text-sm text-muted-foreground">Progresso calculado pelo dinheiro guardado identificado no extrato ou WhatsApp.</p>
         </div>
         <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
           <Flag className="size-5" />
@@ -65,7 +65,7 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
       <CardContent className="space-y-5">
         {goals.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-sm text-muted-foreground">
-            Nenhuma meta cadastrada. Crie metas e relacione aportes na importação para acompanhar a evolução aqui.
+            Crie uma meta e registre quando guardar dinheiro. O progresso aparece aqui automaticamente.
           </div>
         ) : (
           <>
@@ -111,7 +111,7 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
                   <div className="h-full animate-pulse rounded-md bg-muted" />
                 ) : evolutionData.length === 0 ? (
                   <div className="grid h-full place-items-center text-center text-sm text-muted-foreground">
-                    Nenhum aporte relacionado ainda.
+                    Nenhum dinheiro guardado identificado ainda.
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">

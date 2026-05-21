@@ -61,7 +61,7 @@ export async function updateCategoryKeywords(formData: FormData) {
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
 
   const userId = await getCurrentUserId();
-  if (!userId) return { error: "Faça login para editar identificadores." };
+  if (!userId) return { error: "Faça login para editar as regras." };
 
   const category = await prisma.category.findFirst({ where: { id: parsed.data.id, userId } });
   if (!category) return { error: "Categoria não encontrada para este usuário." };

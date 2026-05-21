@@ -21,9 +21,9 @@ export function ProjectionCard({
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <h2 className="font-semibold">Previsão de fechamento</h2>
+          <h2 className="font-semibold">Como o mes deve terminar</h2>
           <p className="text-sm text-muted-foreground">
-            Tendência conservadora: receitas já registradas e despesas projetadas pelo ritmo do período.
+            Estimativa simples: dinheiro que ja entrou e gastos projetados pelo ritmo do periodo.
           </p>
         </div>
         <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -32,23 +32,23 @@ export function ProjectionCard({
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-md bg-muted/50 p-3">
-          <p className="text-sm text-muted-foreground">Receita considerada</p>
+          <p className="text-sm text-muted-foreground">Dinheiro que entrou</p>
           <strong className="text-lg">{formatCurrency(projectedIncome)}</strong>
         </div>
         <div className="rounded-md bg-muted/50 p-3">
-          <p className="text-sm text-muted-foreground">Despesa estimada</p>
+          <p className="text-sm text-muted-foreground">Gastos previstos</p>
           <strong className="text-lg">{formatCurrency(projectedExpenses)}</strong>
         </div>
         <div className="rounded-md bg-muted/50 p-3">
-          <p className="text-sm text-muted-foreground">Sobra estimada</p>
+          <p className="text-sm text-muted-foreground">Sobra provavel</p>
           <strong className={projectedSavings < 0 ? "text-lg text-red-500" : "text-lg text-emerald-500"}>{formatCurrency(projectedSavings)}</strong>
         </div>
         <div className="rounded-md border border-border bg-background/40 p-3 sm:col-span-3">
           <div className="flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>
-              Base de cálculo: {elapsedDays} de {totalDays} dia(s) do período.
+              Usando {elapsedDays} de {totalDays} dia(s) do periodo.
             </span>
-            <span>Confiança da tendência: {confidence}</span>
+            <span>Confianca da estimativa: {confidence}</span>
           </div>
         </div>
       </CardContent>

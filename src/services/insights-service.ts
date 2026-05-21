@@ -124,14 +124,14 @@ export function buildLocalInsights(context: InsightContext) {
 
   const overBudget = context.planningGroups.filter((group) => group.planned > 0 && group.actual > group.planned);
   if (overBudget.length > 0) {
-    lines.push(`Atenção para ${overBudget.map((group) => group.name).join(", ")}: o gasto real passou do limite recomendado.`);
+    lines.push(`Voce gastou mais do que planejou em ${overBudget.map((group) => group.name).join(", ")}. Vale revisar esses gastos antes do fim do mes.`);
   } else if (context.planningGroups.length > 0) {
     lines.push("Nenhum grupo do planejamento passou do limite recomendado até agora.");
   }
 
   const activeGoal = [...context.goals].sort((a, b) => b.progress - a.progress)[0];
   if (activeGoal) {
-    lines.push(`Meta mais avançada: ${activeGoal.name}, com ${activeGoal.progress}% concluído por aportes identificados.`);
+    lines.push(`Meta mais avancada: ${activeGoal.name}, com ${activeGoal.progress}% concluido pelo dinheiro guardado identificado.`);
   }
 
   return lines.join("\n\n");
@@ -174,7 +174,7 @@ export function buildNotifications(context: InsightContext): NotificationItem[] 
     .forEach((goal) => {
       notifications.push({
         id: `goal-${goal.name}`,
-        title: `Aporte relacionado: ${goal.name}`,
+        title: `Dinheiro guardado: ${goal.name}`,
         description: `${formatCurrency(goal.contributedAmount)} identificados, ${goal.progress}% da meta.`,
         severity: goal.progress >= 100 ? "success" : "info"
       });
@@ -215,7 +215,7 @@ export async function generateAiInsights(context: InsightContext) {
           role: "user",
           parts: [
             {
-              text: `Você é um analista financeiro pessoal. Analise exatamente o mesmo fluxo financeiro definido no dashboard: período filtrado, receitas, despesas, saldo líquido, origens de crédito, categorias, planejamento e metas. Responda em português do Brasil, de forma objetiva e completa, sem prometer rentabilidade. Use apenas os dados agregados fornecidos. Estruture em: Resumo executivo, Entradas de crédito, Fluxo do período, Categorias, Planejamento, Metas, Recomendações práticas e Próximos passos. Na seção Entradas de crédito, avalie concentração, recorrência provável e dependência de poucas fontes. Termine a resposta com a frase "Fim da análise."\n\nDados agregados:\n${JSON.stringify(context)}`
+              text: `Você é um analista financeiro pessoal falando com uma pessoa leiga. Analise exatamente o mesmo fluxo financeiro definido no dashboard: período filtrado, receitas, despesas, saldo, origens de crédito, categorias, planejamento e metas. Responda em português do Brasil, com linguagem simples, sem jargões técnicos quando houver alternativa melhor. Troque termos como déficit por "ficar no negativo", aporte por "dinheiro guardado" e recorrência por "aparece com frequência". Seja objetivo, completo e prático, sem prometer rentabilidade. Use apenas os dados agregados fornecidos. Estruture em: Resumo executivo, Entradas de crédito, Como o dinheiro saiu, Planejamento, Metas, Recomendações práticas e Próximos passos. Na seção Entradas de crédito, avalie concentração, entradas que parecem adiantamento/vale e dependência de poucas fontes. Termine a resposta com a frase "Fim da análise."\n\nDados agregados:\n${JSON.stringify(context)}`
             }
           ]
         }

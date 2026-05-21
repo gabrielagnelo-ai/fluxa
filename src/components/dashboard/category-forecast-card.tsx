@@ -22,8 +22,8 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-semibold">Previsão por categoria</h2>
-          <p className="text-sm text-muted-foreground">Fechamento estimado por limite, ritmo atual e recorrência.</p>
+          <h2 className="font-semibold">Gastos que merecem atencao</h2>
+          <p className="text-sm text-muted-foreground">Categorias que podem passar do combinado ou ainda nao tem valor previsto.</p>
         </div>
         <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
           <TrendingUp className="size-5" />
@@ -32,13 +32,13 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
       <CardContent>
         {relevantForecasts.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-sm text-muted-foreground">
-            Defina limites no Planejamento ou importe transações para gerar previsões por categoria.
+            Defina valores no Planejamento ou importe transacoes para acompanhar os gastos por categoria.
           </div>
         ) : (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">
-              <SummaryTile label="Categorias em risco" value={String(riskCount)} tone={riskCount > 0 ? "danger" : "success"} />
-              <SummaryTile label="Categorias recorrentes" value={String(recurringCount)} />
+              <SummaryTile label="Precisam de atencao" value={String(riskCount)} tone={riskCount > 0 ? "danger" : "success"} />
+              <SummaryTile label="Gastos frequentes" value={String(recurringCount)} />
               <SummaryTile label="Categorias analisadas" value={String(forecasts.length)} />
             </div>
 
@@ -56,7 +56,7 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
                           {item.recurring && (
                             <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-xs text-muted-foreground">
                               <Repeat2 className="size-3" />
-                              recorrente
+                              aparece sempre
                             </span>
                           )}
                           {item.status !== "ok" && (
@@ -67,17 +67,17 @@ export function CategoryForecastCard({ forecasts }: { forecasts: CategoryForecas
                               )}
                             >
                               <AlertTriangle className="size-3" />
-                              {item.status === "leak" ? "sem limite" : item.status === "over" ? "acima do limite" : "atenção"}
+                              {item.status === "leak" ? "sem valor previsto" : item.status === "over" ? "acima do previsto" : "atencao"}
                             </span>
                           )}
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Realizado {formatCurrency(item.actual)} · estimado {formatCurrency(item.projected)}
+                          Ja gasto {formatCurrency(item.actual)} · possivel fechamento {formatCurrency(item.projected)}
                         </p>
                       </div>
                       <div className="shrink-0 text-left sm:text-right">
-                        <strong className={item.status === "leak" ? "text-red-500" : undefined}>{hasLimit ? `${item.projectedUsage}%` : "crítico"}</strong>
-                        <p className="text-sm text-muted-foreground">{hasLimit ? `limite ${formatCurrency(item.planned)}` : "sem limite definido"}</p>
+                        <strong className={item.status === "leak" ? "text-red-500" : undefined}>{hasLimit ? `${item.projectedUsage}%` : "atenção"}</strong>
+                        <p className="text-sm text-muted-foreground">{hasLimit ? `previsto ${formatCurrency(item.planned)}` : "sem valor previsto"}</p>
                       </div>
                     </div>
                     <div className="mt-3 h-2 rounded-full bg-background">

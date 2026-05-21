@@ -8,9 +8,9 @@ export default async function PlanningPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Orçamento e modelo econômico"
+        eyebrow="Seu plano do mes"
         title="Planejamento"
-        description="Use modelos como 50/30/20 ou 60/30/10 para distribuir sua renda entre necessidades, desejos e metas."
+        description="Defina sua renda e diga quanto pretende gastar em contas essenciais, desejos e dinheiro guardado."
       />
       <EconomicPlanManager overview={overview} />
     </div>

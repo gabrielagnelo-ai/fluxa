@@ -348,8 +348,8 @@ export function internalAlerts({
     const examples = salaryAdvance.descriptions.length ? ` Identificado em: ${salaryAdvance.descriptions.join(", ")}.` : "";
     alerts.push({
       id: "salary-advance-income",
-      title: "Entrada de adiantamento ou vale salarial",
-      description: `${formatMoney(salaryAdvance.total)} entrou como adiantamento/vale. Trate como alerta crítico, porque esse valor pode faltar no próximo salário ou nos próximos meses.${examples}`,
+      title: "Vale ou adiantamento recebido",
+      description: `${formatMoney(salaryAdvance.total)} entrou agora e pode reduzir o salario disponivel do proximo mes.${examples}`,
       severity: "danger"
     });
   }
@@ -360,8 +360,8 @@ export function internalAlerts({
     .forEach((item) => {
       alerts.push({
         id: `category-leak-${item.categoryName}`,
-        title: `${item.categoryName} sem limite definido`,
-        description: `Já houve ${formatMoney(item.actual)} de gasto sem planejamento. Isso é tratado como vazamento de orçamento.`,
+        title: `Crie um limite para ${item.categoryName}`,
+        description: `Voce ja gastou ${formatMoney(item.actual)} nessa categoria, mas ainda nao definiu um valor previsto. Isso ajuda o Fluxa a acompanhar melhor.`,
         severity: "danger"
       });
     });
@@ -372,8 +372,8 @@ export function internalAlerts({
     .forEach((item) => {
       alerts.push({
         id: `category-over-${item.categoryName}`,
-        title: `${item.categoryName} deve estourar o limite`,
-        description: `Fechamento estimado em ${formatMoney(item.projected)} para limite de ${formatMoney(item.planned)}.`,
+        title: `${item.categoryName} pode passar do limite`,
+        description: `Se continuar nesse ritmo, pode chegar a ${formatMoney(item.projected)} para um valor previsto de ${formatMoney(item.planned)}.`,
         severity: "danger"
       });
     });
@@ -396,8 +396,8 @@ export function internalAlerts({
     .forEach((item) => {
       alerts.push({
         id: `recurring-no-limit-${item.categoryName}`,
-        title: `${item.categoryName} parece recorrente`,
-        description: `Apareceu em ${item.months} meses recentes. Vale definir um limite no Planejamento.`,
+        title: `${item.categoryName} aparece com frequencia`,
+        description: `Apareceu em ${item.months} meses recentes. Vale definir um valor previsto no Planejamento.`,
         severity: "info"
       });
     });
@@ -409,15 +409,15 @@ export function internalAlerts({
       if (progress >= 100) {
         alerts.push({
           id: `goal-complete-${goal.name}`,
-          title: `Meta ${goal.name} concluída`,
-          description: `${formatMoney(goal.contributedAmount)} aportados de ${formatMoney(goal.targetAmount)}.`,
+          title: `Meta ${goal.name} concluida`,
+          description: `${formatMoney(goal.contributedAmount)} guardados de ${formatMoney(goal.targetAmount)}.`,
           severity: "success"
         });
       } else if (progress >= 80) {
         alerts.push({
           id: `goal-near-${goal.name}`,
           title: `Meta ${goal.name} está perto`,
-          description: `${progress}% concluído pelos aportes relacionados.`,
+          description: `${progress}% concluido pelo dinheiro guardado identificado.`,
           severity: "info"
         });
       }
@@ -426,8 +426,8 @@ export function internalAlerts({
   if (projectedIncome > 0 && projectedExpenses > projectedIncome) {
     alerts.unshift({
       id: "projected-deficit",
-      title: "Fechamento tende a ficar negativo",
-      description: `Despesas estimadas em ${formatMoney(projectedExpenses)} contra ${formatMoney(projectedIncome)} de receita considerada.`,
+      title: "O mes pode terminar no negativo",
+      description: `Os gastos estimados sao ${formatMoney(projectedExpenses)} contra ${formatMoney(projectedIncome)} de dinheiro entrando.`,
       severity: "danger"
     });
   }

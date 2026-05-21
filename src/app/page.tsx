@@ -14,8 +14,8 @@ const benefits = [
 
 const steps = [
   "Importe extratos bancários ou registre gastos pelo WhatsApp.",
-  "Revise categorias, metas e marcadores identificados automaticamente.",
-  "Acompanhe saldo, limites, metas, projeções e insights em tempo real."
+  "Revise categorias e metas identificadas automaticamente.",
+  "Acompanhe saldo, gastos previstos, metas e insights em tempo real."
 ];
 
 const metrics = [

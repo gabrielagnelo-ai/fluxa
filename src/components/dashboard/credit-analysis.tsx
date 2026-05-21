@@ -19,8 +19,8 @@ export function CreditAnalysis({ origins }: { origins: CreditOrigin[] }) {
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-semibold">Analise das entradas de credito</h2>
-          <p className="text-sm text-muted-foreground">Origem, concentracao e recorrencia das receitas no periodo.</p>
+          <h2 className="font-semibold">De onde veio o dinheiro</h2>
+          <p className="text-sm text-muted-foreground">Principais entradas e quanto cada uma representa no periodo.</p>
         </div>
         <span className="grid size-10 place-items-center rounded-lg bg-emerald-500/10 text-emerald-500">
           <ArrowDownToLine className="size-5" />
@@ -44,7 +44,7 @@ export function CreditAnalysis({ origins }: { origins: CreditOrigin[] }) {
                 {mainOrigin && <p className="text-sm text-muted-foreground">{mainOrigin.share}% das entradas</p>}
               </div>
               <div className="rounded-lg border border-border bg-muted/25 p-4">
-                <p className="text-sm text-muted-foreground">Fontes recorrentes</p>
+                <p className="text-sm text-muted-foreground">Entradas frequentes</p>
                 <strong className="mt-1 block text-2xl">{recurringCount}</strong>
                 <p className="text-sm text-muted-foreground">{origins.length} origem(ns) no periodo</p>
               </div>
@@ -57,7 +57,7 @@ export function CreditAnalysis({ origins }: { origins: CreditOrigin[] }) {
                     <div className="min-w-0">
                       <p className="truncate font-medium" title={origin.name}>{origin.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {origin.count} entrada(s) - {origin.recurring ? "recorrente/provavel" : "pontual"}
+                        {origin.count} entrada(s) - {origin.recurring ? "aparece com frequencia" : "pontual"}
                       </p>
                     </div>
                     <div className="shrink-0 text-right">

@@ -62,13 +62,13 @@ type PlanningOverview = {
 
 const limitTypeLabels = {
   FIXED: "Fixo",
-  VARIABLE: "Variável"
+  VARIABLE: "Variavel"
 };
 
 const filterLabels: Record<LimitFilter, string> = {
   active: "Relevantes",
-  planned: "Com limite",
-  over: "Estouradas",
+  planned: "Com valor",
+  over: "Passou do limite",
   all: "Todas"
 };
 
@@ -118,8 +118,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold">Modelo econômico</h2>
-            <p className="text-sm text-muted-foreground">Defina renda e percentuais. O Fluxa compara com seus gastos reais.</p>
+            <h2 className="font-semibold">Divisao da renda</h2>
+            <p className="text-sm text-muted-foreground">Informe quanto entra no mes e escolha uma divisao simples para acompanhar seus gastos.</p>
           </div>
           <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
             <Calculator className="size-5" />
@@ -139,7 +139,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               <option value="custom">Personalizado</option>
             </select>
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-              {isCustom ? "Ajuste os percentuais. A soma precisa ser 100%." : selectedPreset.description}
+              {isCustom ? "Ajuste os percentuais. A soma precisa ser 100%." : "Necessidades sao contas essenciais. Desejos sao gastos flexiveis. Metas sao dinheiro guardado."}
             </div>
             <Input name="needsPercent" defaultValue={needsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Necessidades %" />
             <Input name="wantsPercent" defaultValue={wantsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Desejos %" />
@@ -156,6 +156,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                   <div>
                     <p className="font-medium">{group.name}</p>
                     <p className="text-sm text-muted-foreground">{group.percent}% da renda</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {group.key === "needs" ? "Ex.: aluguel, luz, mercado" : group.key === "wants" ? "Ex.: delivery, lazer, compras" : "Ex.: reserva e objetivos"}
+                    </p>
                   </div>
                   <strong className={cn("text-sm", group.overLimit ? "text-red-500" : "text-emerald-500")}>{group.usage}%</strong>
                 </div>
@@ -175,9 +178,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
         <Card className="border-red-500/30 bg-red-500/[0.04]">
           <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="font-semibold">Impacto no próximo salário</h2>
+              <h2 className="font-semibold">Impacto no proximo salario</h2>
               <p className="text-sm text-muted-foreground">
-                Adiantamentos e vales deste mês reduzem a renda disponível em {overview.nextMonthImpact.monthLabel}. A sobra abaixo considera todos os limites registrados.
+                Se voce recebeu vale ou adiantamento agora, esse valor pode diminuir o salario disponivel em {overview.nextMonthImpact.monthLabel}.
               </p>
             </div>
             <span className="grid size-10 place-items-center rounded-lg bg-red-500/10 text-red-500">
@@ -186,7 +189,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </CardHeader>
           <CardContent className="space-y-4">
             <section className="grid gap-3 md:grid-cols-4">
-              <CompactMetric icon={CircleDollarSign} label="Salário base" value={formatCurrency(overview.nextMonthImpact.baseIncome)} detail="renda mensal configurada" />
+              <CompactMetric icon={CircleDollarSign} label="Salario base" value={formatCurrency(overview.nextMonthImpact.baseIncome)} detail="renda mensal configurada" />
               <CompactMetric
                 icon={AlertTriangle}
                 label="Adiantamento/vale"
@@ -194,17 +197,17 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                 detail={`${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) identificada(s)`}
                 tone="danger"
               />
-              <CompactMetric icon={WalletCards} label="Salário ajustado" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="estimado para o próximo mês" />
+              <CompactMetric icon={WalletCards} label="Salario ajustado" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="estimado para o proximo mes" />
               <CompactMetric
                 icon={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? AlertTriangle : CheckCircle2}
                 label="Sobra prevista"
                 value={formatCurrency(overview.nextMonthImpact.leftoverAfterPlanned)}
-                detail={`${overview.nextMonthImpact.plannedCount} limite(s) registrado(s)`}
+                detail={`${overview.nextMonthImpact.plannedCount} gasto(s) planejado(s)`}
                 tone={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? "danger" : "success"}
               />
             </section>
             <div className="rounded-lg border border-red-500/20 bg-background/35 px-3 py-2 text-sm text-muted-foreground">
-              Cálculo: salário base menos adiantamento/vale, depois menos os limites definidos em Planejamento. Isso não altera sua renda salva automaticamente.
+              Pense assim: o Fluxa tira do salario o que voce ja recebeu adiantado e os gastos que voce planejou para mostrar quanto pode sobrar.
             </div>
           </CardContent>
         </Card>
@@ -213,8 +216,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold">Limites por categoria</h2>
-            <p className="text-sm text-muted-foreground">Controle somente as categorias importantes. Linhas sem limite e sem gasto ficam fora da visão principal.</p>
+            <h2 className="font-semibold">Gastos previstos por categoria</h2>
+            <p className="text-sm text-muted-foreground">Preencha quanto pretende gastar. O Fluxa compara esse valor com o que aconteceu no mes.</p>
           </div>
           <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
             <SlidersHorizontal className="size-5" />
@@ -226,8 +229,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             <input type="hidden" name="year" value={overview.year} />
 
             <section className="grid gap-3 md:grid-cols-4">
-              <CompactMetric icon={CircleDollarSign} label="Planejado" value={formatCurrency(overview.limitSummary.plannedTotal)} detail={`${overview.limitSummary.plannedCount} com limite`} />
-              <CompactMetric icon={CheckCircle2} label="Realizado" value={formatCurrency(overview.limitSummary.actualWithLimit)} detail="gasto monitorado" />
+              <CompactMetric icon={CircleDollarSign} label="Previsto" value={formatCurrency(overview.limitSummary.plannedTotal)} detail={`${overview.limitSummary.plannedCount} com valor definido`} />
+              <CompactMetric icon={CheckCircle2} label="Ja gasto" value={formatCurrency(overview.limitSummary.actualWithLimit)} detail="gasto acompanhado" />
               <CompactMetric
                 icon={overview.limitSummary.difference < 0 ? AlertTriangle : CheckCircle2}
                 label="Saldo"
@@ -237,7 +240,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               />
               <CompactMetric
                 icon={overview.limitSummary.overLimitCount > 0 ? AlertTriangle : CheckCircle2}
-                label="Estouradas"
+                label="Passaram"
                 value={String(overview.limitSummary.overLimitCount)}
                 detail={`${overview.limitSummary.spentCount} com gasto`}
                 tone={overview.limitSummary.overLimitCount > 0 ? "danger" : "success"}
@@ -260,7 +263,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                   </button>
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">Use “Todas” para criar limite em uma categoria que ainda não apareceu no mês.</p>
+              <p className="text-sm text-muted-foreground">Use Todas para definir um valor em uma categoria que ainda nao apareceu no mes.</p>
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-border">
@@ -269,9 +272,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                   <tr className="border-b border-border">
                     <th className="px-4 py-3 font-medium">Categoria</th>
                     <th className="px-4 font-medium">Tipo</th>
-                    <th className="px-4 font-medium">Limite</th>
-                    <th className="px-4 text-right font-medium">Gasto</th>
-                    <th className="px-4 font-medium">Situação</th>
+                    <th className="px-4 font-medium">Valor previsto</th>
+                    <th className="px-4 text-right font-medium">Ja gasto</th>
+                    <th className="px-4 font-medium">Situacao</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,7 +287,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alterações..." : "As mudanças salvam ao alterar o tipo ou sair do campo de valor."}</p>
+              <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alteracoes..." : "As mudancas salvam ao alterar o tipo ou sair do campo de valor."}</p>
               <Button disabled={limitPending}>{limitPending ? "Salvando..." : "Salvar limites"}</Button>
             </div>
             {limitState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{limitState.error}</p>}
@@ -421,8 +424,8 @@ function CompactMetric({
 function getLimitStatus(item: PlanningOverview["categoryLimits"][number]) {
   if (item.planned <= 0) {
     return {
-      label: "Sem limite",
-      detail: item.actual > 0 ? "Gasto sem meta definida" : "Sem movimento no mês",
+      label: "Sem valor",
+      detail: item.actual > 0 ? "Gasto sem valor previsto" : "Sem movimento no mes",
       barClass: "bg-muted",
       textClass: "text-muted-foreground"
     };
@@ -431,7 +434,7 @@ function getLimitStatus(item: PlanningOverview["categoryLimits"][number]) {
   if (item.actual > item.planned) {
     return {
       label: `${item.usage}%`,
-      detail: `${formatCurrency(Math.abs(item.difference))} acima do limite`,
+      detail: `${formatCurrency(Math.abs(item.difference))} acima do previsto`,
       barClass: "bg-red-500",
       textClass: "text-red-500"
     };
