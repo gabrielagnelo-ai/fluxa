@@ -1,6 +1,6 @@
 import { categorizeDescription } from "@/services/category-service";
 
-const expenseWords = ["gastei", "paguei", "comprei", "saiu", "despesa", "debito", "débito"];
+const expenseWords = ["gastei", "gaste", "gatei", "gatiei", "paguei", "comprei", "saiu", "despesa", "debito", "débito"];
 const incomeWords = ["recebi", "entrou", "ganhei", "salario", "salário", "receita"];
 const goalContributionWords = [
   "guardei",
@@ -19,7 +19,9 @@ const goalContributionWords = [
   "juntar"
 ];
 const disposableWords =
-  /\b(eu|r\$|reais|real|hoje|ontem|no|na|nos|nas|em|de|do|da|dos|das|para|pra|a|ao|aos|com|um|uma|o|os|as)\b/gi;
+  /\b(eu|r\$|reais|real|hoje|ontem|dia|data|no|na|nos|nas|em|de|do|da|dos|das|para|pra|a|ao|aos|com|um|uma|o|os|as)\b/gi;
+const commandWords =
+  /\b(gastei|gaste|gatei|gatiei|paguei|comprei|recebi|entrou|ganhei|guardei|guarde|guardar|aportei|aporte|aportar|reservei|reserve|poupei|poupar|coloquei|colocar|juntei|juntar|saiu|despesa|debito|d[ée]bito|salario|sal[áa]rio|receita)\b/gi;
 
 function parseAmount(text: string) {
   const match = text.match(/(?:r\$\s*)?(\d{1,6}(?:[.,]\d{1,2})?)/i);
@@ -60,13 +62,15 @@ function inferDate(text: string) {
   return now;
 }
 
-function cleanDescription(text: string) {
+export function cleanWhatsAppDescription(text: string) {
   return text
-    .replace(/(?:r\$\s*)?\d{1,6}(?:[.,]\d{1,2})?/gi, "")
-    .replace(
-      /\b(gastei|paguei|comprei|recebi|entrou|ganhei|guardei|guarde|guardar|aportei|aporte|aportar|reservei|reserve|poupei|poupar|coloquei|colocar|juntei|juntar|hoje|ontem|no|na|nos|nas|em|de|do|da|dos|das|para|pra|com|reais|real)\b/gi,
-      " "
-    )
+    .replace(/^whatsapp\s*-\s*/i, "")
+    .replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g, " ")
+    .replace(/(?:r\$\s*)?\d{1,6}(?:[.,]\d{1,2})?/gi, " ")
+    .replace(commandWords, " ")
+    .replace(disposableWords, " ")
+    .replace(/[|/\\;:_-]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s*]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -77,8 +81,10 @@ function extractGoalQuery(text: string) {
   const rawTarget = targetMatch?.[1] ?? withoutAmount;
 
   return rawTarget
-    .replace(/\b(guardei|guarde|guardar|aportei|aporte|aportar|reservei|reserve|poupei|poupar|coloquei|colocar|juntei|juntar)\b/gi, " ")
+    .replace(commandWords, " ")
     .replace(disposableWords, " ")
+    .replace(/[|/\\;:_-]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s*]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -87,7 +93,7 @@ export function parseWhatsAppTransaction(text: string) {
   const amount = parseAmount(text);
   if (!amount) return null;
 
-  const description = cleanDescription(text) || text.trim();
+  const description = cleanWhatsAppDescription(text) || text.trim();
   const goalQueryText = isGoalContributionText(text) ? extractGoalQuery(text) : undefined;
   const goalQuery = goalQueryText !== undefined ? goalQueryText || "meta informada" : undefined;
   const type = goalQuery ? "EXPENSE" : inferType(text);
