@@ -173,11 +173,22 @@ export async function getCurrentBalanceUntil(end: Date) {
   const userId = await getCurrentUserId();
   if (!userId) return 0;
 
+  const baseline = await prisma.balanceBaseline.findUnique({
+    where: { userId },
+    select: { date: true, amount: true }
+  });
+  const useBaseline = baseline && baseline.date <= end;
+
   const totals = await prisma.transaction.groupBy({
     by: ["type"],
     where: {
       userId,
-      date: { lte: end }
+      date: useBaseline
+        ? {
+            gte: baseline.date,
+            lte: end
+          }
+        : { lte: end }
     },
     _sum: {
       amount: true
@@ -187,7 +198,31 @@ export async function getCurrentBalanceUntil(end: Date) {
   return totals.reduce((balance, total) => {
     const amount = Number(total._sum.amount ?? 0);
     return total.type === "INCOME" ? balance + amount : balance - amount;
-  }, 0);
+  }, useBaseline ? Number(baseline.amount) : 0);
+}
+
+export async function getBalanceBaselineForCurrentUser() {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const baseline = await prisma.balanceBaseline.findUnique({
+    where: { userId },
+    select: {
+      date: true,
+      amount: true,
+      note: true,
+      updatedAt: true
+    }
+  });
+
+  if (!baseline) return null;
+
+  return {
+    date: baseline.date.toISOString(),
+    amount: Number(baseline.amount),
+    note: baseline.note ?? undefined,
+    updatedAt: baseline.updatedAt.toISOString()
+  };
 }
 
 export async function getGoalsForCurrentUser() {
