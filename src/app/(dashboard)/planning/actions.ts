@@ -112,8 +112,27 @@ async function persistCategoryLimit({
   if (!category) return { error: "Categoria inválida." };
 
   if (amount === 0) {
-    await prisma.categoryLimit.deleteMany({
-      where: { userId, categoryId, month, year }
+    await prisma.categoryLimit.upsert({
+      where: {
+        userId_categoryId_month_year: {
+          userId,
+          categoryId,
+          month,
+          year
+        }
+      },
+      update: {
+        amount: 0,
+        type
+      },
+      create: {
+        userId,
+        categoryId,
+        month,
+        year,
+        amount: 0,
+        type
+      }
     });
     return { success: "Limite removido." };
   }
@@ -201,17 +220,6 @@ export async function saveCategoryLimits(formData: FormData) {
     const amount = parseMoneyInput(amounts[index]);
     const type = limitTypeSchema.safeParse(types[index]);
     if (!Number.isFinite(amount) || amount < 0 || !type.success) return [];
-
-    if (amount === 0) {
-      return prisma.categoryLimit.deleteMany({
-        where: {
-          userId,
-          categoryId,
-          month: month.data,
-          year: year.data
-        }
-      });
-    }
 
     return prisma.categoryLimit.upsert({
       where: {
@@ -334,12 +342,33 @@ export async function deleteCategoryLimit(formData: FormData) {
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Faca login para remover limites." };
 
-  await prisma.categoryLimit.deleteMany({
+  const category = await prisma.category.findFirst({
+    where: { id: parsed.data.categoryId, userId },
+    select: { id: true }
+  });
+
+  if (!category) return { error: "Categoria invalida." };
+
+  await prisma.categoryLimit.upsert({
     where: {
+      userId_categoryId_month_year: {
+        userId,
+        categoryId: parsed.data.categoryId,
+        month: parsed.data.month,
+        year: parsed.data.year
+      }
+    },
+    update: {
+      amount: 0,
+      type: "VARIABLE"
+    },
+    create: {
       userId,
       categoryId: parsed.data.categoryId,
       month: parsed.data.month,
-      year: parsed.data.year
+      year: parsed.data.year,
+      amount: 0,
+      type: "VARIABLE"
     }
   });
 
