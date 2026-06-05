@@ -55,6 +55,7 @@ function emptyOverview(month: number, year: number) {
       remaining: 0,
       availableForGoals: 0
     },
+    plannedItems: [],
     goals: [],
     nextMonthImpact: {
       monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(selectedMonth),
@@ -113,7 +114,7 @@ export async function getPlanningOverview(date = new Date()) {
   const end = new Date(year, month, 1);
   const previousStart = new Date(year, month - 2, 1);
   const previousEnd = new Date(year, month - 1, 1);
-  const [plan, fallbackPlan, transactions, previousTransactions, contributions, categories, limits, fallbackLimitPeriod, goals] = await Promise.all([
+  const [plan, fallbackPlan, transactions, previousTransactions, contributions, categories, limits, fallbackLimitPeriod, plannedExpenses, goals] = await Promise.all([
     prisma.spendingPlan.findUnique({ where: { userId_month_year: { userId, month, year } } }),
     findPreviousPlan(userId, month, year),
     prisma.transaction.findMany({
@@ -138,6 +139,11 @@ export async function getPlanningOverview(date = new Date()) {
       select: { categoryId: true, amount: true, type: true }
     }),
     findPreviousLimitPeriod(userId, month, year),
+    prisma.plannedExpense.findMany({
+      where: { userId, month, year },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, name: true, amount: true, type: true, note: true }
+    }),
     prisma.goal.findMany({
       where: { userId, status: "ACTIVE" },
       include: { contributions: true },
@@ -219,10 +225,33 @@ export async function getPlanningOverview(date = new Date()) {
     spentCount: categoryLimits.filter((item) => item.actual > 0).length
   };
   const plannedNextMonthLimits = categoryLimits.filter((item) => item.planned > 0);
-  const plannedExpenses = plannedNextMonthLimits.reduce((sum, item) => sum + item.planned, 0);
+  const plannedExpenseItems = plannedExpenses.map((item) => ({
+    id: item.id,
+    name: item.name,
+    planned: Number(item.amount),
+    actual: 0,
+    difference: Number(item.amount),
+    usage: 0,
+    type: item.type === "FIXED" ? ("FIXED" as const) : ("VARIABLE" as const),
+    source: "manual" as const,
+    note: item.note ?? undefined
+  }));
+  const plannedCategoryItems = plannedNextMonthLimits.map((item) => ({
+    id: item.categoryId,
+    name: item.categoryName,
+    planned: item.planned,
+    actual: item.actual,
+    difference: item.difference,
+    usage: item.usage,
+    type: item.type === "FIXED" ? ("FIXED" as const) : ("VARIABLE" as const),
+    source: "category" as const,
+    note: undefined
+  }));
+  const plannedItems = [...plannedCategoryItems, ...plannedExpenseItems];
+  const plannedExpensesTotal = plannedItems.reduce((sum, item) => sum + item.planned, 0);
   const adjustedIncome = Math.max(0, monthlyIncome - salaryAdvance.total);
-  const fixedPlanned = plannedNextMonthLimits.filter((item) => item.type === "FIXED").reduce((sum, item) => sum + item.planned, 0);
-  const variablePlanned = plannedNextMonthLimits.filter((item) => item.type !== "FIXED").reduce((sum, item) => sum + item.planned, 0);
+  const fixedPlanned = plannedItems.filter((item) => item.type === "FIXED").reduce((sum, item) => sum + item.planned, 0);
+  const variablePlanned = plannedItems.filter((item) => item.type !== "FIXED").reduce((sum, item) => sum + item.planned, 0);
   const availableForGoals = adjustedIncome - fixedPlanned - variablePlanned;
   const selectedMonth = new Date(year, month - 1, 1);
   const planSource = plan
@@ -277,11 +306,12 @@ export async function getPlanningOverview(date = new Date()) {
     paymentPlan: {
       fixedPlanned,
       variablePlanned,
-      totalPlanned: plannedExpenses,
-      paid: plannedNextMonthLimits.reduce((sum, item) => sum + item.actual, 0),
-      remaining: plannedNextMonthLimits.reduce((sum, item) => sum + Math.max(0, item.planned - item.actual), 0),
+      totalPlanned: plannedExpensesTotal,
+      paid: plannedItems.reduce((sum, item) => sum + item.actual, 0),
+      remaining: plannedItems.reduce((sum, item) => sum + Math.max(0, item.planned - item.actual), 0),
       availableForGoals
     },
+    plannedItems,
     goals: goals.map((goal) => {
       const contributedAmount = goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0);
       const savedAmount = Number(goal.currentAmount) + contributedAmount;
@@ -300,9 +330,9 @@ export async function getPlanningOverview(date = new Date()) {
       salaryAdvanceTotal: salaryAdvance.total,
       salaryAdvanceCount: salaryAdvance.count,
       adjustedIncome,
-      plannedExpenses,
-      plannedCount: plannedNextMonthLimits.length,
-      leftoverAfterPlanned: adjustedIncome - plannedExpenses,
+      plannedExpenses: plannedExpensesTotal,
+      plannedCount: plannedItems.length,
+      leftoverAfterPlanned: adjustedIncome - plannedExpensesTotal,
       hasSalaryAdvance: salaryAdvance.total > 0
     }
   };

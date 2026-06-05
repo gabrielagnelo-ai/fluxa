@@ -244,3 +244,99 @@ export async function saveCategoryLimits(formData: FormData) {
   revalidatePath("/insights");
   return { success: "Limites por categoria salvos." };
 }
+
+const plannedExpenseSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2020).max(2100),
+  name: z.string().trim().min(2, "Informe o nome da conta."),
+  amount: z.string().min(1, "Informe o valor."),
+  type: limitTypeSchema,
+  note: z.string().trim().optional()
+});
+
+export async function createPlannedExpense(_previousState: unknown, formData: FormData) {
+  const parsed = plannedExpenseSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Conta invalida." };
+
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "Faca login para salvar contas planejadas." };
+
+  const amount = parseMoneyInput(parsed.data.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return { error: "Informe um valor maior que zero." };
+
+  await prisma.plannedExpense.create({
+    data: {
+      userId,
+      month: parsed.data.month,
+      year: parsed.data.year,
+      name: parsed.data.name,
+      amount,
+      type: parsed.data.type,
+      note: parsed.data.note || null
+    }
+  });
+
+  revalidatePath("/planning");
+  revalidatePath("/dashboard");
+  revalidatePath("/insights");
+  return { success: "Conta planejada adicionada." };
+}
+
+const updatePlannedExpenseSchema = plannedExpenseSchema
+  .omit({ month: true, year: true })
+  .extend({
+    id: z.string().min(1)
+  });
+
+export async function updatePlannedExpense(_previousState: unknown, formData: FormData) {
+  const parsed = updatePlannedExpenseSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Conta invalida." };
+
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "Faca login para editar contas planejadas." };
+
+  const amount = parseMoneyInput(parsed.data.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return { error: "Informe um valor maior que zero." };
+
+  await prisma.plannedExpense.updateMany({
+    where: {
+      id: parsed.data.id,
+      userId
+    },
+    data: {
+      name: parsed.data.name,
+      amount,
+      type: parsed.data.type,
+      note: parsed.data.note || null
+    }
+  });
+
+  revalidatePath("/planning");
+  revalidatePath("/dashboard");
+  revalidatePath("/insights");
+  return { success: "Conta planejada atualizada." };
+}
+
+const deletePlannedExpenseSchema = z.object({
+  id: z.string().min(1)
+});
+
+export async function deletePlannedExpense(formData: FormData) {
+  const parsed = deletePlannedExpenseSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Conta invalida." };
+
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "Faca login para excluir." };
+
+  await prisma.plannedExpense.deleteMany({
+    where: {
+      id: parsed.data.id,
+      userId
+    }
+  });
+
+  revalidatePath("/planning");
+  revalidatePath("/dashboard");
+  revalidatePath("/insights");
+  return { success: "Conta removida." };
+}
