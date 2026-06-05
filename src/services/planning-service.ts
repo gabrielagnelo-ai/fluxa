@@ -24,11 +24,13 @@ function groupCategoryByLimit(type?: "FIXED" | "VARIABLE" | "GOAL", categoryName
 }
 
 function emptyOverview(month: number, year: number) {
-  const nextMonth = new Date(year, month, 1);
+  const selectedMonth = new Date(year, month - 1, 1);
 
   return {
     month,
     year,
+    monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(selectedMonth),
+    planSource: null,
     plan: null,
     actualIncome: 0,
     groups: [
@@ -46,7 +48,7 @@ function emptyOverview(month: number, year: number) {
       spentCount: 0
     },
     nextMonthImpact: {
-      monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(nextMonth),
+      monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(selectedMonth),
       baseIncome: 0,
       salaryAdvanceTotal: 0,
       salaryAdvanceCount: 0,
@@ -59,6 +61,38 @@ function emptyOverview(month: number, year: number) {
   };
 }
 
+async function findPreviousPlan(userId: string, month: number, year: number) {
+  return prisma.spendingPlan.findFirst({
+    where: {
+      userId,
+      OR: [{ year: { lt: year } }, { year, month: { lt: month } }]
+    },
+    orderBy: [{ year: "desc" }, { month: "desc" }]
+  });
+}
+
+async function findPreviousLimitPeriod(userId: string, month: number, year: number) {
+  const latestLimit = await prisma.categoryLimit.findFirst({
+    where: {
+      userId,
+      OR: [{ year: { lt: year } }, { year, month: { lt: month } }]
+    },
+    orderBy: [{ year: "desc" }, { month: "desc" }],
+    select: { month: true, year: true }
+  });
+
+  if (!latestLimit) return { limits: [], source: null as string | null };
+
+  const limits = await prisma.categoryLimit.findMany({
+    where: { userId, month: latestLimit.month, year: latestLimit.year },
+    select: { categoryId: true, amount: true, type: true }
+  });
+
+  const source = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(latestLimit.year, latestLimit.month - 1, 1));
+
+  return { limits, source };
+}
+
 export async function getPlanningOverview(date = new Date()) {
   const userId = await getCurrentUserId();
   const month = date.getMonth() + 1;
@@ -68,10 +102,17 @@ export async function getPlanningOverview(date = new Date()) {
 
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
-  const [plan, transactions, contributions, categories, limits] = await Promise.all([
+  const previousStart = new Date(year, month - 2, 1);
+  const previousEnd = new Date(year, month - 1, 1);
+  const [plan, fallbackPlan, transactions, previousTransactions, contributions, categories, limits, fallbackLimitPeriod] = await Promise.all([
     prisma.spendingPlan.findUnique({ where: { userId_month_year: { userId, month, year } } }),
+    findPreviousPlan(userId, month, year),
     prisma.transaction.findMany({
       where: { userId, date: { gte: start, lt: end } },
+      include: { category: true }
+    }),
+    prisma.transaction.findMany({
+      where: { userId, date: { gte: previousStart, lt: previousEnd } },
       include: { category: true }
     }),
     prisma.goalContribution.findMany({
@@ -86,12 +127,13 @@ export async function getPlanningOverview(date = new Date()) {
     prisma.categoryLimit.findMany({
       where: { userId, month, year },
       select: { categoryId: true, amount: true, type: true }
-    })
+    }),
+    findPreviousLimitPeriod(userId, month, year)
   ]);
 
   const actualIncome = transactions.filter((transaction) => transaction.type === "INCOME").reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   const salaryAdvance = salaryAdvanceCredits(
-    transactions.map((transaction) => ({
+    previousTransactions.map((transaction) => ({
       date: transaction.date.toISOString(),
       description: transaction.description,
       amount: Number(transaction.amount),
@@ -100,10 +142,11 @@ export async function getPlanningOverview(date = new Date()) {
       source: transaction.source ?? undefined
     }))
   );
-  const monthlyIncome = plan ? Number(plan.monthlyIncome) : actualIncome;
-  const needsPercent = plan?.needsPercent ?? 50;
-  const wantsPercent = plan?.wantsPercent ?? 30;
-  const savingsPercent = plan?.savingsPercent ?? 20;
+  const effectivePlan = plan ?? fallbackPlan;
+  const monthlyIncome = effectivePlan ? Number(effectivePlan.monthlyIncome) : actualIncome;
+  const needsPercent = effectivePlan?.needsPercent ?? 50;
+  const wantsPercent = effectivePlan?.wantsPercent ?? 30;
+  const savingsPercent = effectivePlan?.savingsPercent ?? 20;
   const savingsTransactionIds = new Set(contributions.map((contribution) => contribution.transactionId));
   const actual = {
     needs: 0,
@@ -112,6 +155,7 @@ export async function getPlanningOverview(date = new Date()) {
   };
   const actualByCategory = new Map<string, number>();
   const limitByCategory = new Map(limits.map((limit) => [limit.categoryId, limit]));
+  const fallbackLimitByCategory = new Map(fallbackLimitPeriod.limits.map((limit) => [limit.categoryId, limit]));
 
   transactions
     .filter((transaction) => transaction.type === "EXPENSE")
@@ -134,7 +178,9 @@ export async function getPlanningOverview(date = new Date()) {
     .filter((category) => !hiddenPlanningCategories.has(categoryKey(category.name)))
     .map((category) => {
       const limit = limitByCategory.get(category.id);
-      const planned = Number(limit?.amount ?? 0);
+      const fallbackLimit = fallbackLimitByCategory.get(category.id);
+      const effectiveLimit = limit ?? fallbackLimit;
+      const planned = Number(effectiveLimit?.amount ?? 0);
       const actualAmount = actualByCategory.get(category.id) ?? 0;
       const difference = planned - actualAmount;
       const usage = planned > 0 ? Math.round((actualAmount / planned) * 100) : 0;
@@ -146,7 +192,7 @@ export async function getPlanningOverview(date = new Date()) {
         actual: actualAmount,
         difference,
         usage,
-        type: limit?.type ?? inferLimitType(category.name)
+        type: effectiveLimit?.type ?? inferLimitType(category.name)
       };
     });
   const plannedLimits = categoryLimits.filter((item) => item.planned > 0);
@@ -161,16 +207,25 @@ export async function getPlanningOverview(date = new Date()) {
   const plannedNextMonthLimits = categoryLimits.filter((item) => item.planned > 0);
   const plannedExpenses = plannedNextMonthLimits.reduce((sum, item) => sum + item.planned, 0);
   const adjustedIncome = Math.max(0, monthlyIncome - salaryAdvance.total);
-  const nextMonth = new Date(year, month, 1);
+  const selectedMonth = new Date(year, month - 1, 1);
+  const planSource = plan
+    ? "salvo neste mes"
+    : fallbackPlan
+      ? `copiado de ${new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(fallbackPlan.year, fallbackPlan.month - 1, 1))}`
+      : fallbackLimitPeriod.source
+        ? `limites copiados de ${fallbackLimitPeriod.source}`
+        : null;
 
   return {
     month,
     year,
-    plan: plan
+    monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(selectedMonth),
+    planSource,
+    plan: effectivePlan
       ? {
-          id: plan.id,
+          id: effectivePlan.id,
           monthlyIncome,
-          model: plan.model,
+          model: effectivePlan.model,
           needsPercent,
           wantsPercent,
           savingsPercent
@@ -203,7 +258,7 @@ export async function getPlanningOverview(date = new Date()) {
     categoryLimits,
     limitSummary,
     nextMonthImpact: {
-      monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(nextMonth),
+      monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(selectedMonth),
       baseIncome: monthlyIncome,
       salaryAdvanceTotal: salaryAdvance.total,
       salaryAdvanceCount: salaryAdvance.count,

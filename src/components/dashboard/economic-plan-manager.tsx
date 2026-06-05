@@ -15,6 +15,8 @@ type LimitFilter = "active" | "planned" | "over" | "all";
 type PlanningOverview = {
   month: number;
   year: number;
+  monthLabel: string;
+  planSource: string | null;
   plan: {
     monthlyIncome: number;
     model: string;
@@ -149,6 +151,12 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary xl:col-span-7">{state.success}</p>}
           </form>
 
+          {overview.planSource && (
+            <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary">
+              Base deste mes: {overview.planSource}. Ajuste os valores e clique em Salvar para gravar o planejamento de {overview.monthLabel}.
+            </p>
+          )}
+
           <section className="grid gap-3 md:grid-cols-3">
             {modelUsage.map((group) => (
               <div key={group.key} className="rounded-lg border border-border bg-background/35 p-3">
@@ -174,44 +182,46 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
         </CardContent>
       </Card>
 
-      {overview.nextMonthImpact.hasSalaryAdvance && (
-        <Card className="border-red-500/30 bg-red-500/[0.04]">
+      <Card className={cn(overview.nextMonthImpact.hasSalaryAdvance && "border-red-500/30 bg-red-500/[0.04]")}>
           <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="font-semibold">Impacto no proximo salario</h2>
+              <h2 className="font-semibold">Projecao de {overview.nextMonthImpact.monthLabel}</h2>
               <p className="text-sm text-muted-foreground">
-                Se voce recebeu vale ou adiantamento agora, esse valor pode diminuir o salario disponivel em {overview.nextMonthImpact.monthLabel}.
+                Veja quanto pode sobrar considerando sua renda, vales ou adiantamentos do mes anterior e os gastos previstos.
               </p>
             </div>
-            <span className="grid size-10 place-items-center rounded-lg bg-red-500/10 text-red-500">
+            <span className={cn("grid size-10 place-items-center rounded-lg", overview.nextMonthImpact.hasSalaryAdvance ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary")}>
               <WalletCards className="size-5" />
             </span>
           </CardHeader>
           <CardContent className="space-y-4">
             <section className="grid gap-3 md:grid-cols-4">
-              <CompactMetric icon={CircleDollarSign} label="Salario base" value={formatCurrency(overview.nextMonthImpact.baseIncome)} detail="renda mensal configurada" />
+              <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.baseIncome)} detail="renda mensal configurada" />
               <CompactMetric
                 icon={AlertTriangle}
                 label="Adiantamento/vale"
                 value={`-${formatCurrency(overview.nextMonthImpact.salaryAdvanceTotal)}`}
-                detail={`${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) identificada(s)`}
-                tone="danger"
+                detail={
+                  overview.nextMonthImpact.salaryAdvanceCount > 0
+                    ? `${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) no mes anterior`
+                    : "nenhum vale identificado"
+                }
+                tone={overview.nextMonthImpact.salaryAdvanceTotal > 0 ? "danger" : "neutral"}
               />
-              <CompactMetric icon={WalletCards} label="Salario ajustado" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="estimado para o proximo mes" />
+              <CompactMetric icon={WalletCards} label="Gastos previstos" value={formatCurrency(overview.nextMonthImpact.plannedExpenses)} detail={`${overview.nextMonthImpact.plannedCount} categoria(s) planejada(s)`} />
               <CompactMetric
                 icon={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? AlertTriangle : CheckCircle2}
                 label="Sobra prevista"
                 value={formatCurrency(overview.nextMonthImpact.leftoverAfterPlanned)}
-                detail={`${overview.nextMonthImpact.plannedCount} gasto(s) planejado(s)`}
+                detail="renda ajustada menos gastos previstos"
                 tone={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? "danger" : "success"}
               />
             </section>
-            <div className="rounded-lg border border-red-500/20 bg-background/35 px-3 py-2 text-sm text-muted-foreground">
-              Pense assim: o Fluxa tira do salario o que voce ja recebeu adiantado e os gastos que voce planejou para mostrar quanto pode sobrar.
+            <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-sm text-muted-foreground">
+              Pense assim: renda planejada menos vales/adiantamentos do mes anterior, depois menos todos os valores previstos nas categorias.
             </div>
           </CardContent>
         </Card>
-      )}
 
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
