@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Calculator, CheckCircle2, CircleDollarSign, ListChecks, Plus, SlidersHorizontal, Target, Trash2, WalletCards, type LucideIcon } from "lucide-react";
-import { createPlannedExpense, deletePlannedExpense, saveCategoryLimit, saveCategoryLimits, updatePlannedExpense, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
+import { createPlannedExpense, deleteCategoryLimit, deletePlannedExpense, saveCategoryLimit, saveCategoryLimits, updatePlannedExpense, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -189,8 +189,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
           <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="grid gap-3 md:grid-cols-2">
-              <BillList title="Contas fixas" description="O que costuma ser obrigatorio pagar." items={fixedBills} emptyText="Nenhuma conta fixa marcada ainda." />
-              <BillList title="Gastos combinados" description="Limites flexiveis para controlar o mes." items={variableBills} emptyText="Nenhum gasto variavel planejado ainda." />
+              <BillList title="Contas fixas" description="O que costuma ser obrigatorio pagar." items={fixedBills} month={overview.month} year={overview.year} emptyText="Nenhuma conta fixa marcada ainda." />
+              <BillList title="Gastos combinados" description="Limites flexiveis para controlar o mes." items={variableBills} month={overview.month} year={overview.year} emptyText="Nenhum gasto variavel planejado ainda." />
             </div>
             <GoalPlanCard goals={overview.goals} availableForGoals={overview.paymentPlan.availableForGoals} />
           </section>
@@ -393,11 +393,15 @@ function BillList({
   title,
   description,
   items,
+  month,
+  year,
   emptyText
 }: {
   title: string;
   description: string;
   items: PlanningOverview["plannedItems"];
+  month: number;
+  year: number;
   emptyText: string;
 }) {
   const total = items.reduce((sum, item) => sum + item.planned, 0);
@@ -429,9 +433,12 @@ function BillList({
                     {formatCurrency(item.actual)} pago de {formatCurrency(item.planned)}
                   </p>
                 </div>
-                <span className={cn("rounded-full px-2 py-1 text-xs font-semibold", paid ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-400/10 text-amber-300")}>
-                  {paid ? "pago" : `${formatCurrency(Math.max(0, remaining))} falta`}
-                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className={cn("rounded-full px-2 py-1 text-xs font-semibold", paid ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-400/10 text-amber-300")}>
+                    {paid ? "pago" : `${formatCurrency(Math.max(0, remaining))} falta`}
+                  </span>
+                  <DeleteCategoryLimitButton categoryId={item.id} month={month} year={year} />
+                </div>
               </div>
               <div className="mt-2 h-2 rounded-full bg-background">
                 <div className={cn("h-2 rounded-full", paid ? "bg-emerald-500" : "bg-primary")} style={{ width: `${Math.min(100, item.usage)}%` }} />
@@ -448,25 +455,29 @@ function PlannedExpenseInlineForm({ item }: { item: PlanningOverview["plannedIte
   const [state, action, pending] = useActionState(updatePlannedExpense, undefined as { error?: string; success?: string } | undefined);
 
   return (
-    <form action={action} className="rounded-lg border border-border/70 bg-card/40 p-3">
-      <input type="hidden" name="id" value={item.id} />
-      <input type="hidden" name="note" value={item.note ?? ""} />
-      <div className="grid gap-2 md:grid-cols-[1fr_120px_120px_auto_auto]">
-        <Input name="name" defaultValue={item.name} aria-label="Nome da conta planejada" />
-        <Input name="amount" defaultValue={item.planned.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} inputMode="decimal" aria-label="Valor planejado" />
-        <select name="type" defaultValue={item.type} className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
-          <option value="FIXED">Fixo</option>
-          <option value="VARIABLE">Variavel</option>
-        </select>
-        <Button disabled={pending} className="h-10 px-3 text-sm">
-          {pending ? "Salvando..." : "Salvar"}
+    <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+      <form action={action} className="space-y-2">
+        <input type="hidden" name="id" value={item.id} />
+        <input type="hidden" name="note" value={item.note ?? ""} />
+        <Input name="name" defaultValue={item.name} aria-label="Nome da conta planejada" placeholder="Nome da conta" />
+        <div className="grid grid-cols-[1fr_120px] gap-2">
+          <Input name="amount" defaultValue={item.planned.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} inputMode="decimal" aria-label="Valor planejado" />
+          <select name="type" defaultValue={item.type} className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
+            <option value="FIXED">Fixo</option>
+            <option value="VARIABLE">Variavel</option>
+          </select>
+        </div>
+        <Button disabled={pending} className="h-10 w-full px-3 text-sm">
+          {pending ? "Salvando..." : "Salvar alteracoes"}
         </Button>
+      </form>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">Conta adicionada manualmente</p>
         <DeletePlannedExpenseButton id={item.id} />
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">Conta adicionada manualmente</p>
       {state?.error && <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{state.error}</p>}
       {state?.success && <p className="mt-2 rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">{state.success}</p>}
-    </form>
+    </div>
   );
 }
 
@@ -515,6 +526,30 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
         })}
       </div>
     </div>
+  );
+}
+
+function DeleteCategoryLimitButton({ categoryId, month, year }: { categoryId: string; month: number; year: number }) {
+  const [, action, pending] = useActionState(
+    async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => deleteCategoryLimit(formData),
+    undefined
+  );
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="categoryId" value={categoryId} />
+      <input type="hidden" name="month" value={month} />
+      <input type="hidden" name="year" value={year} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="grid size-7 place-items-center rounded-lg border border-red-500/20 text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+        aria-label="Remover limite desta categoria"
+        title="Remover limite desta categoria"
+      >
+        <Trash2 className="size-3.5" />
+      </button>
+    </form>
   );
 }
 

@@ -321,6 +321,34 @@ const deletePlannedExpenseSchema = z.object({
   id: z.string().min(1)
 });
 
+const deleteCategoryLimitSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2020).max(2100),
+  categoryId: z.string().min(1)
+});
+
+export async function deleteCategoryLimit(formData: FormData) {
+  const parsed = deleteCategoryLimitSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Limite invalido." };
+
+  const userId = await getCurrentUserId();
+  if (!userId) return { error: "Faca login para remover limites." };
+
+  await prisma.categoryLimit.deleteMany({
+    where: {
+      userId,
+      categoryId: parsed.data.categoryId,
+      month: parsed.data.month,
+      year: parsed.data.year
+    }
+  });
+
+  revalidatePath("/planning");
+  revalidatePath("/dashboard");
+  revalidatePath("/insights");
+  return { success: "Limite removido." };
+}
+
 export async function deletePlannedExpense(formData: FormData) {
   const parsed = deletePlannedExpenseSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: "Conta invalida." };
