@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Calculator, CheckCircle2, CircleDollarSign, SlidersHorizontal, WalletCards, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Calculator, CheckCircle2, CircleDollarSign, ListChecks, SlidersHorizontal, Target, WalletCards, type LucideIcon } from "lucide-react";
 import { saveCategoryLimit, saveCategoryLimits, upsertSpendingPlan } from "@/app/(dashboard)/planning/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -49,6 +49,21 @@ type PlanningOverview = {
     plannedCount: number;
     spentCount: number;
   };
+  paymentPlan: {
+    fixedPlanned: number;
+    variablePlanned: number;
+    totalPlanned: number;
+    paid: number;
+    remaining: number;
+    availableForGoals: number;
+  };
+  goals: {
+    id: string;
+    name: string;
+    targetAmount: number;
+    savedAmount: number;
+    remainingAmount: number;
+  }[];
   nextMonthImpact: {
     monthLabel: string;
     baseIncome: number;
@@ -94,6 +109,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
     const usage = group.planned > 0 ? Math.round((group.actual / group.planned) * 100) : 0;
     return { ...group, usage, overLimit: group.planned > 0 && group.actual > group.planned };
   });
+  const fixedBills = overview.categoryLimits.filter((item) => item.planned > 0 && item.type === "FIXED");
+  const variableBills = overview.categoryLimits.filter((item) => item.planned > 0 && item.type !== "FIXED");
 
   const visibleLimits = useMemo(() => {
     return overview.categoryLimits
@@ -117,6 +134,81 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
   return (
     <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="font-semibold">Plano de pagamentos e metas</h2>
+            <p className="text-sm text-muted-foreground">Confira o que precisa pagar em {overview.monthLabel} e quanto pode sobrar para guardar.</p>
+          </div>
+          <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
+            <ListChecks className="size-5" />
+          </span>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <section className="grid gap-3 md:grid-cols-4">
+            <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="ja considera vale/adiantamento" />
+            <CompactMetric icon={WalletCards} label="Contas fixas" value={formatCurrency(overview.paymentPlan.fixedPlanned)} detail={`${fixedBills.length} item(ns) marcado(s) como fixo`} />
+            <CompactMetric icon={SlidersHorizontal} label="Gastos variaveis" value={formatCurrency(overview.paymentPlan.variablePlanned)} detail={`${variableBills.length} item(ns) flexiveis`} />
+            <CompactMetric
+              icon={Target}
+              label="Sobra para metas"
+              value={formatCurrency(overview.paymentPlan.availableForGoals)}
+              detail="renda menos fixos e variaveis"
+              tone={overview.paymentPlan.availableForGoals < 0 ? "danger" : "success"}
+            />
+          </section>
+
+          <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="grid gap-3 md:grid-cols-2">
+              <BillList title="Contas fixas" description="O que costuma ser obrigatorio pagar." items={fixedBills} emptyText="Nenhuma conta fixa marcada ainda." />
+              <BillList title="Gastos combinados" description="Limites flexiveis para controlar o mes." items={variableBills} emptyText="Nenhum gasto variavel planejado ainda." />
+            </div>
+            <GoalPlanCard goals={overview.goals} availableForGoals={overview.paymentPlan.availableForGoals} />
+          </section>
+        </CardContent>
+      </Card>
+
+      <Card className={cn(overview.nextMonthImpact.hasSalaryAdvance && "border-red-500/30 bg-red-500/[0.04]")}>
+        <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="font-semibold">Projecao de {overview.nextMonthImpact.monthLabel}</h2>
+            <p className="text-sm text-muted-foreground">
+              Veja quanto pode sobrar considerando sua renda, vales ou adiantamentos do mes anterior e os gastos previstos.
+            </p>
+          </div>
+          <span className={cn("grid size-10 place-items-center rounded-lg", overview.nextMonthImpact.hasSalaryAdvance ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary")}>
+            <WalletCards className="size-5" />
+          </span>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <section className="grid gap-3 md:grid-cols-4">
+            <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.baseIncome)} detail="renda mensal configurada" />
+            <CompactMetric
+              icon={AlertTriangle}
+              label="Adiantamento/vale"
+              value={`-${formatCurrency(overview.nextMonthImpact.salaryAdvanceTotal)}`}
+              detail={
+                overview.nextMonthImpact.salaryAdvanceCount > 0
+                  ? `${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) no mes anterior`
+                  : "nenhum vale identificado"
+              }
+              tone={overview.nextMonthImpact.salaryAdvanceTotal > 0 ? "danger" : "neutral"}
+            />
+            <CompactMetric icon={WalletCards} label="Gastos previstos" value={formatCurrency(overview.nextMonthImpact.plannedExpenses)} detail={`${overview.nextMonthImpact.plannedCount} categoria(s) planejada(s)`} />
+            <CompactMetric
+              icon={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? AlertTriangle : CheckCircle2}
+              label="Sobra prevista"
+              value={formatCurrency(overview.nextMonthImpact.leftoverAfterPlanned)}
+              detail="renda ajustada menos gastos previstos"
+              tone={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? "danger" : "success"}
+            />
+          </section>
+          <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-sm text-muted-foreground">
+            Pense assim: renda planejada menos vales/adiantamentos do mes anterior, depois menos todos os valores previstos nas categorias.
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -181,47 +273,6 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </section>
         </CardContent>
       </Card>
-
-      <Card className={cn(overview.nextMonthImpact.hasSalaryAdvance && "border-red-500/30 bg-red-500/[0.04]")}>
-          <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h2 className="font-semibold">Projecao de {overview.nextMonthImpact.monthLabel}</h2>
-              <p className="text-sm text-muted-foreground">
-                Veja quanto pode sobrar considerando sua renda, vales ou adiantamentos do mes anterior e os gastos previstos.
-              </p>
-            </div>
-            <span className={cn("grid size-10 place-items-center rounded-lg", overview.nextMonthImpact.hasSalaryAdvance ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary")}>
-              <WalletCards className="size-5" />
-            </span>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <section className="grid gap-3 md:grid-cols-4">
-              <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.baseIncome)} detail="renda mensal configurada" />
-              <CompactMetric
-                icon={AlertTriangle}
-                label="Adiantamento/vale"
-                value={`-${formatCurrency(overview.nextMonthImpact.salaryAdvanceTotal)}`}
-                detail={
-                  overview.nextMonthImpact.salaryAdvanceCount > 0
-                    ? `${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) no mes anterior`
-                    : "nenhum vale identificado"
-                }
-                tone={overview.nextMonthImpact.salaryAdvanceTotal > 0 ? "danger" : "neutral"}
-              />
-              <CompactMetric icon={WalletCards} label="Gastos previstos" value={formatCurrency(overview.nextMonthImpact.plannedExpenses)} detail={`${overview.nextMonthImpact.plannedCount} categoria(s) planejada(s)`} />
-              <CompactMetric
-                icon={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? AlertTriangle : CheckCircle2}
-                label="Sobra prevista"
-                value={formatCurrency(overview.nextMonthImpact.leftoverAfterPlanned)}
-                detail="renda ajustada menos gastos previstos"
-                tone={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? "danger" : "success"}
-              />
-            </section>
-            <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-sm text-muted-foreground">
-              Pense assim: renda planejada menos vales/adiantamentos do mes anterior, depois menos todos os valores previstos nas categorias.
-            </div>
-          </CardContent>
-        </Card>
 
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -305,6 +356,107 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function BillList({
+  title,
+  description,
+  items,
+  emptyText
+}: {
+  title: string;
+  description: string;
+  items: PlanningOverview["categoryLimits"];
+  emptyText: string;
+}) {
+  const total = items.reduce((sum, item) => sum + item.planned, 0);
+
+  return (
+    <div className="rounded-xl border border-border bg-background/35 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold">{title}</h3>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        <strong className="text-sm">{formatCurrency(total)}</strong>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {items.length === 0 && <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">{emptyText}</p>}
+        {items.map((item) => {
+          const remaining = item.planned - item.actual;
+          const paid = item.planned > 0 && item.actual >= item.planned;
+
+          return (
+            <div key={item.categoryId} className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{item.categoryName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(item.actual)} pago de {formatCurrency(item.planned)}
+                  </p>
+                </div>
+                <span className={cn("rounded-full px-2 py-1 text-xs font-semibold", paid ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-400/10 text-amber-300")}>
+                  {paid ? "pago" : `${formatCurrency(Math.max(0, remaining))} falta`}
+                </span>
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-background">
+                <div className={cn("h-2 rounded-full", paid ? "bg-emerald-500" : "bg-primary")} style={{ width: `${Math.min(100, item.usage)}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["goals"]; availableForGoals: number }) {
+  const activeGoals = goals.slice(0, 4);
+  const suggestion = activeGoals.length > 0 ? Math.max(0, availableForGoals) / activeGoals.length : 0;
+
+  return (
+    <div className="rounded-xl border border-border bg-background/35 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold">Metas de economia</h3>
+          <p className="text-sm text-muted-foreground">Use a sobra do mes para decidir quanto guardar.</p>
+        </div>
+        <Target className={cn("size-5", availableForGoals < 0 ? "text-red-500" : "text-emerald-500")} />
+      </div>
+
+      <div className="mt-4 rounded-lg border border-border/70 bg-card/40 p-3">
+        <p className="text-sm text-muted-foreground">Disponivel para guardar</p>
+        <strong className={cn("mt-1 block text-2xl", availableForGoals < 0 ? "text-red-500" : "text-emerald-500")}>{formatCurrency(availableForGoals)}</strong>
+        <p className="mt-1 text-xs text-muted-foreground">Calculado depois dos gastos fixos e variaveis planejados.</p>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {activeGoals.length === 0 && <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">Crie uma meta para o Fluxa mostrar como distribuir a sobra.</p>}
+        {activeGoals.map((goal) => {
+          const progress = goal.targetAmount > 0 ? Math.round((goal.savedAmount / goal.targetAmount) * 100) : 0;
+
+          return (
+            <div key={goal.id} className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{goal.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(goal.savedAmount)} de {formatCurrency(goal.targetAmount)}
+                  </p>
+                </div>
+                <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">{progress}%</span>
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-background">
+                <div className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(100, progress)}%` }} />
+              </div>
+              {suggestion > 0 && <p className="mt-2 text-xs text-muted-foreground">Sugestao se dividir igual: {formatCurrency(Math.min(suggestion, goal.remainingAmount))}</p>}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

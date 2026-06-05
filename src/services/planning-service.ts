@@ -47,6 +47,15 @@ function emptyOverview(month: number, year: number) {
       plannedCount: 0,
       spentCount: 0
     },
+    paymentPlan: {
+      fixedPlanned: 0,
+      variablePlanned: 0,
+      totalPlanned: 0,
+      paid: 0,
+      remaining: 0,
+      availableForGoals: 0
+    },
+    goals: [],
     nextMonthImpact: {
       monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(selectedMonth),
       baseIncome: 0,
@@ -104,7 +113,7 @@ export async function getPlanningOverview(date = new Date()) {
   const end = new Date(year, month, 1);
   const previousStart = new Date(year, month - 2, 1);
   const previousEnd = new Date(year, month - 1, 1);
-  const [plan, fallbackPlan, transactions, previousTransactions, contributions, categories, limits, fallbackLimitPeriod] = await Promise.all([
+  const [plan, fallbackPlan, transactions, previousTransactions, contributions, categories, limits, fallbackLimitPeriod, goals] = await Promise.all([
     prisma.spendingPlan.findUnique({ where: { userId_month_year: { userId, month, year } } }),
     findPreviousPlan(userId, month, year),
     prisma.transaction.findMany({
@@ -128,7 +137,12 @@ export async function getPlanningOverview(date = new Date()) {
       where: { userId, month, year },
       select: { categoryId: true, amount: true, type: true }
     }),
-    findPreviousLimitPeriod(userId, month, year)
+    findPreviousLimitPeriod(userId, month, year),
+    prisma.goal.findMany({
+      where: { userId, status: "ACTIVE" },
+      include: { contributions: true },
+      orderBy: { createdAt: "desc" }
+    })
   ]);
 
   const actualIncome = transactions.filter((transaction) => transaction.type === "INCOME").reduce((sum, transaction) => sum + Number(transaction.amount), 0);
@@ -207,6 +221,9 @@ export async function getPlanningOverview(date = new Date()) {
   const plannedNextMonthLimits = categoryLimits.filter((item) => item.planned > 0);
   const plannedExpenses = plannedNextMonthLimits.reduce((sum, item) => sum + item.planned, 0);
   const adjustedIncome = Math.max(0, monthlyIncome - salaryAdvance.total);
+  const fixedPlanned = plannedNextMonthLimits.filter((item) => item.type === "FIXED").reduce((sum, item) => sum + item.planned, 0);
+  const variablePlanned = plannedNextMonthLimits.filter((item) => item.type !== "FIXED").reduce((sum, item) => sum + item.planned, 0);
+  const availableForGoals = adjustedIncome - fixedPlanned - variablePlanned;
   const selectedMonth = new Date(year, month - 1, 1);
   const planSource = plan
     ? "salvo neste mes"
@@ -257,6 +274,26 @@ export async function getPlanningOverview(date = new Date()) {
     ],
     categoryLimits,
     limitSummary,
+    paymentPlan: {
+      fixedPlanned,
+      variablePlanned,
+      totalPlanned: plannedExpenses,
+      paid: plannedNextMonthLimits.reduce((sum, item) => sum + item.actual, 0),
+      remaining: plannedNextMonthLimits.reduce((sum, item) => sum + Math.max(0, item.planned - item.actual), 0),
+      availableForGoals
+    },
+    goals: goals.map((goal) => {
+      const contributedAmount = goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0);
+      const savedAmount = Number(goal.currentAmount) + contributedAmount;
+
+      return {
+        id: goal.id,
+        name: goal.name,
+        targetAmount: Number(goal.targetAmount),
+        savedAmount,
+        remainingAmount: Math.max(0, Number(goal.targetAmount) - savedAmount)
+      };
+    }),
     nextMonthImpact: {
       monthLabel: new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(selectedMonth),
       baseIncome: monthlyIncome,
