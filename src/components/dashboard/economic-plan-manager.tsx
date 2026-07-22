@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { economicModels } from "@/constants/economic-models";
+import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, formatMonthDistance, monthlyYield, monthsToReachTarget, projectCompoundBalance } from "@/lib/savings-projection";
 import { cn, formatCurrency } from "@/lib/utils";
 
 type LimitFilter = "active" | "planned" | "over" | "all";
@@ -77,6 +78,7 @@ type PlanningOverview = {
     targetAmount: number;
     savedAmount: number;
     remainingAmount: number;
+    dueDate: string | null;
   }[];
   nextMonthImpact: {
     monthLabel: string;
@@ -510,6 +512,17 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
         {activeGoals.length === 0 && <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">Crie uma meta para o Fluxa mostrar como distribuir a sobra.</p>}
         {activeGoals.map((goal) => {
           const progress = goal.targetAmount > 0 ? Math.round((goal.savedAmount / goal.targetAmount) * 100) : 0;
+          const suggestedContribution = Math.min(suggestion, goal.remainingAmount);
+          const projectedInOneYear = projectCompoundBalance({
+            principal: goal.savedAmount,
+            months: 12,
+            monthlyContribution: suggestedContribution
+          });
+          const estimatedMonths = monthsToReachTarget({
+            principal: goal.savedAmount,
+            target: goal.targetAmount,
+            monthlyContribution: suggestedContribution
+          });
 
           return (
             <div key={goal.id} className="rounded-lg border border-border/70 bg-card/40 p-3">
@@ -525,7 +538,25 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
               <div className="mt-2 h-2 rounded-full bg-background">
                 <div className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(100, progress)}%` }} />
               </div>
-              {suggestion > 0 && <p className="mt-2 text-xs text-muted-foreground">Sugestao se dividir igual: {formatCurrency(Math.min(suggestion, goal.remainingAmount))}</p>}
+              <div className="mt-3 grid gap-2 rounded-lg border border-border/70 bg-background/35 p-2 text-xs text-muted-foreground">
+                <p>
+                  Rendimento estimado: <span className="font-medium text-emerald-400">{formatCurrency(monthlyYield(goal.savedAmount))}</span> no proximo mes.
+                </p>
+                {suggestion > 0 ? (
+                  <>
+                    <p>
+                      Sugestao de deposito: <span className="font-medium text-foreground">{formatCurrency(suggestedContribution)}</span> por mes.
+                    </p>
+                    <p>
+                      Com {DEFAULT_SAVINGS_MONTHLY_RATE_LABEL}, pode chegar em{" "}
+                      <span className="font-medium text-primary">{formatMonthDistance(estimatedMonths)}</span>.
+                    </p>
+                    <p>Saldo projetado em 12 meses: {formatCurrency(projectedInOneYear)}.</p>
+                  </>
+                ) : (
+                  <p>Saldo projetado em 12 meses sem novos depositos: {formatCurrency(projectedInOneYear)}.</p>
+                )}
+              </div>
             </div>
           );
         })}

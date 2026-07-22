@@ -1,11 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
-import { Trash2 } from "lucide-react";
+import { CalendarClock, TrendingUp, Trash2 } from "lucide-react";
 import { deleteGoal, upsertGoal } from "@/app/(dashboard)/goals/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, monthlyYield, monthsUntilDate, projectCompoundBalance } from "@/lib/savings-projection";
 import { formatCurrency } from "@/lib/utils";
 
 type GoalItem = {
@@ -16,6 +17,7 @@ type GoalItem = {
   status: "ACTIVE" | "PAUSED" | "COMPLETED";
   markers: string[];
   contributedAmount: number;
+  savedAmount: number;
 };
 
 function GoalForm({ goal }: { goal?: GoalItem }) {
@@ -84,7 +86,11 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
         </Card>
       ) : (
         goals.map((goal) => {
-          const progress = goal.targetAmount > 0 ? Math.min(100, Math.round((goal.contributedAmount / goal.targetAmount) * 100)) : 0;
+          const progress = goal.targetAmount > 0 ? Math.min(100, Math.round((goal.savedAmount / goal.targetAmount) * 100)) : 0;
+          const projectionMonths = monthsUntilDate(goal.dueDate) ?? 12;
+          const projectedBalance = projectCompoundBalance({ principal: goal.savedAmount, months: projectionMonths });
+          const projectedYield = Math.max(0, projectedBalance - goal.savedAmount);
+          const periodLabel = goal.dueDate ? "Na data da meta" : "Em 12 meses";
 
           return (
             <Card key={goal.id}>
@@ -92,7 +98,7 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
                 <div>
                   <h2 className="font-semibold">{goal.name}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {formatCurrency(goal.contributedAmount)} de {formatCurrency(goal.targetAmount)} · {progress}%
+                    {formatCurrency(goal.savedAmount)} de {formatCurrency(goal.targetAmount)} · {progress}%
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Dinheiro guardado identificado: {formatCurrency(goal.contributedAmount)} · Palavras usadas: {goal.markers.join(", ") || "nenhuma"}
@@ -103,6 +109,26 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
               <CardContent className="space-y-4">
                 <div className="h-2 rounded-full bg-muted">
                   <div className="h-2 rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="rounded-lg border border-border bg-background/35 p-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <TrendingUp className="size-4 text-emerald-500" />
+                      Rendimento mensal
+                    </div>
+                    <strong className="mt-1 block text-lg text-emerald-500">{formatCurrency(monthlyYield(goal.savedAmount))}</strong>
+                    <p className="mt-1 text-xs text-muted-foreground">Conta rendendo {DEFAULT_SAVINGS_MONTHLY_RATE_LABEL}.</p>
+                  </div>
+                  <div className="rounded-lg border border-border bg-background/35 p-3 md:col-span-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CalendarClock className="size-4 text-primary" />
+                      {periodLabel}
+                    </div>
+                    <strong className="mt-1 block text-lg">{formatCurrency(projectedBalance)}</strong>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Projecao sem novos depositos: {formatCurrency(projectedYield)} de rendimento estimado.
+                    </p>
+                  </div>
                 </div>
                 <GoalForm goal={goal} />
               </CardContent>

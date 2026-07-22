@@ -20,7 +20,8 @@ export default async function GoalsPage() {
           dueDate: goal.dueDate?.toISOString() ?? null,
           status: goal.status,
           markers: goal.markers.map((marker) => marker.keyword),
-          contributedAmount: goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0)
+          contributedAmount: goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0),
+          savedAmount: Number(goal.currentAmount) + goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0)
         }))}
       />
     </div>

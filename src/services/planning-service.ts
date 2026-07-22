@@ -357,7 +357,8 @@ export async function getPlanningOverview(date = new Date()) {
         name: goal.name,
         targetAmount: Number(goal.targetAmount),
         savedAmount,
-        remainingAmount: Math.max(0, Number(goal.targetAmount) - savedAmount)
+        remainingAmount: Math.max(0, Number(goal.targetAmount) - savedAmount),
+        dueDate: goal.dueDate?.toISOString() ?? null
       };
     }),
     nextMonthImpact: {
