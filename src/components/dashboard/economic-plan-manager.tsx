@@ -66,6 +66,9 @@ type PlanningOverview = {
     usage: number;
     type: "FIXED" | "VARIABLE";
     source: "category" | "manual";
+    sourceMonth: number;
+    sourceYear: number;
+    inherited: boolean;
     note?: string;
   }[];
   goals: {
@@ -419,7 +422,7 @@ function BillList({
       <div className="mt-4 space-y-2">
         {items.length === 0 && <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">{emptyText}</p>}
         {items.map((item) => {
-          if (item.source === "manual") return <PlannedExpenseInlineForm key={`${item.source}-${item.id}`} item={item} />;
+          if (item.source === "manual") return <PlannedExpenseInlineForm key={`${item.source}-${item.id}`} item={item} month={month} year={year} />;
 
           const remaining = item.planned - item.actual;
           const paid = item.planned > 0 && item.actual >= item.planned;
@@ -451,13 +454,15 @@ function BillList({
   );
 }
 
-function PlannedExpenseInlineForm({ item }: { item: PlanningOverview["plannedItems"][number] }) {
+function PlannedExpenseInlineForm({ item, month, year }: { item: PlanningOverview["plannedItems"][number]; month: number; year: number }) {
   const [state, action, pending] = useActionState(updatePlannedExpense, undefined as { error?: string; success?: string } | undefined);
 
   return (
     <div className="rounded-lg border border-border/70 bg-card/40 p-3">
       <form action={action} className="space-y-2">
         <input type="hidden" name="id" value={item.id} />
+        <input type="hidden" name="month" value={month} />
+        <input type="hidden" name="year" value={year} />
         <input type="hidden" name="note" value={item.note ?? ""} />
         <Input name="name" defaultValue={item.name} aria-label="Nome da conta planejada" placeholder="Nome da conta" />
         <div className="grid grid-cols-[1fr_120px] gap-2">
@@ -472,8 +477,8 @@ function PlannedExpenseInlineForm({ item }: { item: PlanningOverview["plannedIte
         </Button>
       </form>
       <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">Conta adicionada manualmente</p>
-        <DeletePlannedExpenseButton id={item.id} />
+        <p className="text-xs text-muted-foreground">{item.inherited ? "Copiada do planejamento anterior" : "Conta adicionada manualmente"}</p>
+        <DeletePlannedExpenseButton id={item.id} name={item.name} type={item.type} month={month} year={year} />
       </div>
       {state?.error && <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{state.error}</p>}
       {state?.success && <p className="mt-2 rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">{state.success}</p>}
@@ -553,7 +558,7 @@ function DeleteCategoryLimitButton({ categoryId, month, year }: { categoryId: st
   );
 }
 
-function DeletePlannedExpenseButton({ id }: { id: string }) {
+function DeletePlannedExpenseButton({ id, name, type, month, year }: { id: string; name: string; type: "FIXED" | "VARIABLE"; month: number; year: number }) {
   const [, action, pending] = useActionState(
     async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => deletePlannedExpense(formData),
     undefined
@@ -562,6 +567,10 @@ function DeletePlannedExpenseButton({ id }: { id: string }) {
   return (
     <form action={action}>
       <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="name" value={name} />
+      <input type="hidden" name="type" value={type} />
+      <input type="hidden" name="month" value={month} />
+      <input type="hidden" name="year" value={year} />
       <button
         type="submit"
         disabled={pending}

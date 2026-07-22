@@ -103,6 +103,30 @@ async function findPreviousLimitPeriod(userId: string, month: number, year: numb
   return { limits, source };
 }
 
+async function findPreviousPlannedExpensePeriod(userId: string, month: number, year: number) {
+  const latestExpense = await prisma.plannedExpense.findFirst({
+    where: {
+      userId,
+      amount: { gt: 0 },
+      OR: [{ year: { lt: year } }, { year, month: { lt: month } }]
+    },
+    orderBy: [{ year: "desc" }, { month: "desc" }],
+    select: { month: true, year: true }
+  });
+
+  if (!latestExpense) return { expenses: [], source: null as string | null };
+
+  const expenses = await prisma.plannedExpense.findMany({
+    where: { userId, month: latestExpense.month, year: latestExpense.year },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, amount: true, type: true, note: true, month: true, year: true }
+  });
+
+  const source = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(latestExpense.year, latestExpense.month - 1, 1));
+
+  return { expenses, source };
+}
+
 export async function getPlanningOverview(date = new Date()) {
   const userId = await getCurrentUserId();
   const month = date.getMonth() + 1;
@@ -114,7 +138,7 @@ export async function getPlanningOverview(date = new Date()) {
   const end = new Date(year, month, 1);
   const previousStart = new Date(year, month - 2, 1);
   const previousEnd = new Date(year, month - 1, 1);
-  const [plan, fallbackPlan, transactions, previousTransactions, contributions, categories, limits, fallbackLimitPeriod, plannedExpenses, goals] = await Promise.all([
+  const [plan, fallbackPlan, transactions, previousTransactions, contributions, categories, limits, fallbackLimitPeriod, plannedExpenses, fallbackPlannedExpensePeriod, goals] = await Promise.all([
     prisma.spendingPlan.findUnique({ where: { userId_month_year: { userId, month, year } } }),
     findPreviousPlan(userId, month, year),
     prisma.transaction.findMany({
@@ -142,8 +166,9 @@ export async function getPlanningOverview(date = new Date()) {
     prisma.plannedExpense.findMany({
       where: { userId, month, year },
       orderBy: { createdAt: "asc" },
-      select: { id: true, name: true, amount: true, type: true, note: true }
+      select: { id: true, name: true, amount: true, type: true, note: true, month: true, year: true }
     }),
+    findPreviousPlannedExpensePeriod(userId, month, year),
     prisma.goal.findMany({
       where: { userId, status: "ACTIVE" },
       include: { contributions: true },
@@ -187,7 +212,7 @@ export async function getPlanningOverview(date = new Date()) {
 
       if (!savingsTransactionIds.has(transaction.id)) {
         const group = groupCategoryByLimit(
-          transaction.categoryId ? limitByCategory.get(transaction.categoryId)?.type : undefined,
+          transaction.categoryId ? (limitByCategory.get(transaction.categoryId) ?? fallbackLimitByCategory.get(transaction.categoryId))?.type : undefined,
           transaction.category?.name
         );
         actual[group] += amount;
@@ -225,7 +250,12 @@ export async function getPlanningOverview(date = new Date()) {
     spentCount: categoryLimits.filter((item) => item.actual > 0).length
   };
   const plannedNextMonthLimits = categoryLimits.filter((item) => item.planned > 0);
-  const plannedExpenseItems = plannedExpenses.map((item) => ({
+  const currentPlannedExpenseByName = new Map(plannedExpenses.map((item) => [normalizeText(item.name), item]));
+  const effectivePlannedExpenses = [
+    ...fallbackPlannedExpensePeriod.expenses.filter((item) => !currentPlannedExpenseByName.has(normalizeText(item.name))),
+    ...plannedExpenses
+  ].filter((item) => Number(item.amount) > 0);
+  const plannedExpenseItems = effectivePlannedExpenses.map((item) => ({
     id: item.id,
     name: item.name,
     planned: Number(item.amount),
@@ -234,6 +264,9 @@ export async function getPlanningOverview(date = new Date()) {
     usage: 0,
     type: item.type === "FIXED" ? ("FIXED" as const) : ("VARIABLE" as const),
     source: "manual" as const,
+    sourceMonth: item.month,
+    sourceYear: item.year,
+    inherited: item.month !== month || item.year !== year,
     note: item.note ?? undefined
   }));
   const plannedCategoryItems = plannedNextMonthLimits.map((item) => ({
@@ -245,6 +278,9 @@ export async function getPlanningOverview(date = new Date()) {
     usage: item.usage,
     type: item.type === "FIXED" ? ("FIXED" as const) : ("VARIABLE" as const),
     source: "category" as const,
+    sourceMonth: month,
+    sourceYear: year,
+    inherited: false,
     note: undefined
   }));
   const plannedItems = [...plannedCategoryItems, ...plannedExpenseItems];
@@ -258,8 +294,8 @@ export async function getPlanningOverview(date = new Date()) {
     ? "salvo neste mes"
     : fallbackPlan
       ? `copiado de ${new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(fallbackPlan.year, fallbackPlan.month - 1, 1))}`
-      : fallbackLimitPeriod.source
-        ? `limites copiados de ${fallbackLimitPeriod.source}`
+      : fallbackLimitPeriod.source || fallbackPlannedExpensePeriod.source
+        ? `copiado de ${fallbackLimitPeriod.source ?? fallbackPlannedExpensePeriod.source}`
         : null;
 
   return {

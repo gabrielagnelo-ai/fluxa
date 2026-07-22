@@ -291,7 +291,6 @@ export async function createPlannedExpense(_previousState: unknown, formData: Fo
 }
 
 const updatePlannedExpenseSchema = plannedExpenseSchema
-  .omit({ month: true, year: true })
   .extend({
     id: z.string().min(1)
   });
@@ -306,18 +305,42 @@ export async function updatePlannedExpense(_previousState: unknown, formData: Fo
   const amount = parseMoneyInput(parsed.data.amount);
   if (!Number.isFinite(amount) || amount <= 0) return { error: "Informe um valor maior que zero." };
 
-  await prisma.plannedExpense.updateMany({
+  const existingExpense = await prisma.plannedExpense.findFirst({
     where: {
       id: parsed.data.id,
       userId
     },
-    data: {
-      name: parsed.data.name,
-      amount,
-      type: parsed.data.type,
-      note: parsed.data.note || null
-    }
+    select: { month: true, year: true }
   });
+
+  if (!existingExpense) return { error: "Conta nao encontrada." };
+
+  if (existingExpense.month === parsed.data.month && existingExpense.year === parsed.data.year) {
+    await prisma.plannedExpense.updateMany({
+      where: {
+        id: parsed.data.id,
+        userId
+      },
+      data: {
+        name: parsed.data.name,
+        amount,
+        type: parsed.data.type,
+        note: parsed.data.note || null
+      }
+    });
+  } else {
+    await prisma.plannedExpense.create({
+      data: {
+        userId,
+        month: parsed.data.month,
+        year: parsed.data.year,
+        name: parsed.data.name,
+        amount,
+        type: parsed.data.type,
+        note: parsed.data.note || null
+      }
+    });
+  }
 
   revalidatePath("/planning");
   revalidatePath("/dashboard");
@@ -326,7 +349,11 @@ export async function updatePlannedExpense(_previousState: unknown, formData: Fo
 }
 
 const deletePlannedExpenseSchema = z.object({
-  id: z.string().min(1)
+  id: z.string().min(1),
+  month: z.coerce.number().int().min(1).max(12),
+  year: z.coerce.number().int().min(2020).max(2100),
+  name: z.string().trim().min(2),
+  type: limitTypeSchema
 });
 
 const deleteCategoryLimitSchema = z.object({
@@ -385,12 +412,39 @@ export async function deletePlannedExpense(formData: FormData) {
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Faca login para excluir." };
 
-  await prisma.plannedExpense.deleteMany({
+  const existingExpense = await prisma.plannedExpense.findFirst({
     where: {
       id: parsed.data.id,
       userId
-    }
+    },
+    select: { month: true, year: true, note: true }
   });
+
+  if (!existingExpense) return { error: "Conta nao encontrada." };
+
+  if (existingExpense.month === parsed.data.month && existingExpense.year === parsed.data.year) {
+    await prisma.plannedExpense.updateMany({
+      where: {
+        id: parsed.data.id,
+        userId
+      },
+      data: {
+        amount: 0
+      }
+    });
+  } else {
+    await prisma.plannedExpense.create({
+      data: {
+        userId,
+        month: parsed.data.month,
+        year: parsed.data.year,
+        name: parsed.data.name,
+        amount: 0,
+        type: parsed.data.type,
+        note: existingExpense.note
+      }
+    });
+  }
 
   revalidatePath("/planning");
   revalidatePath("/dashboard");
