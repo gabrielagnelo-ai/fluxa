@@ -46,6 +46,14 @@ BRAPI_TOKEN="sua-chave"
 
 Sem essa chave, o Fluxa tenta consultar as cotações públicas e mostra uma mensagem caso o limite da API seja atingido.
 
+Para receber o orçamento mensal da lista de compras do ShapeOS, configure o mesmo segredo nos dois projetos:
+
+```bash
+SHAPEOS_INTEGRATION_SECRET="um-segredo-aleatorio-com-pelo-menos-32-caracteres"
+```
+
+No ShapeOS, configure também `FLUXA_API_URL` com a URL deste projeto. O ShapeOS envia somente os dados econômicos da lista e o Fluxa os registra como despesa planejada, sem criar uma transação paga.
+
 Para testar Open Finance com Belvo Hosted Widget, configure:
 
 ```bash

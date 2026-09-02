@@ -27,7 +27,8 @@ const serverEnvSchema = z.object({
   WHATSAPP_PROVIDER: z.enum(["meta", "twilio"]).default("meta"),
   TWILIO_ACCOUNT_SID: z.string().min(1).optional(),
   TWILIO_AUTH_TOKEN: z.string().min(1).optional(),
-  TWILIO_WHATSAPP_FROM: z.string().min(1).optional()
+  TWILIO_WHATSAPP_FROM: z.string().min(1).optional(),
+  SHAPEOS_INTEGRATION_SECRET: z.string().min(32).optional()
 });
 
 let cachedEnv: z.infer<typeof serverEnvSchema> | null = null;
