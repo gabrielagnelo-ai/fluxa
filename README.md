@@ -52,7 +52,7 @@ Para receber o orçamento mensal da lista de compras do ShapeOS, configure o mes
 SHAPEOS_INTEGRATION_SECRET="um-segredo-aleatorio-com-pelo-menos-32-caracteres"
 ```
 
-No ShapeOS, configure também `FLUXA_API_URL` com a URL deste projeto. O ShapeOS envia somente os dados econômicos da lista e o Fluxa os registra como despesa planejada, sem criar uma transação paga.
+No ShapeOS, configure também `FLUXA_API_URL` com a URL deste projeto. O ShapeOS envia somente os dados econômicos da lista e o Fluxa atualiza a meta mensal da categoria `Mercado`, sem criar uma transação paga. Sincronizações repetidas substituem a meta do mesmo mês em vez de somar valores.
 
 Para testar Open Finance com Belvo Hosted Widget, configure:
 

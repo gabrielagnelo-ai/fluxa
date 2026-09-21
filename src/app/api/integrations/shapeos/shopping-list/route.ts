@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerEnv } from "@/lib/security/env";
+import { defaultCategoryRules } from "@/services/category-service";
 
 export const runtime = "nodejs";
 
@@ -76,35 +77,53 @@ export async function POST(request: Request) {
   });
   if (!user) return Response.json({ error: "account_not_found" }, { status: 404 });
 
-  const name = "Alimentação planejada (ShapeOS)";
-  const note = integrationNote(payload, missingPriceCount);
-  const existing = await prisma.plannedExpense.findFirst({
-    where: {
-      userId: user.id,
-      month: payload.month,
-      year: payload.year,
-      name,
-      note: { startsWith: "[ShapeOS sync]" },
-    },
-    select: { id: true },
-  });
+  const marketRule = defaultCategoryRules.find((category) => category.name === "Mercado");
+  if (!marketRule) {
+    return Response.json({ error: "market_category_not_configured" }, { status: 500 });
+  }
 
-  const expense = existing
-    ? await prisma.plannedExpense.update({
-        where: { id: existing.id },
-        data: { amount: computedTotal, type: "VARIABLE", note },
-      })
-    : await prisma.plannedExpense.create({
-        data: {
+  const result = await prisma.$transaction(async (transaction) => {
+    const category = await transaction.category.upsert({
+      where: { userId_name: { userId: user.id, name: marketRule.name } },
+      update: {},
+      create: { ...marketRule, userId: user.id },
+      select: { id: true },
+    });
+
+    const limit = await transaction.categoryLimit.upsert({
+      where: {
+        userId_categoryId_month_year: {
           userId: user.id,
+          categoryId: category.id,
           month: payload.month,
           year: payload.year,
-          name,
-          amount: computedTotal,
-          type: "VARIABLE",
-          note,
         },
-      });
+      },
+      update: { amount: computedTotal, type: "VARIABLE" },
+      create: {
+        userId: user.id,
+        categoryId: category.id,
+        month: payload.month,
+        year: payload.year,
+        amount: computedTotal,
+        type: "VARIABLE",
+      },
+      select: { id: true },
+    });
+
+    // Remove the old integration entry so the same food budget is not counted twice.
+    await transaction.plannedExpense.deleteMany({
+      where: {
+        userId: user.id,
+        month: payload.month,
+        year: payload.year,
+        name: "Alimentação planejada (ShapeOS)",
+        note: { startsWith: "[ShapeOS sync]" },
+      },
+    });
+
+    return { categoryId: category.id, limitId: limit.id };
+  });
 
   revalidatePath("/planning");
   revalidatePath("/dashboard");
@@ -112,8 +131,10 @@ export async function POST(request: Request) {
 
   return Response.json({
     ok: true,
-    action: existing ? "updated" : "created",
-    expenseId: expense.id,
+    action: "market_limit_updated",
+    category: "Mercado",
+    categoryId: result.categoryId,
+    limitId: result.limitId,
     amount: computedTotal,
     missingPriceCount,
   });
@@ -124,33 +145,6 @@ function validSignature(secret: string, timestamp: string, rawBody: string, prov
   const expected = Buffer.from(createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex"), "hex");
   const received = Buffer.from(provided, "hex");
   return expected.length === received.length && timingSafeEqual(expected, received);
-}
-
-function integrationNote(payload: z.infer<typeof payloadSchema>, missingPriceCount: number) {
-  const pricedItems = payload.items
-    .filter((item) => item.subtotal != null)
-    .sort((a, b) => (b.subtotal ?? 0) - (a.subtotal ?? 0))
-    .slice(0, 12)
-    .map((item) => `${item.name}: ${formatQuantity(item.quantity, item.unit)} · ${formatMoney(item.subtotal ?? 0)}`);
-  const omitted = Math.max(0, payload.items.length - pricedItems.length - missingPriceCount);
-
-  return [
-    "[ShapeOS sync]",
-    `${payload.plan.name} · ${payload.days} dias · ${payload.items.length} itens`,
-    pricedItems.join("; "),
-    omitted > 0 ? `+ ${omitted} item(ns) precificado(s)` : "",
-    missingPriceCount > 0 ? `${missingPriceCount} item(ns) sem preço no ShapeOS` : "Todos os itens têm preço",
-    `Atualizado em ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(payload.generatedAt))}`,
-  ].filter(Boolean).join("\n");
-}
-
-function formatQuantity(quantity: number, unit: "g" | "kg" | "unit") {
-  if (unit === "unit") return `${quantity} un.`;
-  return `${quantity.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} ${unit}`;
-}
-
-function formatMoney(value: number) {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function roundMoney(value: number) {
