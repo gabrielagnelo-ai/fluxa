@@ -83,7 +83,12 @@ export default async function DashboardPage({
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
 
-      {shouldShowFirstSteps && <FirstStepsCard />}
+      {shouldShowFirstSteps && (
+        <FirstStepsCard
+          incomeConfigured={Number(planningOverview.plan?.monthlyIncome ?? 0) > 0}
+          limitsConfigured={planningOverview.categoryLimits.some((item) => item.planned > 0)}
+        />
+      )}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label={balanceBaseline ? "Saldo atual" : "Saldo estimado"} value={currentBalance} icon={CreditCard} tone="bg-blue-500/10 text-blue-500" />

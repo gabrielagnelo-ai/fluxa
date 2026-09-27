@@ -1,19 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getSupabaseConfig } from "@/lib/supabase/config";
+import { getSupabaseConfig, isSupabaseConfigured } from "@/lib/supabase/config";
 
 export async function updateSession(request: NextRequest) {
   const { url, key } = getSupabaseConfig();
 
-  if (!url || !key) {
+  if (!isSupabaseConfigured()) {
     return NextResponse.next({ request });
   }
 
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    url,
-    key,
+    url!,
+    key!,
     {
       cookies: {
         getAll() {
@@ -28,6 +28,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  // Public/login pages remain available during an auth outage. Protected actions
+  // still verify the current user before reading or writing account data.
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // Sign-in forms show an actionable service-unavailable message.
+  }
   return response;
 }

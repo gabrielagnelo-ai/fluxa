@@ -243,18 +243,18 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="planning-income" className="scroll-mt-6">
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold">Divisao da renda</h2>
-            <p className="text-sm text-muted-foreground">Informe quanto entra no mes e escolha uma divisao simples para acompanhar seus gastos.</p>
+            <h2 className="font-semibold">Divisão da renda</h2>
+            <p className="text-sm text-muted-foreground">Primeiro, informe quanto espera receber no mês e salve. Esse valor serve para planejar; as receitas reais são registradas nas transações.</p>
           </div>
           <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
             <Calculator className="size-5" />
           </span>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form action={action} className="grid gap-3 xl:grid-cols-[180px_180px_1fr_90px_90px_90px_auto]">
+          <form action={action} onReset={(event) => event.preventDefault()} className="grid gap-3 xl:grid-cols-[180px_180px_1fr_90px_90px_90px_auto]">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
             <Input name="monthlyIncome" defaultValue={overview.plan?.monthlyIncome ?? overview.actualIncome} type="number" min="0" step="0.01" placeholder="Renda mensal" />
@@ -308,11 +308,11 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="planning-limits" className="scroll-mt-6">
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 className="font-semibold">Gastos previstos por categoria</h2>
-            <p className="text-sm text-muted-foreground">Preencha quanto pretende gastar. O Fluxa compara esse valor com o que aconteceu no mes.</p>
+            <p className="text-sm text-muted-foreground">Depois, defina seus limites. Ao importar ou adicionar transações, o Fluxa compara esses valores com os gastos realizados.</p>
           </div>
           <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
             <SlidersHorizontal className="size-5" />

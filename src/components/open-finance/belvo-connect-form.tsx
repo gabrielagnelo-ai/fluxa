@@ -53,7 +53,7 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
           <div>
             <h2 className="font-semibold">Conectar com Belvo</h2>
             <p className="text-sm text-muted-foreground">
-              Gere um link seguro do Hosted Widget para testar Open Finance com consentimento explícito.
+              Continue no provedor para revisar os dados solicitados e autorizar o acesso, se desejar.
             </p>
           </div>
           <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -61,22 +61,22 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
           </span>
         </CardHeader>
         <CardContent>
-          <form action={connectAction} className="grid gap-3 md:grid-cols-2">
-            <Input name="name" placeholder="Nome completo igual ao banco" required />
-            <Input name="cpf" placeholder="CPF" inputMode="numeric" required />
-            <select name="consentDays" defaultValue="183" className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+          <form action={connectAction} onReset={(event) => event.preventDefault()} className="grid gap-3 md:grid-cols-2">
+            <label className="space-y-1.5 text-sm">Nome completo<Input name="name" autoComplete="name" placeholder="Como aparece no banco" required /></label>
+            <label className="space-y-1.5 text-sm">CPF<Input name="cpf" inputMode="numeric" autoComplete="off" required /></label>
+            <label className="space-y-1.5 text-sm">Prazo do consentimento<select name="consentDays" defaultValue="183" className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
               <option value="92">3 meses</option>
               <option value="183">6 meses</option>
               <option value="275">9 meses</option>
               <option value="366">12 meses</option>
-            </select>
-            <Button disabled={!configured || connectPending}>{connectPending ? "Abrindo Belvo..." : "Conectar banco"}</Button>
+            </select></label>
+            <Button className="self-end" disabled={!configured || connectPending}>{connectPending ? "Abrindo provedor..." : "Revisar consentimento"}</Button>
             {!configured && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive md:col-span-2">
-                Configure BELVO_SECRET_ID e BELVO_SECRET_PASSWORD no ambiente para testar.
+                A conexão não está disponível neste ambiente. Você pode importar um extrato enquanto isso.
               </p>
             )}
-            {connectState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive md:col-span-2">{connectState.error}</p>}
+            {connectState?.error && <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive md:col-span-2">{connectState.error}</p>}
             {connectState?.widgetUrl && (
               <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary md:col-span-2">
                 Redirecionando para a Belvo...
@@ -102,7 +102,7 @@ export function BelvoConnectForm({ configured }: { configured: boolean }) {
           </div>
           <div className="rounded-lg border border-border bg-muted/20 p-3">
             <p className="font-medium text-foreground">Próxima etapa</p>
-            <p className="mt-1">Salvar o link/consentimento no banco e buscar contas/transações para transformar em lançamentos do Fluxa.</p>
+            <p className="mt-1">A importação automática ainda não está disponível. Por enquanto, importe seu extrato e revise os lançamentos antes de salvar.</p>
           </div>
           <form action={disconnectAction} className="rounded-lg border border-border bg-muted/20 p-3">
             <p className="font-medium text-foreground">Revogação local</p>

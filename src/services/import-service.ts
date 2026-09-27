@@ -4,6 +4,7 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { categorizeTransactions } from "@/services/category-service";
 import type { ParsedTransaction, TransactionType } from "@/types/finance";
+import { isCalendarDate, transactionDate } from "@/lib/transaction-validation";
 
 type RawRow = Record<string, unknown>;
 
@@ -44,22 +45,27 @@ function inferType(rawAmount: number, row: RawRow): TransactionType {
   return rawAmount >= 0 ? "INCOME" : "EXPENSE";
 }
 
-function parseDate(value: unknown) {
+export function parseStatementDate(value: unknown) {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "number") {
     const parsed = XLSX.SSF.parse_date_code(value);
-    return new Date(parsed.y, parsed.m - 1, parsed.d).toISOString();
+    if (!parsed) throw new Error("Data inválida no extrato. Corrija o arquivo e envie novamente.");
+    const date = `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
+    if (!isCalendarDate(date)) throw new Error("Data inválida no extrato.");
+    return transactionDate(date).toISOString();
   }
 
   const text = String(value ?? "").trim();
   const brazilian = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (brazilian) {
     const [, day, month, year] = brazilian;
-    return new Date(Number(year), Number(month) - 1, Number(day)).toISOString();
+    const date = `${year}-${month}-${day}`;
+    if (!isCalendarDate(date)) throw new Error(`Data inválida no extrato: ${text}. Corrija o arquivo e envie novamente.`);
+    return transactionDate(date).toISOString();
   }
 
-  const date = new Date(text);
-  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  if (!isCalendarDate(text.slice(0, 10))) throw new Error(`Data inválida no extrato: ${text}. Use DD/MM/AAAA ou AAAA-MM-DD.`);
+  return transactionDate(text).toISOString();
 }
 
 function normalizeRow(row: RawRow): ParsedTransaction | null {
@@ -75,7 +81,7 @@ function normalizeRow(row: RawRow): ParsedTransaction | null {
   const type = inferType(rawAmount, row);
 
   return {
-    date: parseDate(rawDate),
+    date: parseStatementDate(rawDate),
     description,
     amount: Math.abs(rawAmount),
     type,

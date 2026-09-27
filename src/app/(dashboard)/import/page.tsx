@@ -10,7 +10,7 @@ export default async function ImportPage() {
       <PageHeader
         eyebrow="CSV, XLSX e PDF"
         title="Importar extratos"
-        description="Envie seus arquivos do banco. O Fluxa le as transacoes, sugere categorias e deixa voce revisar antes de salvar."
+        description="Envie seus arquivos do banco. Revise os dados, ajuste as categorias e confira duplicadas antes de salvar."
       />
       <ImportDropzone
         categoryOptions={categories.map((category) => ({

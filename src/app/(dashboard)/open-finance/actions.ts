@@ -27,11 +27,11 @@ export async function generateBelvoWidget(formData: FormData) {
     if (!rateLimit.allowed) return { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." };
 
     const widgetUrl = await createBelvoWidgetUrl({ ...parsed.data, userId });
-    return { success: "Token criado. Abra o widget para testar a conexão.", widgetUrl };
+    return { success: "Continue no provedor para revisar o consentimento.", widgetUrl };
   } catch (error) {
     secureLogger.error("Belvo widget action failed", { error });
     return {
-      error: error instanceof Error ? error.message : "Não foi possível iniciar a conexão com a Belvo."
+      error: "Não foi possível abrir o provedor agora. Confira os dados informados e tente novamente em instantes."
     };
   }
 }
@@ -40,6 +40,11 @@ export async function disconnectBelvoBank() {
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Faça login para desconectar banco." };
 
-  await revokeBelvoConnections(userId);
-  return { success: "Banco desconectado localmente. Novas sincronizações foram bloqueadas." };
+  try {
+    await revokeBelvoConnections(userId);
+    return { success: "Os registros de conexão no Fluxa foram desativados. Revogue também o consentimento no banco ou no provedor." };
+  } catch (error) {
+    secureLogger.error("Belvo disconnect failed", { error });
+    return { error: "Não foi possível desativar a conexão no Fluxa. Tente novamente em instantes." };
+  }
 }

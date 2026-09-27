@@ -1,68 +1,17 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { CheckCircle2, CircleAlert, CircleSlash } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { isBelvoConfigured, registerBelvoConnectionFromCallback } from "@/lib/belvo/server";
-import { secureLogger } from "@/lib/security/logger";
-import { getCurrentUserId } from "@/services/finance-data-service";
 
 const statusCopy = {
-  success: {
-    icon: CheckCircle2,
-    title: "Consentimento finalizado",
-    description: "A Belvo retornou sucesso. O próximo passo é consultar links, contas e transações via API."
-  },
-  exit: {
-    icon: CircleSlash,
-    title: "Fluxo interrompido",
-    description: "Você saiu do widget antes de finalizar a conexão."
-  },
-  event: {
-    icon: CircleAlert,
-    title: "Evento da Belvo",
-    description: "A Belvo retornou um evento durante o fluxo. Confira os parâmetros da URL para depuração."
-  }
+  success: { title: "Você voltou do provedor", description: "O fluxo de consentimento retornou ao Fluxa. A importação automática ainda não está disponível; nenhum lançamento foi criado por este retorno." },
+  exit: { title: "Fluxo de consentimento interrompido", description: "Você saiu antes de concluir o fluxo. Pode tentar novamente quando quiser ou importar um extrato." },
+  event: { title: "Confira o status no provedor", description: "Não foi possível confirmar a conclusão do consentimento neste retorno. Verifique suas autorizações diretamente no banco ou no provedor." }
 };
 
-export default async function OpenFinanceCallbackPage({
-  searchParams
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function OpenFinanceCallbackPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
-  if (!isBelvoConfigured()) redirect("/dashboard");
-
-  const status = String(params?.status ?? "event") as keyof typeof statusCopy;
-  const copy = statusCopy[status] ?? statusCopy.event;
-  const Icon = copy.icon;
-  const userId = await getCurrentUserId();
-
-  if (status === "success" && userId && params) {
-    try {
-      await registerBelvoConnectionFromCallback(userId, params);
-    } catch (error) {
-      secureLogger.error("Belvo callback registration failed", { error });
-    }
-  }
-
-  return (
-    <div className="space-y-5">
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">{copy.title}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{copy.description}</p>
-          </div>
-          <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
-            <Icon className="size-5" />
-          </span>
-        </CardHeader>
-        <CardContent>
-          <Link href="/open-finance" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
-            Voltar para Open Finance
-          </Link>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const status = params?.status;
+  const copy = status === "success" ? statusCopy.success : status === "exit" ? statusCopy.exit : statusCopy.event;
+  // A query string is not proof of a bank authorization. Never persist an ACTIVE
+  // connection from an unverified browser callback; verified sync is a future step.
+  return <Card><CardHeader><h1 className="text-2xl font-semibold">{copy.title}</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">{copy.description}</p></CardHeader><CardContent className="flex flex-wrap gap-3"><Link href="/open-finance" className="premium-button inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-primary-foreground">Ver conexões bancárias</Link><Link href="/import" className="inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-sm">Importar extrato</Link></CardContent></Card>;
 }

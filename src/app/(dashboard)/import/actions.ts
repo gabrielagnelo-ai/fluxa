@@ -1,6 +1,7 @@
 "use server";
 
-import { TransactionType } from "@prisma/client";
+import { createHash } from "node:crypto";
+import { Prisma, TransactionType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isDatabaseConfigured, prisma } from "@/lib/prisma";
@@ -13,17 +14,65 @@ import { categorizeDescription, defaultCategoryRules } from "@/services/category
 import { ensureDefaultCategories } from "@/services/finance-data-service";
 import { isGoalContributionExcluded, matchGoalMarker } from "@/services/goal-marker-service";
 import { ensureUserFromAuthUser } from "@/services/user-service";
+import { reviewImport } from "@/lib/import-deduplication";
+import { isCalendarDate, isTransactionDate, transactionAmountSchema, transactionDate } from "@/lib/transaction-validation";
 
 const transactionSchema = z.object({
-  date: z.string(),
-  description: z.string().min(1),
-  amount: z.number().positive(),
+  date: z.string().refine(isTransactionDate),
+  description: z.string().trim().min(1).max(300),
+  amount: transactionAmountSchema,
   type: z.enum(["INCOME", "EXPENSE"]),
   category: z.string().optional(),
   categoryLocked: z.boolean().optional(),
   goalId: z.string().optional(),
-  source: z.string().optional()
+  source: z.string().max(300).optional()
 });
+
+const importPayloadSchema = z.object({
+  account: z.string().trim().min(2).max(80),
+  transactions: z.array(transactionSchema.extend({
+    fileHash: z.string().regex(/^[a-f0-9]{64}$/),
+    rowIndex: z.number().int().min(0).max(100000),
+    forceImport: z.boolean().optional()
+  })).min(1).max(5000)
+});
+
+function prepareImport(input: z.infer<typeof importPayloadSchema>) {
+  const account = input.account.normalize("NFKC").replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+  const accountHash = createHash("sha256").update(account).digest("hex").slice(0, 20);
+  return input.transactions.map((item) => ({
+    ...item, source: `Extrato · ${account}`,
+    importId: `statement:v1:${accountHash}:${item.fileHash}:${item.rowIndex}`
+  }));
+}
+
+async function existingImportRows(tx: Prisma.TransactionClient, userId: string, transactions: ReturnType<typeof prepareImport>) {
+  const dates = transactions.map((item) => item.date.slice(0, 10)).sort();
+  const rows = await tx.transaction.findMany({
+    where: { userId, OR: [
+      { date: { gte: new Date(`${dates[0]}T00:00:00.000Z`), lte: new Date(`${dates[dates.length - 1]}T23:59:59.999Z`) } },
+      { importId: { in: transactions.map((item) => item.importId) } }
+    ] },
+    select: { date: true, description: true, amount: true, type: true, source: true, importId: true }
+  });
+  return rows.map((row) => ({ ...row, date: row.date.toISOString(), amount: Number(row.amount) }));
+}
+
+export async function previewImportedTransactions(payload: unknown) {
+  const parsed = importPayloadSchema.safeParse(payload);
+  if (!parsed.success) return { error: "Informe a conta de origem e confira data, descrição e valor de todas as linhas (até 5.000 por lote)." };
+  try {
+    if (!isDatabaseConfigured() || !isSupabaseConfigured()) return { error: "Entre na sua conta para conferir duplicadas e salvar extratos." };
+    const { data } = await (await createClient()).auth.getUser();
+    if (!data.user) return { error: "Faça login para conferir as transações já importadas." };
+    const user = await ensureUserFromAuthUser(data.user);
+    const transactions = prepareImport(parsed.data);
+    return { review: reviewImport(transactions, await existingImportRows(prisma, user.id, transactions)) };
+  } catch (error) {
+    secureLogger.error("Import preview failed", { error });
+    return { error: "Não foi possível verificar duplicadas. Sua prévia foi mantida; tente novamente." };
+  }
+}
 
 const aiClassificationSchema = z.array(
   z.object({
@@ -41,8 +90,10 @@ function parseCurrency(value: string) {
 }
 
 function parseBrazilianDate(value: string) {
-  const [day, month, year] = value.split("/").map(Number);
-  return new Date(year, month - 1, day).toISOString();
+  const [day, month, year] = value.split("/");
+  const date = `${year}-${month}-${day}`;
+  if (!isCalendarDate(date)) throw new Error("Data inválida no PDF.");
+  return transactionDate(date).toISOString();
 }
 
 function normalizePdfDescription(value: string) {
@@ -97,6 +148,7 @@ async function createPdfParser(file: File) {
 export async function parsePdfStatement(formData: FormData) {
   const file = formData.get("file");
   if (!(file instanceof File)) return { error: "Arquivo PDF não encontrado." };
+  if (file.size > 6 * 1024 * 1024) return { error: "O PDF deve ter até 6 MB. Exporte em CSV/XLSX ou divida o período." };
 
   let parser: Awaited<ReturnType<typeof createPdfParser>> | undefined;
 
@@ -411,90 +463,57 @@ export async function classifyImportedTransactions(payload: unknown) {
 }
 
 export async function saveImportedTransactions(payload: unknown) {
-  const transactions = z.array(transactionSchema).safeParse(payload);
-  if (!transactions.success) return { error: "Arquivo inválido ou sem transações reconhecidas." };
+  const parsed = importPayloadSchema.safeParse(payload);
+  if (!parsed.success) return { error: "Confira a conta de origem, as datas e os valores antes de salvar." };
+  try {
+    if (!isDatabaseConfigured() || !isSupabaseConfigured()) return { error: "Entre na sua conta para salvar extratos. Nenhum dado foi gravado." };
+    const { data } = await (await createClient()).auth.getUser();
+    if (!data.user) return { error: "Faça login para salvar extratos no seu usuário." };
+    const user = await ensureUserFromAuthUser(data.user);
+    await ensureDefaultCategories(user.id);
+    const incoming = prepareImport(parsed.data);
 
-  if (!isDatabaseConfigured()) {
-    return {
-      success: `${transactions.data.length} transações processadas em modo demo. Configure DATABASE_URL para salvar no PostgreSQL.`
-    };
-  }
-
-  const data = isSupabaseConfigured() ? (await (await createClient()).auth.getUser()).data : { user: null };
-
-  if (isSupabaseConfigured() && !data.user) {
-    return { error: "Faça login para salvar extratos no seu usuário." };
-  }
-
-  const user = data.user ? await ensureUserFromAuthUser(data.user) : null;
-
-  if (!user) return { error: "Configure o banco e faça login antes de salvar importações." };
-
-  await ensureDefaultCategories(user.id);
-
-  const categories = await prisma.category.findMany({ where: { userId: user.id } });
-  const goals = await prisma.goal.findMany({ where: { userId: user.id }, select: { id: true } });
-  const goalIds = new Set(goals.map((goal) => goal.id));
-  const goalMarkers = await prisma.goalMarker.findMany({ where: { userId: user.id } });
-  const rules = categories.map((category) => ({
-    name: category.name,
-    color: category.color,
-    icon: category.icon,
-    keywords: category.keywords
-  }));
-  const importId = crypto.randomUUID();
-
-  const savedTransactions = await prisma.$transaction(
-    transactions.data.map((transaction) => {
-      const categoryByTag = categorizeDescription(transaction.description, rules.length ? rules : defaultCategoryRules);
-      const categoryName = transaction.category ?? (categoryByTag !== "Outros" ? categoryByTag : "Outros");
-
-      return prisma.transaction.create({
-        data: {
-          userId: user.id,
-          categoryId: categories.find((category) => category.name === categoryName)?.id,
-          date: new Date(transaction.date),
-          description: transaction.description,
-          amount: transaction.amount,
-          type: transaction.type as TransactionType,
-          source: transaction.source ?? "Upload",
-          importId,
-          categoryLocked: Boolean(transaction.categoryLocked)
-        }
+    // Read, compare, insert and link goals atomically. Retry serialization conflicts
+    // so two tabs uploading the same statement cannot both insert the same rows.
+    const persist = () => prisma.$transaction(async (tx) => {
+      const [existing, categories, goals, markers] = await Promise.all([
+        existingImportRows(tx, user.id, incoming),
+        tx.category.findMany({ where: { userId: user.id } }),
+        tx.goal.findMany({ where: { userId: user.id }, select: { id: true } }),
+        tx.goalMarker.findMany({ where: { userId: user.id } })
+      ]);
+      const review = reviewImport(incoming, existing);
+      const selected = review.filter((row) => row.include).map((row) => incoming[row.index]);
+      const goalIds = new Set(goals.map((goal) => goal.id));
+      const rules = categories.map(({ name, color, icon, keywords }) => ({ name, color, icon, keywords }));
+      const records = selected.map((item) => {
+        const categoryName = item.category ?? categorizeDescription(item.description, rules.length ? rules : defaultCategoryRules);
+        return { id: crypto.randomUUID(), userId: user.id, categoryId: categories.find((category) => category.name === categoryName)?.id,
+          date: transactionDate(item.date), description: item.description, amount: item.amount,
+          type: item.type as TransactionType, source: item.source, importId: item.importId, categoryLocked: Boolean(item.categoryLocked) };
       });
-    })
-  );
+      if (records.length) await tx.transaction.createMany({ data: records });
+      const contributions = records.flatMap((item, index) => {
+        const original = selected[index];
+        if (item.type !== "EXPENSE" || isGoalContributionExcluded(item.description)) return [];
+        const goalId = original.goalId && goalIds.has(original.goalId) ? original.goalId : matchGoalMarker(item.description, markers)?.goalId;
+        return goalId ? [{ userId: user.id, goalId, transactionId: item.id, amount: item.amount, date: item.date }] : [];
+      });
+      if (contributions.length) await tx.goalContribution.createMany({ data: contributions, skipDuplicates: true });
+      return { saved: records.length, skipped: incoming.length - records.length, contributions: contributions.length };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 20000 });
 
-  const contributions = savedTransactions.flatMap((transaction, index) => {
-    const originalTransaction = transactions.data[index];
-    const marker = matchGoalMarker(transaction.description, goalMarkers);
-    const goalId = !isGoalContributionExcluded(transaction.description) && originalTransaction?.goalId && goalIds.has(originalTransaction.goalId)
-      ? originalTransaction.goalId
-      : marker?.goalId;
-
-    if (!goalId || transaction.type !== TransactionType.EXPENSE) return [];
-
-    return {
-      userId: user.id,
-      goalId,
-      transactionId: transaction.id,
-      amount: transaction.amount,
-      date: transaction.date
-    };
-  });
-
-  if (contributions.length > 0) {
-    await prisma.goalContribution.createMany({
-      data: contributions,
-      skipDuplicates: true
-    });
+    let result: Awaited<ReturnType<typeof persist>> | undefined;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try { result = await persist(); break; } catch (error) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2034" || attempt === 2) throw error;
+      }
+    }
+    if (!result) return { error: "Não foi possível salvar. Tente novamente." };
+    for (const path of ["/dashboard", "/transactions", "/goals", "/planning", "/insights", "/import"]) revalidatePath(path);
+    return { success: `${result.saved} transação(ões) salva(s). ${result.skipped} repetida(s) ignorada(s). ${result.contributions} aporte(s) relacionado(s) a metas.` };
+  } catch (error) {
+    secureLogger.error("Statement save failed", { error });
+    return { error: "Não foi possível concluir a importação. A prévia foi mantida; tente novamente. A conferência de duplicadas também protege novas tentativas." };
   }
-
-  revalidatePath("/dashboard");
-  revalidatePath("/transactions");
-  revalidatePath("/goals");
-  revalidatePath("/planning");
-  revalidatePath("/insights");
-  revalidatePath("/import");
-  return { success: `${transactions.data.length} transações importadas. ${contributions.length} aporte(s) relacionado(s) a metas.` };
 }

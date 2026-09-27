@@ -2,15 +2,18 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Sparkles, Trash2, UploadCloud } from "lucide-react";
-import { classifyImportedTransactions, parsePdfStatement, saveImportedTransactions } from "@/app/(dashboard)/import/actions";
+import { classifyImportedTransactions, parsePdfStatement, previewImportedTransactions, saveImportedTransactions } from "@/app/(dashboard)/import/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import type { ImportReview } from "@/lib/import-deduplication";
 import { normalizeText } from "@/lib/utils";
 import { defaultCategoryRules } from "@/services/category-service";
 import { parseStatementFile } from "@/services/import-service";
 import type { ParsedTransaction } from "@/types/finance";
 
 const fallbackCategories = defaultCategoryRules.map(({ name, keywords }) => ({ name, keywords }));
+type PreviewTransaction = ParsedTransaction & { fileHash: string; rowIndex: number; uiId: string; forceImport?: boolean };
 
 type CategoryOption = {
   name: string;
@@ -62,7 +65,9 @@ export function ImportDropzone({
     return [...categoryTags, ...goalTags];
   }, [categories, goalOptions]);
 
-  const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
+  const [transactions, setTransactions] = useState<PreviewTransaction[]>([]);
+  const [account, setAccount] = useState("");
+  const [review, setReview] = useState<ImportReview[] | null>(null);
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
@@ -83,31 +88,39 @@ export function ImportDropzone({
   }
 
   async function parseFile(file: File) {
+    if (file.size > 20 * 1024 * 1024) throw new Error(`${file.name}: limite de 20 MB por arquivo.`);
+    if (file.name.toLowerCase().endsWith(".pdf") && file.size > 6 * 1024 * 1024) throw new Error(`${file.name}: limite de 6 MB por PDF. Exporte em CSV/XLSX ou divida o período.`);
+    const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    const fileHash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    const withIdentity = (transaction: ParsedTransaction, rowIndex: number) => ({ ...applyAutomaticTag(transaction), source: file.name, fileHash, rowIndex, uiId: crypto.randomUUID() });
     if (file.name.toLowerCase().endsWith(".pdf")) {
       const formData = new FormData();
       formData.append("file", file);
       const result = await parsePdfStatement(formData);
       if ("error" in result) throw new Error(`${file.name}: ${result.error}`);
-      return result.transactions.map((transaction) => applyAutomaticTag({ ...transaction, source: file.name }));
+      return result.transactions.map(withIdentity);
     }
 
     const parsed = await parseStatementFile(file);
-    return parsed.map((transaction) => applyAutomaticTag({ ...transaction, source: file.name }));
+    return parsed.map(withIdentity);
   }
 
   async function handleFiles(files?: FileList | null) {
     setError(undefined);
     setMessage(undefined);
     if (!files?.length) return;
-
+    // Copy FileList before the input is reset so names/count survive async parsing.
+    const selectedFiles = Array.from(files);
     setReading(true);
     try {
-      const parsedGroups = await Promise.all(Array.from(files).map(parseFile));
+      const parsedGroups = await Promise.all(selectedFiles.map(parseFile));
       const nextTransactions = parsedGroups.flat();
-
+      if (transactions.length + nextTransactions.length > 5000) throw new Error("Importe até 5.000 transações por lote.");
+      if (!nextTransactions.length) throw new Error("Nenhuma transação reconhecida. Confira as colunas Data, Descrição e Valor do arquivo.");
+      setReview(null);
       setTransactions((current) => [...current, ...nextTransactions]);
-      setFileNames((current) => [...current, ...Array.from(files).map((file) => file.name)]);
-      setMessage(`${nextTransactions.length} transações lidas de ${files.length} arquivo(s). Revise e salve.`);
+      setFileNames((current) => [...current, ...selectedFiles.map((file) => file.name)]);
+      setMessage(`${nextTransactions.length} transações lidas de ${selectedFiles.length} arquivo(s). Revise e salve.`);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : "Falha ao ler arquivos.");
     } finally {
@@ -145,18 +158,46 @@ export function ImportDropzone({
     setFileNames([]);
     setMessage(undefined);
     setError(undefined);
+    setReview(null);
+  }
+
+  function updateRow(index: number, values: Partial<PreviewTransaction>) {
+    setTransactions((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...values, forceImport: false } : item));
+    setReview(null);
+  }
+
+  function checkDuplicates(nextTransactions = transactions) {
+    startTransition(async () => {
+      setError(undefined); setMessage(undefined); setReview(null);
+      try {
+        const result = await previewImportedTransactions({ account, transactions: nextTransactions });
+        if (result.error) setError(result.error);
+        else setReview(result.review ?? null);
+      } catch { setError("Não foi possível conectar. Tente conferir novamente; sua prévia foi mantida."); }
+    });
+  }
+
+  function updateForceImport(index: number, forceImport: boolean) {
+    const nextTransactions = transactions.map((item, itemIndex) => itemIndex === index ? { ...item, forceImport } : item);
+    setTransactions(nextTransactions);
+    // A confirmed extra payment changes which rows in overlapping files are
+    // duplicates. Refresh the review/count before enabling Save again.
+    checkDuplicates(nextTransactions);
   }
 
   function save() {
     startTransition(async () => {
       setError(undefined);
-      const result = await saveImportedTransactions(transactions);
+      try {
+      const result = await saveImportedTransactions({ account, transactions });
       if (result?.error) setError(result.error);
       if (result?.success) {
         setMessage(result.success);
         setTransactions([]);
         setFileNames([]);
+        setReview(null);
       }
+      } catch { setError("A conexão falhou. Tente salvar novamente; a prévia foi mantida."); }
     });
   }
 
@@ -164,6 +205,7 @@ export function ImportDropzone({
     startAiTransition(async () => {
       setError(undefined);
       setMessage(undefined);
+      try {
       const result = await classifyImportedTransactions(transactions);
 
       if (result?.error) {
@@ -203,134 +245,62 @@ export function ImportDropzone({
       setMessage(
         `${classifications.length} transação(ões) classificadas com IA. ${skipped} já tinham categoria e não foram enviadas.${createdCategories.length ? ` ${createdCategories.length} categoria(s) criada(s): ${createdCategories.map((category) => category.name).join(", ")}.` : ""} Revise antes de salvar.`
       );
+      } catch { setError("Não foi possível classificar. Tente novamente ou escolha as categorias manualmente."); }
     });
   }
 
+  const busy = reading || pending || aiPending;
+  const selectedCount = review?.filter((row) => row.status !== "imported" && (row.status === "new" || transactions[row.index]?.forceImport)).length ?? 0;
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <h2 className="font-semibold">Importar extratos</h2>
-          <p className="text-sm text-muted-foreground">
-            Envie os arquivos do banco. O Fluxa le as transacoes e deixa voce revisar tudo antes de salvar.
-          </p>
-        </CardHeader>
+        <CardHeader><h2 className="font-semibold">Importar extratos</h2><p className="text-sm text-muted-foreground">Envie, revise e confira duplicadas antes de salvar. Até 5.000 transações por lote.</p></CardHeader>
         <CardContent>
-          <label className="flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 px-5 text-center transition hover:bg-muted">
+          <label className="mb-4 block text-sm font-medium">Conta de origem<Input value={account} disabled={busy} maxLength={80} onChange={(event) => { setAccount(event.target.value); setReview(null); }} placeholder="Ex.: Nubank final 1234" className="mt-1 block max-w-md" /></label>
+          <p className="mb-4 text-sm text-muted-foreground">Use sempre o mesmo nome para esta conta. Contas diferentes podem ter pagamentos iguais.</p>
+          <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 px-5 text-center transition hover:bg-muted focus-within:ring-2 focus-within:ring-primary">
             <UploadCloud className="mb-3 size-9 text-primary" />
-            <span className="font-medium">{reading ? "Lendo arquivos..." : "Selecione CSV, XLSX ou PDF"}</span>
-            <span className="mt-1 text-sm text-muted-foreground">Pode enviar varios extratos de uma vez.</span>
-            <input
-              className="sr-only"
-              type="file"
-              accept=".csv,.xlsx,.xls,.pdf"
-              multiple
-              disabled={reading}
-              onChange={(event) => {
-                void handleFiles(event.target.files);
-                event.currentTarget.value = "";
-              }}
-            />
+            <span className="font-medium">{reading ? "Lendo arquivos…" : "Selecione CSV, XLSX ou PDF"}</span>
+            <span className="mt-1 text-sm text-muted-foreground">Arquivos da mesma conta. Até 20 MB para planilhas e 6 MB para PDF.</span>
+            <input className="sr-only" type="file" accept=".csv,.xlsx,.xls,.pdf" multiple disabled={busy} onChange={(event) => { void handleFiles(event.target.files); event.currentTarget.value = ""; }} />
           </label>
-          <details className="mt-3 rounded-lg border border-border bg-background/30 px-3 py-2 text-sm text-muted-foreground">
-            <summary className="cursor-pointer font-medium text-foreground">Ver palavras que o Fluxa ja conhece</summary>
-            <p className="mt-2 leading-6">
-              {tagOptions.length ? tagOptions.map((tag) => tag.label).join(", ") : "Nenhuma palavra cadastrada ainda."}
-            </p>
-          </details>
-          {fileNames.length > 0 && (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Arquivos na prévia: {Array.from(new Set(fileNames)).join(", ")}
-            </p>
-          )}
-          {error && <p className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-          {message && <p className="mt-4 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{message}</p>}
+          <details className="mt-3 rounded-lg border border-border p-3 text-sm"><summary className="cursor-pointer font-medium">Formato de exemplo</summary><p className="mt-2 text-muted-foreground">No CSV, use as colunas Data, Descrição e Valor. Valores negativos são gastos; positivos, receitas.</p><pre className="mt-2 overflow-auto rounded bg-muted p-3 text-xs">{"Data;Descrição;Valor\n27/09/2026;Mercado;-125,90\n27/09/2026;Salário;3500,00"}</pre></details>
+          {fileNames.length > 0 && <p className="mt-3 break-words text-sm text-muted-foreground">Arquivos: {Array.from(new Set(fileNames)).join(", ")}</p>}
+          {error && <p role="alert" className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+          {message && <p role="status" className="mt-4 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{message}</p>}
         </CardContent>
       </Card>
-
-      {transactions.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-semibold">Prévia da importação</h2>
-              <p className="text-sm text-muted-foreground">{transactions.length} transações reconhecidas em lote.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button className="bg-muted text-foreground hover:bg-muted/80" onClick={clearPreview} disabled={pending || aiPending}>
-                <Trash2 className="size-4" />
-                Limpar
-              </Button>
-              <Button className="bg-blue-500 text-white hover:bg-blue-500/90" onClick={classifyWithAi} disabled={pending || aiPending || reading}>
-                <Sparkles className="size-4" />
-                {aiPending ? "Classificando..." : "Classificar com IA"}
-              </Button>
-              <Button onClick={save} disabled={pending || aiPending || reading}>
-                {pending ? "Salvando..." : "Salvar transações"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1180px] text-sm">
-                <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr className="border-b border-border">
-                    <th className="py-3 font-medium">Data</th>
-                    <th className="font-medium">Descrição</th>
-                    <th className="font-medium">Arquivo</th>
-                    <th className="font-medium">Tipo</th>
-                    <th className="font-medium">Regra usada</th>
-                    <th className="font-medium">Categoria</th>
-                    <th className="font-medium">Meta</th>
-                    <th className="text-right font-medium">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((item, index) => (
-                    <tr key={`${item.description}-${item.date}-${index}`} className="border-b border-border/60 transition last:border-0 hover:bg-muted/40">
-                      <td className="py-3 text-muted-foreground">{new Date(item.date).toLocaleDateString("pt-BR")}</td>
-                      <td className="max-w-[320px] truncate font-medium">{item.description}</td>
-                      <td className="max-w-48 truncate text-muted-foreground">{item.source ?? "Upload"}</td>
-                      <td>{item.type === "INCOME" ? "Entrada" : "Saída"}</td>
-                      <td>
-                        <select className="h-9 min-w-56 rounded-md border border-border bg-background px-2" value={item.tag ?? ""} onChange={(event) => updateTag(index, event.target.value)}>
-                          <option value="">Nenhuma regra</option>
-                          <optgroup label="Categorias">
-                            {tagOptions.filter((tag) => tag.type === "category").map((tag) => (
-                              <option key={tag.value} value={tag.value}>{tag.label}</option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="Metas">
-                            {tagOptions.filter((tag) => tag.type === "goal").map((tag) => (
-                              <option key={tag.value} value={tag.value}>{tag.label}</option>
-                            ))}
-                          </optgroup>
-                        </select>
-                      </td>
-                      <td>
-                        <select className="h-9 rounded-md border border-border bg-background px-2" value={item.category ?? "Outros"} onChange={(event) => updateCategory(index, event.target.value)}>
-                          {categoryNames.map((category) => (
-                            <option key={category} value={category}>{category}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <select className="h-9 min-w-40 rounded-md border border-border bg-background px-2" value={item.goalId ?? ""} onChange={(event) => updateGoal(index, event.target.value)}>
-                          <option value="">Nenhuma</option>
-                          {goalOptions.map((goal) => (
-                            <option key={goal.id} value={goal.id}>{goal.name}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="text-right font-semibold">R$ {item.amount.toFixed(2).replace(".", ",")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {transactions.length > 0 && <Card>
+        <CardHeader className="space-y-3">
+          <div><h2 className="font-semibold">Revise as {transactions.length} transações</h2><p className="text-sm text-muted-foreground">Edite qualquer campo ou remova uma linha. Depois, confira o que já existe no histórico.</p></div>
+          <div className="flex flex-wrap gap-2">
+            <button className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm" onClick={clearPreview} disabled={busy}><Trash2 className="size-4" />Limpar prévia</button>
+            <Button onClick={classifyWithAi} disabled={busy}><Sparkles className="size-4" />{aiPending ? "Classificando…" : "Classificar com IA"}</Button>
+            <Button onClick={() => checkDuplicates()} disabled={busy || account.trim().length < 2}>{pending ? "Aguarde…" : "Conferir duplicadas"}</Button>
+            <Button onClick={save} disabled={busy || !review || selectedCount === 0}>{pending ? "Aguarde…" : `Salvar ${selectedCount} transações`}</Button>
+          </div>
+          {review && <div role="status" className="rounded-xl border border-border p-3 text-sm"><strong>{review.filter((row) => row.status === "new").length} novas</strong> · {review.filter((row) => row.status === "imported").length} já importadas · {review.filter((row) => row.status === "possible").length} possíveis repetidas.<p className="mt-1 text-muted-foreground">Repetidas ficam de fora. Se uma possível repetida for outro pagamento real, marque “Importar mesmo assim”. A conferência é refeita ao salvar.</p></div>}
+        </CardHeader>
+        <CardContent>
+          <fieldset disabled={busy} className="min-w-0 divide-y divide-border">
+            {transactions.map((item, index) => {
+              const status = review?.[index]?.status;
+              return <article key={item.uiId} className="space-y-3 py-5 first:pt-0">
+                <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-xs text-muted-foreground">{item.source} · linha {item.rowIndex + 1}</p>{status && <p className={status === "new" ? "text-sm text-emerald-500" : "text-sm text-amber-500"}>{status === "new" ? "Nova transação" : status === "imported" ? "Já importada — será ignorada" : "Possível repetida — confira"}</p>}</div><button type="button" className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Remover ${item.description} da prévia`} onClick={() => { setTransactions((rows) => rows.filter((row) => row.uiId !== item.uiId)); setReview(null); }}><Trash2 className="size-4" /></button></div>
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <label className="min-w-0 text-xs text-muted-foreground">Descrição<Input className="mt-1" maxLength={300} required value={item.description} onChange={(event) => updateRow(index, { description: event.target.value })} /></label>
+                  <label className="min-w-0 text-xs text-muted-foreground">Data<Input className="mt-1" type="date" required value={item.date.slice(0, 10)} onChange={(event) => updateRow(index, { date: event.target.value })} /></label>
+                  <label className="min-w-0 text-xs text-muted-foreground">Valor (R$)<Input className="mt-1" type="number" inputMode="decimal" min="0.01" step="0.01" required value={item.amount || ""} onChange={(event) => updateRow(index, { amount: Number(event.target.value) })} /></label>
+                  <label className="min-w-0 text-xs text-muted-foreground">Tipo<select className="premium-input mt-1 h-10 w-full rounded-xl px-3 text-sm" value={item.type} onChange={(event) => updateRow(index, { type: event.target.value as "INCOME" | "EXPENSE" })}><option value="EXPENSE">Gasto</option><option value="INCOME">Receita</option></select></label>
+                  <label className="min-w-0 text-xs text-muted-foreground">Categoria<select className="premium-input mt-1 h-10 w-full rounded-xl px-3 text-sm" value={item.category ?? "Outros"} onChange={(event) => updateCategory(index, event.target.value)}>{categoryNames.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+                </div>
+                <details className="text-sm"><summary className="cursor-pointer text-muted-foreground">Regra de categoria e meta</summary><div className="mt-3 grid gap-3 sm:grid-cols-2"><label>Regra<select className="premium-input mt-1 h-10 w-full rounded-xl px-3" value={item.tag ?? ""} onChange={(event) => updateTag(index, event.target.value)}><option value="">Nenhuma regra</option>{tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label}</option>)}</select></label><label>Meta<select className="premium-input mt-1 h-10 w-full rounded-xl px-3" value={item.goalId ?? ""} onChange={(event) => updateGoal(index, event.target.value)}><option value="">Nenhuma</option>{goalOptions.map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label></div></details>
+                {status === "possible" && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(item.forceImport)} onChange={(event) => updateForceImport(index, event.target.checked)} />Importar mesmo assim: este é outro pagamento real.</label>}
+              </article>;
+            })}
+          </fieldset>
+        </CardContent>
+      </Card>}
     </div>
   );
 }
-
