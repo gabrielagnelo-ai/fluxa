@@ -59,7 +59,7 @@ export async function updateTransactionCategory(formData: FormData) {
     const result = await prisma.transaction.updateMany({ where: { id: parsed.data.id, userId }, data: { categoryId: category.id, categoryLocked: true } });
     if (!result.count) return { error: "Esta transação não está mais disponível." };
     refreshTransactions();
-    return { success: "Categoria atualizada." };
+    return { success: "Categoria atualizada.", categoryId: category.id };
   } catch (error) {
     secureLogger.error("Transaction category update failed", { error });
     return { error: "Não foi possível atualizar a categoria. Tente novamente." };

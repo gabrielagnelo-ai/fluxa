@@ -7,6 +7,7 @@ export type ParsedTransaction = {
   amount: number;
   type: TransactionType;
   category?: string;
+  categoryId?: string | null;
   categoryLocked?: boolean;
   tag?: string;
   goalId?: string;

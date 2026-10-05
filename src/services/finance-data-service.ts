@@ -89,6 +89,7 @@ export async function getTransactionsForCurrentUser(options?: { limit?: number; 
     amount: Number(transaction.amount),
     type: transaction.type,
     category: transaction.category?.name ?? "Outros",
+    categoryId: transaction.categoryId,
     source: transaction.source ?? undefined,
     importId: transaction.importId ?? undefined
   }));
@@ -115,6 +116,7 @@ export async function getRecentWhatsAppTransactionsForCurrentUser(limit = 3): Pr
     amount: Number(transaction.amount),
     type: transaction.type,
     category: transaction.category?.name ?? "Outros",
+    categoryId: transaction.categoryId,
     source: transaction.source ?? undefined,
     importId: transaction.importId ?? undefined
   }));

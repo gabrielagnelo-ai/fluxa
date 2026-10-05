@@ -12,7 +12,7 @@ import type { ParsedTransaction } from "@/types/finance";
 type CategoryOption = { id: string; name: string };
 const displayDate = (date: string) => date.slice(0, 10).split("-").reverse().join("/");
 
-export function TransactionsTable({ transactions, title = "Últimas transações", categories = [], redirectTo }: {
+export function TransactionsTable({ transactions, title = "Últimas transações", categories = [] }: {
   transactions: ParsedTransaction[]; title?: string; categories?: CategoryOption[]; redirectTo?: string;
 }) {
   const [search, setSearch] = useState("");
@@ -39,7 +39,7 @@ export function TransactionsTable({ transactions, title = "Últimas transações
           <p className="break-words text-xs text-muted-foreground">{item.category ?? "Outros"}{item.source && ` · ${item.source}`}</p>
           {actions(item)}
         </article>)}</div>
-        <div className="hidden overflow-x-auto md:block"><table className="w-full text-sm"><thead className="text-left text-xs text-muted-foreground"><tr className="border-b border-border"><th className="py-3 font-medium">Data</th><th className="font-medium">Descrição</th><th className="font-medium">Categoria</th><th className="text-right font-medium">Valor</th><th className="text-right font-medium">Ações</th></tr></thead><tbody>{filtered.map((item, index) => <tr key={item.id ?? index} className="border-b border-border/60 last:border-0 hover:bg-muted/40"><td className="whitespace-nowrap py-3 pr-3 text-muted-foreground">{displayDate(item.date)}</td><td className="max-w-64 break-words pr-3 font-medium">{item.description}<p className="text-xs font-normal text-muted-foreground">{item.type === "INCOME" ? "Receita" : "Gasto"}{item.source && ` · ${item.source}`}</p></td><td className="pr-3"><TransactionCategorySelect transactionId={item.id} currentCategory={item.category} categories={categories} redirectTo={redirectTo} /></td><td className="text-right">{amount(item)}</td><td className="pl-3">{actions(item)}</td></tr>)}</tbody></table></div>
+        <div className="hidden overflow-x-auto md:block"><table className="w-full text-sm"><thead className="text-left text-xs text-muted-foreground"><tr className="border-b border-border"><th className="py-3 font-medium">Data</th><th className="font-medium">Descrição</th><th className="font-medium">Categoria</th><th className="text-right font-medium">Valor</th><th className="text-right font-medium">Ações</th></tr></thead><tbody>{filtered.map((item, index) => <tr key={item.id ?? index} className="border-b border-border/60 last:border-0 hover:bg-muted/40"><td className="whitespace-nowrap py-3 pr-3 text-muted-foreground">{displayDate(item.date)}</td><td className="max-w-64 break-words pr-3 font-medium">{item.description}<p className="text-xs font-normal text-muted-foreground">{item.type === "INCOME" ? "Receita" : "Gasto"}{item.source && ` · ${item.source}`}</p></td><td className="pr-3"><TransactionCategorySelect transactionId={item.id} currentCategoryId={item.categoryId} currentCategory={item.category} categories={categories} /></td><td className="text-right">{amount(item)}</td><td className="pl-3">{actions(item)}</td></tr>)}</tbody></table></div>
       </>}
     </CardContent>
   </Card>;
