@@ -107,9 +107,10 @@ test("invalid, expired and missing-session email links never enter a protected d
   assert.deepEqual(mock.calls, []);
 });
 
-test("mobile navigation keeps four primary tasks and the shared menu includes all app areas", () => {
+test("navigation retains the active areas and excludes postponed features", () => {
   assert.equal(mobilePrimaryItems.length, 4);
-  for (const href of ["/dashboard", "/transactions", "/planning", "/import", "/goals", "/investments", "/insights", "/settings", "/open-finance", "/privacy"]) assert.ok(navigationItems.some((item) => item.href === href), href);
-  assert.equal(isNavigationActive("/investments/details", "/investments"), true);
-  assert.equal(isNavigationActive("/investments-extra", "/investments"), false);
+  for (const href of ["/dashboard", "/transactions", "/planning", "/import", "/goals", "/settings", "/privacy"]) assert.ok(navigationItems.some((item) => item.href === href), href);
+  for (const href of ["/investments", "/insights", "/open-finance"]) assert.equal(navigationItems.some((item) => item.href === href), false, href);
+  assert.equal(isNavigationActive("/goals/details", "/goals"), true);
+  assert.equal(isNavigationActive("/goals-extra", "/goals"), false);
 });

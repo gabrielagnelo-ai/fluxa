@@ -6,7 +6,7 @@ export default async function GoalsPage() {
   const goals = await getGoalsForCurrentUser();
 
   return (
-    <div className="space-y-5">
+    <div className="fluxa-page workspace-page goals-page">
       <PageHeader
         eyebrow="Metas financeiras"
         title="Objetivos"

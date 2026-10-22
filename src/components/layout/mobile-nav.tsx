@@ -31,7 +31,7 @@ export function MobileNav() {
 
   return (
     <>
-      <nav aria-label="Navegação principal" className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-2xl border border-white/10 bg-card/95 p-1.5 shadow-glow backdrop-blur-2xl lg:hidden">
+      <nav aria-label="Navegação principal" className="fluxa-mobile-nav fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-2xl border border-white/10 bg-card/95 p-1.5 shadow-glow backdrop-blur-2xl lg:hidden">
         {mobilePrimaryItems.map((item) => {
           const active = isNavigationActive(pathname, item.href);
           return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-0.5 py-2 text-[10px] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary", active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}><item.icon className="size-4" aria-hidden="true" /><span>{item.label}</span></Link>;

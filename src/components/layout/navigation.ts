@@ -1,4 +1,4 @@
-import { Bot, BriefcaseBusiness, Calculator, Flag, Home, Landmark, Settings, ShieldCheck, Upload, WalletCards } from "lucide-react";
+import { Calculator, Flag, Home, Settings, ShieldCheck, Upload, WalletCards } from "lucide-react";
 
 export const navigationItems = [
   { href: "/dashboard", label: "Início", icon: Home },
@@ -6,12 +6,12 @@ export const navigationItems = [
   { href: "/planning", label: "Planejamento", icon: Calculator },
   { href: "/import", label: "Importar", icon: Upload },
   { href: "/goals", label: "Metas", icon: Flag },
-  { href: "/investments", label: "Investimentos", icon: BriefcaseBusiness },
-  { href: "/insights", label: "Inteligência", icon: Bot },
   { href: "/settings", label: "Ajustes", icon: Settings },
-  { href: "/open-finance", label: "Conexões bancárias", icon: Landmark },
   { href: "/privacy", label: "Privacidade e dados", icon: ShieldCheck }
 ];
+
+export const primaryNavigationItems = navigationItems.filter(item => !["/settings", "/privacy"].includes(item.href));
+export const secondaryNavigationItems = navigationItems.filter(item => ["/settings", "/privacy"].includes(item.href));
 
 export const mobilePrimaryItems = navigationItems.slice(0, 4);
 

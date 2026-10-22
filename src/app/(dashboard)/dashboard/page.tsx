@@ -1,14 +1,12 @@
-import { CreditCard, PiggyBank, TrendingDown, TrendingUp } from "lucide-react";
-import { Logo } from "@/components/branding/logo";
+import { formatCurrency } from "@/lib/utils";
 import { BalanceBaselineCard } from "@/components/dashboard/balance-baseline-card";
 import { CategoryForecastCard } from "@/components/dashboard/category-forecast-card";
 import { CreditAnalysis } from "@/components/dashboard/credit-analysis";
 import { FinanceCharts } from "@/components/dashboard/finance-charts";
-import { FirstStepsCard } from "@/components/dashboard/first-steps-card";
+import { TutorialStarter } from "@/components/onboarding/guided-tutorial";
 import { GoalsEvolution } from "@/components/dashboard/goals-evolution";
 import { InternalAlertsCard } from "@/components/dashboard/internal-alerts-card";
-import { InvestmentSummaryCard } from "@/components/dashboard/investment-summary-card";
-import { KpiCard } from "@/components/dashboard/kpi-card";
+import { OverviewPanels } from "@/components/dashboard/overview-panels";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { ProjectionCard } from "@/components/dashboard/projection-card";
 import { WeeklyExpenseInsight } from "@/components/dashboard/weekly-expense-insight";
@@ -31,7 +29,6 @@ import {
   getDashboardTransactions,
   getGoalsForCurrentUser
 } from "@/services/finance-data-service";
-import { buildInvestmentOverview, getInvestmentsForCurrentUser } from "@/services/investment-service";
 import { getPlanningOverview } from "@/services/planning-service";
 import { getPeriodLabel, getPeriodRange } from "@/utils/period";
 
@@ -41,19 +38,17 @@ export default async function DashboardPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const period = getPeriodRange(await searchParams);
-  const [transactions, evolutionTransactions, goals, currentBalance, investments, planningOverview, balanceBaseline] = await Promise.all([
+  const [transactions, evolutionTransactions, goals, currentBalance, planningOverview, balanceBaseline] = await Promise.all([
     getDashboardTransactions(period),
     getDashboardEvolutionTransactions(period.end),
     getGoalsForCurrentUser(),
     getCurrentBalanceUntil(period.end),
-    getInvestmentsForCurrentUser(),
     getPlanningOverview(period.end),
     getBalanceBaselineForCurrentUser()
   ]);
   const periodSummary = summarizeTransactions(transactions);
   const projection = projectPeriod(transactions, period);
   const weeklyInsight = weeklyExpenseInsight(evolutionTransactions, period.end);
-  const investmentOverview = buildInvestmentOverview(investments);
   const goalSnapshots = goals.map((goal) => ({
     name: goal.name,
     targetAmount: Number(goal.targetAmount),
@@ -70,60 +65,45 @@ export default async function DashboardPage({
   });
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        eyebrow={
-          <span className="inline-flex items-center gap-2">
-            <Logo size="sm" compact />
-            Visao geral
-          </span>
-        }
-        title="Dashboard financeiro"
-        description={`Resumo de ${getPeriodLabel(period)} com saldo atual, fluxo do mes, categorias, metas e tendencia de fechamento. O saldo atual considera saldo inicial configurado mais entradas, menos saidas, ate o fim do periodo selecionado.`}
-        actions={<PeriodFilter start={period.start} end={period.end} />}
-      />
+    <div className="fluxa-page dashboard-page">
+      <TutorialStarter eligible={shouldShowFirstSteps} incomeConfigured={Number(planningOverview.plan?.monthlyIncome ?? 0) > 0} limitsConfigured={planningOverview.categoryLimits.some(item => item.planned > 0)} />
+      <PageHeader title="Seu panorama financeiro" description={`Acompanhe seu dinheiro em ${getPeriodLabel(period)}.`} actions={<PeriodFilter start={period.start} end={period.end} />} />
 
-      {shouldShowFirstSteps && (
-        <FirstStepsCard
-          incomeConfigured={Number(planningOverview.plan?.monthlyIncome ?? 0) > 0}
-          limitsConfigured={planningOverview.categoryLimits.some((item) => item.planned > 0)}
-        />
-      )}
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={balanceBaseline ? "Saldo atual" : "Saldo estimado"} value={currentBalance} icon={CreditCard} tone="bg-blue-500/10 text-blue-500" />
-        <KpiCard label="Receitas do periodo" value={periodSummary.income} icon={TrendingUp} tone="bg-emerald-500/10 text-emerald-600" />
-        <KpiCard label="Despesas do periodo" value={periodSummary.expenses} icon={TrendingDown} tone="bg-red-500/10 text-red-600" />
-        <KpiCard label="Economia do periodo" value={periodSummary.savings} icon={PiggyBank} tone="bg-blue-500/10 text-blue-600" />
-      </section>
-
-      <BalanceBaselineCard baseline={balanceBaseline} currentBalance={currentBalance} defaultDate={period.start} />
-
-      <section className="grid gap-4 xl:grid-cols-[1fr_420px]">
-        <ProjectionCard {...projection} />
-        <WeeklyExpenseInsight {...weeklyInsight} />
-      </section>
-      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <CategoryForecastCard forecasts={forecasts} />
-        <InternalAlertsCard alerts={alerts} />
-      </section>
-      <section className="grid gap-4 xl:grid-cols-[420px_1fr]">
-        <InvestmentSummaryCard {...investmentOverview} />
-        <CreditAnalysis origins={creditOrigins(transactions)} />
-      </section>
+      <OverviewPanels balance={currentBalance} estimated={!balanceBaseline}
+        income={periodSummary.income} expenses={periodSummary.expenses}
+        categories={expensesByCategory(transactions)}
+        goals={goalSnapshots} />
       <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} />
-      <GoalsEvolution
-        goals={goals.map((goal) => ({
-          id: goal.id,
-          name: goal.name,
-          targetAmount: Number(goal.targetAmount),
-          contributedAmount: goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0),
-          contributions: goal.contributions.map((contribution) => ({
-            date: contribution.date.toISOString(),
-            amount: Number(contribution.amount)
-          }))
-        }))}
-      />
+      <section aria-label="Detalhes financeiros do mês">
+        <div className="dashboard-detail-grid">
+          <section className="dashboard-period-totals" aria-label="Indicadores do período"><div>Receitas<strong>{formatCurrency(periodSummary.income)}</strong></div><div>Despesas<strong>{formatCurrency(periodSummary.expenses)}</strong></div><div>Resultado do período<strong className={periodSummary.balance < 0 ? "text-red-400" : "text-emerald-400"}>{formatCurrency(periodSummary.balance)}</strong></div></section>
+          <p className="period-metric-note">Entradas e saídas registradas no período selecionado. Resultado = receitas − despesas; não inclui o saldo inicial nem representa o saldo disponível no banco.</p>
+
+          <div className="dashboard-section-heading"><h2>Seu mês em detalhe</h2><p>Projeções, alertas e acompanhamento das suas metas.</p></div>
+          <section className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+            <ProjectionCard {...projection} />
+            <WeeklyExpenseInsight {...weeklyInsight} />
+          </section>
+          <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <CategoryForecastCard forecasts={forecasts} />
+            <InternalAlertsCard alerts={alerts} />
+          </section>
+          <CreditAnalysis origins={creditOrigins(transactions)} />
+          <GoalsEvolution
+            goals={goals.map((goal) => ({
+              id: goal.id,
+              name: goal.name,
+              targetAmount: Number(goal.targetAmount),
+              contributedAmount: goal.contributions.reduce((sum, contribution) => sum + Number(contribution.amount), 0),
+              contributions: goal.contributions.map((contribution) => ({
+                date: contribution.date.toISOString(),
+                amount: Number(contribution.amount)
+              }))
+            }))}
+          />
+          <BalanceBaselineCard baseline={balanceBaseline} currentBalance={currentBalance} defaultDate={period.start} />
+        </div>
+      </section>
     </div>
   );
 }

@@ -42,8 +42,8 @@ export function WeeklyExpenseInsight({ total, previousTotal, difference, trendPe
             </p>
           </div>
           <Link
-            href="/insights"
-            aria-label="Abrir insights financeiros"
+            href="/transactions"
+            aria-label="Ver transações da semana"
             className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-background/60 text-muted-foreground transition hover:border-primary/50 hover:text-primary"
           >
             <ChevronRight className="size-5" />
@@ -59,7 +59,7 @@ export function WeeklyExpenseInsight({ total, previousTotal, difference, trendPe
                 <div className="flex h-24 items-end">
                   <div
                     className={cn(
-                      "w-4 rounded-full transition-all",
+                      "weekly-gradient-bar w-4 rounded-full transition-all",
                       day.amount > 0 ? "bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.35)]" : "border border-dashed border-muted-foreground/35 bg-transparent"
                     )}
                     style={{ height }}
@@ -74,7 +74,7 @@ export function WeeklyExpenseInsight({ total, previousTotal, difference, trendPe
 
         <div className="mt-5 flex items-center gap-2 border-t border-border/70 pt-4 text-sm text-muted-foreground">
           <Sparkles className="size-4 text-primary" />
-          <span>Insights financeiros</span>
+          <span>Resumo dos gastos da semana</span>
         </div>
       </CardContent>
     </Card>

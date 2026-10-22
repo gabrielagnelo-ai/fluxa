@@ -22,7 +22,7 @@ export default async function TransactionsPage({
   const snapshot = createHash("sha256").update(transactions.map((item) => item.id).filter(Boolean).sort().join("\n")).digest("hex");
 
   return (
-    <div className="space-y-5">
+    <div className="fluxa-page workspace-page transactions-page">
       <PageHeader
         eyebrow="Histórico e categorização manual"
         title="Transações"

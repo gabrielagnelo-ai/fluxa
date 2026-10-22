@@ -24,7 +24,7 @@ export function Logo({
     return (
       <div className={cn("flex items-center justify-center", className)}>
         <div
-          className="relative shrink-0 overflow-hidden rounded-full border border-primary/20 bg-[#06101f] shadow-[0_0_22px_rgba(37,99,235,0.24)]"
+          className="relative shrink-0"
           style={{ width: config.mark, height: config.mark }}
         >
           <Image
@@ -32,7 +32,7 @@ export function Logo({
             alt="Fluxa"
             fill
             sizes={`${config.mark}px`}
-            className="object-contain p-1.5"
+            className="object-contain"
             priority={size !== "sm"}
           />
         </div>
@@ -51,7 +51,7 @@ export function Logo({
           alt="Fluxa"
           fill
           sizes={`${config.logoWidth}px`}
-          className="object-contain drop-shadow-[0_0_18px_rgba(37,99,235,0.28)]"
+          className="object-contain"
           priority={size !== "sm"}
         />
       </div>

@@ -258,7 +258,7 @@ export function ImportDropzone({
         <CardContent>
           <label className="mb-4 block text-sm font-medium">Conta de origem<Input value={account} disabled={busy} maxLength={80} onChange={(event) => { setAccount(event.target.value); setReview(null); }} placeholder="Ex.: Nubank final 1234" className="mt-1 block max-w-md" /></label>
           <p className="mb-4 text-sm text-muted-foreground">Use sempre o mesmo nome para esta conta. Contas diferentes podem ter pagamentos iguais.</p>
-          <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 px-5 text-center transition hover:bg-muted focus-within:ring-2 focus-within:ring-primary">
+          <label className="glass-upload-zone flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 px-5 text-center transition hover:bg-muted focus-within:ring-2 focus-within:ring-primary">
             <UploadCloud className="mb-3 size-9 text-primary" />
             <span className="font-medium">{reading ? "Lendo arquivos…" : "Selecione CSV, XLSX ou PDF"}</span>
             <span className="mt-1 text-sm text-muted-foreground">Arquivos da mesma conta. Até 20 MB para planilhas e 6 MB para PDF.</span>

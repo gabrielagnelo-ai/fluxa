@@ -17,7 +17,7 @@ export function PlanningMonthSelector({ month, year }: { month: number; year: nu
   const nextMonth = new Date(current.getFullYear(), current.getMonth() + 1, 1);
 
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card/70 p-3 sm:flex-row sm:items-end">
+    <div className="planning-period-control flex flex-col gap-2 rounded-2xl border border-border bg-card/70 p-3 sm:flex-row sm:items-end">
       <form action="/planning" className="flex items-end gap-2">
         <label className="space-y-1">
           <span className="block text-xs font-medium text-muted-foreground">Mes do planejamento</span>

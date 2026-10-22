@@ -108,7 +108,7 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="h-2 rounded-full bg-muted">
-                  <div className="h-2 rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                  <div className="goal-progress-fill h-2 rounded-full bg-primary" style={{ width: `${progress}%` }} />
                 </div>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div className="rounded-lg border border-border bg-background/35 p-3">

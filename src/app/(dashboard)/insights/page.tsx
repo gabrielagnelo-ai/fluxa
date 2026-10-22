@@ -15,7 +15,7 @@ export default async function InsightsPage({
   const notifications = buildNotifications(context);
 
   return (
-    <div className="space-y-5">
+    <div className="fluxa-page">
       <PageHeader
         eyebrow="IA e alertas"
         title="Inteligência financeira"

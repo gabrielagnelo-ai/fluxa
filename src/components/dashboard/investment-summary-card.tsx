@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn, formatCurrency } from "@/lib/utils";
 
 type InvestmentSummaryCardProps = {
+  compact?: boolean;
   totalCurrent: number;
   gain: number;
   gainPercent: number;
@@ -17,8 +18,20 @@ type InvestmentSummaryCardProps = {
   }[];
 };
 
-export function InvestmentSummaryCard({ totalCurrent, gain, gainPercent, assetCount, allocation }: InvestmentSummaryCardProps) {
-  const topAllocations = allocation.slice(0, 3);
+export function InvestmentSummaryCard({ totalCurrent, gain, gainPercent, assetCount, allocation, compact = false }: InvestmentSummaryCardProps) {
+  const topAllocations = allocation.slice(0, compact ? 4 : 3);
+
+  if (compact) return <Card className="overview-investments">
+    <div className="investment-compact-heading"><h2>Investimentos</h2><Link href="/investments">Ver carteira<ChevronRight size={12} aria-hidden="true" /></Link></div>
+    <div className="investment-compact-total"><strong>{formatCurrency(totalCurrent)}</strong><span className={gain >= 0 ? "text-emerald-400" : "text-red-400"}>{gain >= 0 ? "+" : ""}{gainPercent.toFixed(2)}%</span></div>
+    <p className="investment-compact-caption">{assetCount} ativos · Resultado: {formatCurrency(gain)}</p>
+    <div className="investment-compact-grid">
+      {topAllocations.length ? topAllocations.map(item => <div className="investment-tile" key={item.type}>
+        <strong>{formatCurrency(item.value)}</strong><span className="investment-share">{item.share}% da carteira</span>
+        <span className="investment-tile-name"><i style={{background:item.color}} aria-hidden="true"/>{item.label}</span>
+      </div>) : <Link className="overview-empty" href="/investments">Cadastre ativos para visualizar sua carteira.</Link>}
+    </div>
+  </Card>;
 
   return (
     <Card className="overflow-hidden">

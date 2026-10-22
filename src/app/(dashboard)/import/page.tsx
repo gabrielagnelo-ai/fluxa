@@ -6,13 +6,13 @@ export default async function ImportPage() {
   const [categories, goals] = await Promise.all([getCategoriesForCurrentUser(), getGoalOptionsForCurrentUser()]);
 
   return (
-    <div className="space-y-5">
+    <div className="fluxa-page workspace-page import-page">
       <PageHeader
         eyebrow="CSV, XLSX e PDF"
         title="Importar extratos"
         description="Envie seus arquivos do banco. Revise os dados, ajuste as categorias e confira duplicadas antes de salvar."
       />
-      <ImportDropzone
+      <div data-tour="import-upload"><ImportDropzone
         categoryOptions={categories.map((category) => ({
           name: category.name,
           keywords: category.keywords
@@ -22,7 +22,7 @@ export default async function ImportPage() {
           name: goal.name,
           markers: goal.markers.map((marker) => marker.keyword)
         }))}
-      />
+      /></div>
     </div>
   );
 }
