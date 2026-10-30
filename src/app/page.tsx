@@ -114,7 +114,7 @@ export default function Home() {
 
 function Chapter({ index, id, title, body, children }: { index: number; id: string; title: ReactNode; body: string; children: ReactNode }) {
   return (
-    <section id={id} data-chapter={index} aria-labelledby={`${id}-title`} className="relative py-20 md:min-h-[150vh] md:py-0">
+    <section id={id} data-chapter={index} aria-labelledby={`${id}-title`} className="relative pb-20 pt-[44svh] md:min-h-[150vh] md:py-0">
       <div className="md:sticky md:top-0 md:flex md:h-[100svh] md:items-center">
         <div className="mx-auto w-full max-w-[1400px] px-5 md:px-10">
           <div className="max-w-[580px]">
@@ -145,17 +145,17 @@ function StatementCloseUp() {
   return (
     <figure className="detail overflow-hidden">
       <ExampleTag>extrato-outubro.csv</ExampleTag>
-      <ol className="num divide-y divide-[var(--line)] text-[13px] sm:text-sm">
+      <ol className="num divide-y divide-[var(--line)] text-[12px] sm:text-sm">
         {exampleStatement.map((row) => (
-          <li key={row.raw} className="grid grid-cols-[44px_1fr_auto] items-center gap-3 px-5 py-2.5">
+          <li key={row.raw} className="grid grid-cols-[38px_1fr_auto] items-baseline gap-x-3 px-4 py-2.5 sm:grid-cols-[44px_1fr_auto] sm:px-5">
             <span className="text-2">{row.day}</span>
-            <span className="truncate">{row.raw}</span>
+            <span className="min-w-0 break-words">{row.raw}</span>
             <span className={row.amount > 0 ? "text-[var(--gain)]" : "text-[var(--text)]"}>{row.amount > 0 ? "+" : "−"}{formatAmount(row.amount)}</span>
           </li>
         ))}
-        <li className="grid grid-cols-[44px_1fr_auto] items-center gap-3 bg-[var(--cyan-soft)] px-5 py-2.5">
+        <li className="grid grid-cols-[38px_1fr_auto] items-baseline gap-x-3 bg-[var(--cyan-soft)] px-4 py-2.5 sm:grid-cols-[44px_1fr_auto] sm:px-5">
           <span className="text-2">{duplicate.day}</span>
-          <span className="truncate text-2 line-through">{duplicate.raw}</span>
+          <span className="min-w-0 break-words text-2 line-through">{duplicate.raw}</span>
           <span className="text-cyan">repetida</span>
         </li>
       </ol>
@@ -181,7 +181,7 @@ function CategoryCloseUp() {
       <ul className="divide-y divide-[var(--line)] border-t border-[var(--line)] text-sm">
         {rows.filter((row) => row.category !== "Mercado").map((row) => (
           <li key={row.raw} className="flex items-center justify-between gap-3 px-5 py-3">
-            <span className="num truncate text-[13px] text-2">{row.raw}</span>
+            <span className="num min-w-0 break-words text-[12px] text-2 sm:text-[13px]">{row.raw}</span>
             <span className="shrink-0 rounded-full border border-[var(--line-strong)] px-3 py-1 text-[13px]">{row.category}</span>
           </li>
         ))}

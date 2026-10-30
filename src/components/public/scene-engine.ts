@@ -169,6 +169,9 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
     const t = ease(clamped - a);
     targetPos.set(...CAMERA[a].pos).lerp(new THREE.Vector3(...CAMERA[b].pos), t);
     targetLook.set(...CAMERA[a].look).lerp(new THREE.Vector3(...CAMERA[b].look), t);
+    // Narrow screens: pull the camera back so the five bars fit the width.
+    const aspect = width / height;
+    if (aspect < 1) targetPos.sub(targetLook).multiplyScalar(Math.min(1.8, Math.max(1, 0.78 / aspect))).add(targetLook);
     if (!lite && !reducedMotion) targetPos.add(new THREE.Vector3(pointer.x * 0.35, pointer.y * 0.2, 0));
   }
 
@@ -203,7 +206,8 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
       place(time);
       camera.position.copy(cameraPos);
       camera.lookAt(cameraLook);
-      camera.setViewOffset(width, height, -shift * width, 0, width, height);
+      // Phones: lift the scene into the upper part of the screen, above the copy.
+      camera.setViewOffset(width, height, -shift * width, width < height ? height * 0.14 : 0, width, height);
       renderer.render(scene, camera);
       dirty = false;
       start();

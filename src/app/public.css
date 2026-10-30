@@ -58,7 +58,7 @@
 
 @media (max-width: 767px) {
   .public-scene canvas[data-ready="true"] {
-    opacity: 0.6;
+    opacity: 0.9;
   }
 }
 
@@ -267,11 +267,10 @@
   transition: background-color 200ms linear, border-color 200ms linear;
 }
 
+/* Opaque once scrolled: copy passing under the bar must not stay readable behind it. */
 .public-header[data-solid="true"] {
   border-color: var(--line);
-  background: rgb(5 8 15 / 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--ink);
 }
 
 .header-cta {
@@ -399,6 +398,6 @@
 
 @media (max-width: 1023px) {
   .public-scene[data-mode]::after {
-    background: linear-gradient(180deg, rgb(5 8 15 / 0.25) 0%, rgb(5 8 15 / 0.55) 55%, rgb(5 8 15 / 0.85) 100%);
+    background: linear-gradient(180deg, transparent 0%, transparent 38%, rgb(5 8 15 / 0.6) 62%, rgb(5 8 15 / 0.85) 100%);
   }
 }
