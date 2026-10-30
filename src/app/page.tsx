@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { LandingChrome } from "@/components/public/landing-chrome";
 import { PublicFooter } from "@/components/public/public-footer";
 import { SceneMode } from "@/components/public/scene-mode";
-import { exampleBalance, exampleCategories, exampleIncome, examplePlanned, exampleSpent, exampleStatement, formatAmount } from "@/components/public/example-month";
+import { exampleBalance, exampleCategories, exampleOpening, exampleIncome, examplePlanned, exampleSpent, exampleStatement, formatAmount } from "@/components/public/example-month";
 
 export const metadata: Metadata = {
   title: { absolute: "Fluxa | Seu dinheiro, explicado" },
@@ -211,8 +211,9 @@ function SpendingCloseUp() {
       <dl className="grid grid-cols-3 border-b border-[var(--line)] text-sm">
         <div className="border-r border-[var(--line)] px-4 py-3 sm:px-5"><dt className="text-2">Entradas</dt><dd className="num mt-1 text-[var(--gain)]">{formatAmount(exampleIncome)}</dd></div>
         <div className="border-r border-[var(--line)] px-4 py-3 sm:px-5"><dt className="text-2">Saídas</dt><dd className="num mt-1">{formatAmount(exampleSpent)}</dd></div>
-        <div className="px-4 py-3 sm:px-5"><dt className="text-2">Saldo</dt><dd className="num mt-1">{formatAmount(exampleBalance)}</dd></div>
+        <div className="px-4 py-3 sm:px-5"><dt className="text-2">Saldo no fim do mês</dt><dd className="num mt-1">{formatAmount(exampleBalance)}</dd></div>
       </dl>
+      <p className="border-b border-[var(--line)] px-4 py-2.5 text-sm text-2 sm:px-5">O mês começou com <span className="num text-[var(--text)]">R$ {formatAmount(exampleOpening)}</span>.</p>
       <p className="px-5 pt-4 text-sm text-2">Saídas por categoria, em R$</p>
       <ul className="space-y-3.5 px-5 pb-5 pt-3">
         {exampleCategories.map((item, index) => (
@@ -256,9 +257,12 @@ function LimitsCloseUp() {
           );
         })}
       </ul>
-      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-[var(--line)] px-5 py-4 text-sm">
-        <span className="text-2">Renda de R$ {formatAmount(exampleIncome)} menos os limites</span>
-        <span className="num text-brand">sobram R$ {formatAmount(exampleIncome - examplePlanned)}</span>
+      <figcaption className="border-t border-[var(--line)] px-5 py-4 text-sm">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <span>Como o mês deve terminar</span>
+          <span className="num text-brand">sobra provável R$ {formatAmount(exampleIncome - examplePlanned)}</span>
+        </div>
+        <p className="mt-1 text-2">Previsão: renda de R$ {formatAmount(exampleIncome)} menos R$ {formatAmount(examplePlanned)} de gastos previstos.</p>
       </figcaption>
     </figure>
   );

@@ -15,7 +15,7 @@ const CAMERA: Array<{ pos: [number, number, number]; look: [number, number, numb
   { pos: [3.6, 4.6, 8.2], look: [0, 3.1, 0] },
   { pos: [5.2, 7.4, 6.4], look: [0, 0, -5.5] },
   { pos: [-5.4, 3.1, 8.2], look: [-1.4, 1.5, 0] },
-  { pos: [4.6, 2.7, 6.6], look: [0.6, 2, 0] },
+  { pos: [4.6, 2.7, 7.4], look: [-1.4, 2, 0] },
   { pos: [0.4, 1.3, 11.5], look: [0, 1.7, 0] }
 ];
 
