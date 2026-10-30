@@ -1,60 +1,60 @@
+import { exampleCategories, exampleSpent, exampleStatement } from "@/components/public/example-month";
 import { formatCurrency } from "@/lib/utils";
 
 const metrics = [
-  ["Saldo ilustrativo", 4200, "text-primary"],
-  ["Receitas", 5200, "text-success"],
-  ["Despesas", 2860, "text-red-400"],
-  ["Resultado do mês", 2340, "text-success"]
+  ["Saldo", 4200, "text-[var(--text)]"],
+  ["Receitas", 5200, "text-[var(--gain)]"],
+  ["Despesas", 2860, "text-[var(--danger)]"],
+  ["Resultado", 2340, "text-[var(--gain)]"]
 ] as const;
-export function DashboardPreview() {
-  return (
-    <div className="relative mx-auto mt-10 w-full max-w-5xl overflow-hidden rounded-xl border border-border bg-card/80 p-4 shadow-card backdrop-blur">
-      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="text-left">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Exemplo com dados fictícios</p>
-          <h2 className="text-lg font-semibold">Dashboard financeiro</h2>
-        </div>
-        <span className="rounded-md bg-primary/15 px-3 py-1 text-xs text-primary">Mês de exemplo</span>
-      </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {metrics.map(([label, value, tone]) => (
-          <div key={label} className="rounded-lg border border-border bg-background/55 p-4 text-left">
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <strong className={`mt-2 block text-xl ${tone}`}>{formatCurrency(value)}</strong>
+// Public preview of the dashboard with fictitious data: numbers always carry their label and period.
+export function DashboardPreview() {
+  const largest = Math.max(...exampleCategories.map((item) => item.spent));
+  return (
+    <div className="detail overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-3">
+        <p className="mono-label !text-[11px] text-[var(--text)]">Outubro · mês de exemplo</p>
+        <p className="mono-label hidden !text-[11px] sm:block">Dados fictícios</p>
+      </div>
+      <dl className="grid grid-cols-2 lg:grid-cols-4">
+        {metrics.map(([label, value, tone], index) => (
+          <div key={label} className={`border-[var(--line)] px-5 py-4 ${index % 2 === 0 ? "border-r" : ""} ${index < 2 ? "border-b lg:border-b-0" : ""} lg:border-r lg:last:border-r-0`}>
+            <dt className="text-sm text-2">{label}</dt>
+            <dd className={`num mt-1 text-lg font-medium sm:text-xl ${tone}`}>{formatCurrency(value)}</dd>
           </div>
         ))}
-      </div>
-
-      <div className="mt-3 grid gap-3 lg:grid-cols-[0.75fr_1.25fr]">
-        <div className="rounded-lg border border-border bg-background/55 p-4">
-          <p className="text-sm font-medium">Gastos por categoria</p>
-          <div className="mt-4 grid place-items-center">
-            <div className="relative size-28 rounded-full border-[16px] border-primary border-r-red-500 border-t-success">
-              <div className="absolute inset-4 rounded-full bg-background/95" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border bg-background/55 p-4">
-          <p className="text-sm font-medium">Últimas transações</p>
-          <div className="mt-4 space-y-2 text-sm">
-            {[
-              ["Mercado do bairro", "Saída", "text-red-400"],
-              ["Transporte", "Saída", "text-red-400"],
-              ["Reserva de emergência", "Meta", "text-success"]
-            ].map(([item, type, tone]) => (
-              <div key={item} className="flex items-center justify-between gap-4 rounded-md bg-card/70 px-3 py-2">
-                <span className="truncate font-medium">{item}</span>
-                <span className={tone}>{type}</span>
-              </div>
+      </dl>
+      <div className="grid border-t border-[var(--line)] lg:grid-cols-2">
+        <div className="px-5 py-5 lg:border-r lg:border-[var(--line)]">
+          <p className="font-medium">Gastos por categoria</p>
+          <ul className="mt-4 space-y-3">
+            {exampleCategories.map((item) => (
+              <li key={item.name}>
+                <div className="flex items-baseline justify-between gap-3 text-sm">
+                  <span>{item.name}</span>
+                  <span className="num">{formatCurrency(item.spent)} <span className="text-2">{Math.round((item.spent / exampleSpent) * 100)}%</span></span>
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--line)]"><div className="h-full rounded-full bg-[var(--cyan)]" style={{ width: `${(item.spent / largest) * 100}%` }} /></div>
+              </li>
             ))}
-          </div>
+          </ul>
+        </div>
+        <div className="border-t border-[var(--line)] px-5 py-5 lg:border-t-0">
+          <p className="font-medium">Últimas transações</p>
+          <ul className="mt-3 divide-y divide-[var(--line)]">
+            {exampleStatement.slice(-3).reverse().map((item) => (
+              <li key={item.raw} className="flex items-center justify-between gap-3 py-3 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate">{item.category}</p>
+                  <p className="num mt-0.5 text-xs text-2">{item.day}</p>
+                </div>
+                <span className="num shrink-0">−{formatCurrency(Math.abs(item.amount))}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
   );
 }
-
-
