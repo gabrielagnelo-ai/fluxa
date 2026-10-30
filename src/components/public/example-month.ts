@@ -11,6 +11,8 @@ export const exampleCategories = [
 ] as const;
 
 export const exampleSpent = exampleCategories.reduce((total, item) => total + item.spent, 0);
+// Same figures as the demo: the month opens at R$ 1.860,00 and closes at R$ 4.200,00.
+export const exampleBalance = 4200;
 export const examplePlanned = exampleCategories.reduce((total, item) => total + item.planned, 0);
 
 export const exampleStatement = [

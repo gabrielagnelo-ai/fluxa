@@ -49,16 +49,20 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !lite, alpha: true, powerPreference: "low-power" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, lite ? 1 : 1.75));
   renderer.setClearColor(0x000000, 0);
+  // Tone mapping keeps highlights inside the logo blues instead of clipping to cyan (principle 16).
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.9;
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x05080f, 10, 30);
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
 
-  scene.add(new THREE.HemisphereLight(0x80d8f8, 0x05080f, 1.1));
-  const key = new THREE.DirectionalLight(0xffffff, 1.6);
+  // Light colours come from the logo too; white light would wash the blues out.
+  scene.add(new THREE.HemisphereLight(0x80d8f8, 0x05080f, 0.8));
+  const key = new THREE.DirectionalLight(0x90c8ff, 1.2);
   key.position.set(-4, 9, 6);
   scene.add(key);
-  const rim = new THREE.PointLight(0x1ea7fd, 18, 14, 1.6);
+  const rim = new THREE.PointLight(0x0080f8, 6, 14, 1.6);
   rim.position.set(3, 4, -3);
   scene.add(rim);
 
@@ -86,7 +90,7 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
     const category = categoryOf[i];
     const index = indexInCategory[i];
     const barX = (category - 2) * BAR_GAP;
-    layouts[0].push([(random() - 0.5) * 7.5, 0.4 + random() * 4.2, -1.5 - random() * 4.5, random() * 3, random() * 3, random() * 3]);
+    layouts[0].push([(lite ? 0 : 3.4) + (random() - 0.5) * (lite ? 6.5 : 4.6), 0.4 + random() * 4.2, -1.5 - random() * 4, random() * 3, random() * 3, random() * 3]);
     layouts[1].push([(random() - 0.5) * 0.06, statementSlot[i] * STEP * (lite ? 2 : 1), 0, 0, (random() - 0.5) * 0.12, 0]);
     layouts[2].push([barX, 0.03, -index * ROW_GAP * (lite ? 2 : 1), 0, 0, 0]);
     layouts[3].push([barX, index * STEP * (lite ? 2.4 : 1), 0, 0, 0, 0]);

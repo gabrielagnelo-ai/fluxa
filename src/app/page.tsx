@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { LandingChrome } from "@/components/public/landing-chrome";
 import { PublicFooter } from "@/components/public/public-footer";
 import { SceneMode } from "@/components/public/scene-mode";
-import { exampleCategories, exampleIncome, examplePlanned, exampleSpent, exampleStatement, formatAmount } from "@/components/public/example-month";
+import { exampleBalance, exampleCategories, exampleIncome, examplePlanned, exampleSpent, exampleStatement, formatAmount } from "@/components/public/example-month";
 
 export const metadata: Metadata = {
   title: { absolute: "Fluxa | Seu dinheiro, explicado" },
@@ -41,7 +41,7 @@ export default function Home() {
               <br />
               <span className="intro-word text-brand" style={vars({ "--i": 2 })}>explicado.</span>
             </h1>
-            <div className="copy-plate mt-8 max-w-[44ch] lg:mt-10">
+            <div className="copy-plate -mt-6 max-w-[44ch] md:mt-8 lg:mt-10">
               <p className="intro-fade text-[17px] leading-relaxed text-2 md:text-lg" style={vars({ "--i": 1 })}>
                 Importe o extrato do seu banco ou mande o gasto por mensagem no WhatsApp. O Fluxa separa cada gasto por categoria e mostra para onde o mês foi.
               </p>
@@ -74,17 +74,17 @@ export default function Home() {
         </Chapter>
 
         <Chapter index={2} id="categorizar" title={<>Cada gasto no <span className="text-brand">seu lugar.</span></>}
-          body="Regras com palavras-chave e sugestões automáticas separam moradia, mercado e transporte. Você confere e corrige só o que precisar.">
+          body="Regras com palavras-chave e sugestões da inteligência artificial separam moradia, mercado e transporte. Você confere e corrige só o que precisar.">
           <CategoryCloseUp />
         </Chapter>
 
         <Chapter index={3} id="para-onde-vai" title={<>Para onde <span className="text-brand">o mês foi.</span></>}
-          body="Saldo, entradas, saídas e o peso de cada categoria, com o valor ao lado de cada uma. Dá para ler sem adivinhar.">
+          body="Saldo, entradas, saídas e o peso de cada categoria, com o valor ao lado, mais uma análise do período feita pela inteligência artificial.">
           <SpendingCloseUp />
         </Chapter>
 
         <Chapter index={4} id="metas" title={<>Um limite para <span className="text-brand">cada categoria.</span></>}
-          body="Informe sua renda, defina quanto quer gastar em cada categoria e veja o que sobra para as suas metas antes de o mês acabar. Dinheiro guardado entra na meta, até por mensagem.">
+          body="Informe sua renda e defina quanto quer gastar em cada categoria. O Fluxa mostra como o mês deve terminar e avisa quais categorias podem passar do combinado. Dinheiro guardado entra na meta, até por mensagem.">
           <LimitsCloseUp />
         </Chapter>
 
@@ -207,12 +207,14 @@ function SpendingCloseUp() {
   const largest = Math.max(...exampleCategories.map((item) => item.spent));
   return (
     <figure className="detail overflow-hidden">
-      <ExampleTag>Saídas de outubro</ExampleTag>
-      <div className="flex items-baseline justify-between gap-4 px-5 pt-5">
-        <p className="text-sm text-2">Total do mês</p>
-        <p className="num text-2xl font-medium">R$ {formatAmount(exampleSpent)}</p>
-      </div>
-      <ul className="space-y-4 px-5 pb-6 pt-5">
+      <ExampleTag>Outubro</ExampleTag>
+      <dl className="grid grid-cols-3 border-b border-[var(--line)] text-sm">
+        <div className="border-r border-[var(--line)] px-4 py-3 sm:px-5"><dt className="text-2">Entradas</dt><dd className="num mt-1 text-[var(--gain)]">{formatAmount(exampleIncome)}</dd></div>
+        <div className="border-r border-[var(--line)] px-4 py-3 sm:px-5"><dt className="text-2">Saídas</dt><dd className="num mt-1">{formatAmount(exampleSpent)}</dd></div>
+        <div className="px-4 py-3 sm:px-5"><dt className="text-2">Saldo</dt><dd className="num mt-1">{formatAmount(exampleBalance)}</dd></div>
+      </dl>
+      <p className="px-5 pt-4 text-sm text-2">Saídas por categoria, em R$</p>
+      <ul className="space-y-3.5 px-5 pb-5 pt-3">
         {exampleCategories.map((item, index) => (
           <li key={item.name}>
             <div className="flex items-baseline justify-between gap-3 text-sm">
