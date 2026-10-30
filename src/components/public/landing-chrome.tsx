@@ -10,6 +10,7 @@ import { sceneStore } from "./scene-store";
 export function LandingChrome() {
   const [solid, setSolid] = useState(false);
   const [showCta, setShowCta] = useState(false);
+  const [showLogo, setShowLogo] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -37,6 +38,7 @@ export function LandingChrome() {
       const pastHero = hero ? hero.getBoundingClientRect().bottom < height * 0.35 : false;
       const beforeFinal = final ? final.getBoundingClientRect().top > height * 0.6 : true;
       setShowCta(pastHero && beforeFinal);
+      setShowLogo(pastHero);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
@@ -64,18 +66,18 @@ export function LandingChrome() {
   return (
     <header className="public-header fixed inset-x-0 top-0 z-30 border-b border-transparent" data-solid={solid}>
       <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-5 md:px-10">
-        <Link href="/" aria-label="Fluxa, início" className="-ml-1 rounded-md p-1">
+        <Link href="/" aria-label="Fluxa, início" className="header-logo -ml-1 rounded-md p-1" data-visible={showLogo} tabIndex={showLogo ? undefined : -1}>
           <Logo size="sm" />
         </Link>
         <nav aria-label="Acesso" className="relative flex items-center gap-2 sm:gap-4">
           <Link href="/login" className="link-quiet px-2 text-[15px]">Entrar</Link>
-          <Link href="/signup" className="btn-cyan header-cta !min-h-11 !px-5 !text-[15px]" data-visible={showCta} aria-hidden={!showCta} tabIndex={showCta ? undefined : -1}>
+          <Link href="/signup" className="btn-brand header-cta !min-h-11 !px-5 !text-[15px]" data-visible={showCta} aria-hidden={!showCta} tabIndex={showCta ? undefined : -1}>
             Começar
           </Link>
         </nav>
       </div>
       <div className="h-px w-full bg-transparent">
-        <div ref={barRef} className="chapter-progress h-px w-full bg-[var(--cyan)]" />
+        <div ref={barRef} className="chapter-progress h-px w-full bg-[var(--brand)]" />
       </div>
     </header>
   );

@@ -25,8 +25,9 @@ const CAMERA_NARROW: Partial<Record<number, { pos: [number, number, number]; loo
   4: { pos: [0.4, 3.4, 10.5], look: [0, 1.5, 0] }
 };
 
-const NEUTRAL = new THREE.Color("#1a2943");
-const CATEGORY_COLORS = ["#5ce1ff", "#38a8cc", "#2b7f9c", "#246680", "#1d5066"].map((hex) => new THREE.Color(hex));
+const NEUTRAL = new THREE.Color("#12203d");
+// Logo gradient, measured in public/branding/fluxa-logo.png.
+const CATEGORY_COLORS = ["#38c0f8", "#1ea7fd", "#0080f8", "#024bcf", "#0033af"].map((hex) => new THREE.Color(hex));
 
 type Options = { lite: boolean; reducedMotion: boolean; wide: () => boolean };
 
@@ -53,11 +54,11 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
   scene.fog = new THREE.Fog(0x05080f, 10, 30);
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
 
-  scene.add(new THREE.HemisphereLight(0x9fdcff, 0x05080f, 1.1));
+  scene.add(new THREE.HemisphereLight(0x80d8f8, 0x05080f, 1.1));
   const key = new THREE.DirectionalLight(0xffffff, 1.6);
   key.position.set(-4, 9, 6);
   scene.add(key);
-  const rim = new THREE.PointLight(0x5ce1ff, 18, 14, 1.6);
+  const rim = new THREE.PointLight(0x1ea7fd, 18, 14, 1.6);
   rim.position.set(3, 4, -3);
   scene.add(rim);
 
@@ -106,11 +107,11 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
     const x = (category - 2) * BAR_GAP;
     limitPoints.push(x - 0.68, height, 0, x + 0.68, height, 0);
   });
-  const limitMaterial = new THREE.LineBasicMaterial({ color: 0x5ce1ff, transparent: true, opacity: 0 });
+  const limitMaterial = new THREE.LineBasicMaterial({ color: 0x38c0f8, transparent: true, opacity: 0 });
   const limits = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(limitPoints, 3)), limitMaterial);
   scene.add(limits);
 
-  const horizonMaterial = new THREE.LineBasicMaterial({ color: 0x5ce1ff, transparent: true, opacity: 0.28 });
+  const horizonMaterial = new THREE.LineBasicMaterial({ color: 0x0080f8, transparent: true, opacity: 0.4 });
   const horizon = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute([-60, 0, -9, 60, 0, -9], 3)), horizonMaterial);
   scene.add(horizon);
 

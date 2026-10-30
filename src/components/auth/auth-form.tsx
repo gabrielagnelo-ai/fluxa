@@ -82,7 +82,7 @@ export function AuthForm({ mode, next = "/dashboard", notice, confirmation = fal
     <div>
       <h1 className="display text-[clamp(52px,7vw,72px)]">{text.title}</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-2">{text.description}</p>
-      {notice && <p role="status" className="mt-6 rounded-xl border border-[var(--line-strong)] bg-[var(--cyan-soft)] px-4 py-3 text-[15px] leading-relaxed">{notice}</p>}
+      {notice && <p role="status" className="mt-6 rounded-xl border border-[var(--line-strong)] bg-[var(--brand-soft)] px-4 py-3 text-[15px] leading-relaxed">{notice}</p>}
       <form ref={formRef} action={action} onSubmit={onSubmit} noValidate onReset={(event) => event.preventDefault()} className="mt-8 space-y-5" aria-busy={pending}>
         <input type="hidden" name="next" value={safeAuthDestination(next)} />
         {mode === "signup" && <TextField name="name" label="Nome" value={name} onChange={(value) => { setName(value); clear("name"); }} autoComplete="name" error={fieldError("name")} />}
@@ -90,8 +90,8 @@ export function AuthForm({ mode, next = "/dashboard", notice, confirmation = fal
         {mode !== "reset" && <PasswordInput name="password" label={mode === "new-password" ? "Nova senha" : "Senha"} value={password} onChange={(value) => { setPassword(value); clear("password"); }} newPassword={newPassword} error={fieldError("password")} describedBy={newPassword ? "password-help" : undefined} />}
         {newPassword && <p id="password-help" className="-mt-2 text-sm leading-relaxed text-2">Use pelo menos 8 caracteres. Uma frase longa e exclusiva é mais fácil de lembrar.</p>}
         {mode === "new-password" && <PasswordInput name="confirmPassword" label="Confirmar nova senha" value={confirmPassword} onChange={(value) => { setConfirmPassword(value); clear("confirmPassword"); }} newPassword error={fieldError("confirmPassword")} />}
-        {generalMessage && <p id="auth-feedback" ref={messageRef} tabIndex={-1} role={state?.error ? "alert" : "status"} className={`rounded-xl border px-4 py-3 text-[15px] leading-relaxed focus:outline-none ${state?.error ? "border-[rgb(255_138_138/0.4)] bg-[rgb(255_138_138/0.08)] text-[var(--danger)]" : "border-[var(--line-strong)] bg-[var(--cyan-soft)]"}`}>{generalMessage}</p>}
-        <button type="submit" className="btn-cyan w-full" disabled={pending}>{pending ? "Aguarde..." : text.submit}</button>
+        {generalMessage && <p id="auth-feedback" ref={messageRef} tabIndex={-1} role={state?.error ? "alert" : "status"} className={`rounded-xl border px-4 py-3 text-[15px] leading-relaxed focus:outline-none ${state?.error ? "border-[rgb(255_138_138/0.4)] bg-[rgb(255_138_138/0.08)] text-[var(--danger)]" : "border-[var(--line-strong)] bg-[var(--brand-soft)]"}`}>{generalMessage}</p>}
+        <button type="submit" className="btn-brand w-full" disabled={pending}>{pending ? "Aguarde..." : text.submit}</button>
       </form>
       {showResend && <form action={resendAction} className="mt-5 space-y-3 rounded-xl border border-[var(--line)] p-4">
         <input type="hidden" name="email" value={email} />

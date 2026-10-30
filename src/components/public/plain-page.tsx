@@ -16,7 +16,7 @@ export function PlainPage({ label, title, children }: { label: string; title: st
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-12">
         <p className="mono-label">{label}</p>
         <h1 className="display mt-3 text-[clamp(48px,8vw,88px)]">{title}</h1>
-        <p className="mt-6 rounded-xl border border-[var(--line-strong)] bg-[var(--cyan-soft)] px-4 py-3 text-[15px] leading-relaxed">Versão resumida. O texto completo ainda está em revisão.</p>
+        <p className="mt-6 rounded-xl border border-[var(--line-strong)] bg-[var(--brand-soft)] px-4 py-3 text-[15px] leading-relaxed">Versão resumida. O texto completo ainda está em revisão.</p>
         <div className="mt-10 space-y-8 text-[17px] leading-relaxed text-2 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-[var(--text)]">{children}</div>
       </main>
       <PublicFooter />

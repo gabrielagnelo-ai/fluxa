@@ -1,6 +1,6 @@
 /* Public routes: landing, access, demo, 404, privacy and terms.
-   Ink dominates, cyan is the only vivid colour. Contrast: --text-2 on --ink is about 9:1,
-   --cyan on --ink about 12:1, --cyan-ink on --cyan about 12:1. */
+   Ink dominates; the logo blue is the only vivid colour. Contrast: --text-2 on --ink about 9:1,
+   --brand-light on --ink about 9:1, --brand-ink on --brand about 4.7:1 (white on it fails AA). */
 .public-site,
 .public-scene {
   --ink: #05080f;
@@ -10,9 +10,11 @@
   --line-strong: rgb(148 185 230 / 0.3);
   --text: #e8f0fa;
   --text-2: #a3b3c8;
-  --cyan: #5ce1ff;
-  --cyan-soft: rgb(92 225 255 / 0.12);
-  --cyan-ink: #03141b;
+  /* Measured from public/branding/fluxa-logo.png: #0033AF #024BCF #0080F8 #1083F3 #1EA7FD #38C0F8 #56D1FE #80D8F8. */
+  --brand: #0080f8;
+  --brand-light: #38c0f8;
+  --brand-soft: rgb(0 128 248 / 0.14);
+  --brand-ink: #021024;
   --danger: #ff8a8a;
   --gain: #6ee7b7;
   --spring: cubic-bezier(0.2, 0.9, 0.25, 1);
@@ -32,7 +34,7 @@
 }
 
 .public-site ::selection {
-  background: rgb(92 225 255 / 0.3);
+  background: rgb(0 128 248 / 0.35);
 }
 
 /* Persistent scene (fixed, behind every public route that declares a mode). */
@@ -41,7 +43,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at 68% 62%, rgb(20 70 100 / 0.32), transparent 62%), var(--ink);
+  background: radial-gradient(ellipse at 68% 62%, rgb(2 51 175 / 0.28), transparent 62%), var(--ink);
 }
 
 .public-scene canvas {
@@ -88,8 +90,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-.text-cyan {
-  color: var(--cyan);
+.text-brand {
+  color: var(--brand-light);
+}
+
+/* Large titles: the logo gradient (#1083F3 to #56D1FE, at least 4.7:1 on ink). */
+.display .text-brand {
+  background: linear-gradient(90deg, #1083f3, #56d1fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .text-2 {
@@ -97,7 +109,7 @@
 }
 
 /* Actions: one filled action per view, the rest quiet. */
-.btn-cyan,
+.btn-brand,
 .btn-line {
   display: inline-flex;
   min-height: 48px;
@@ -112,13 +124,13 @@
   transition: transform 160ms var(--spring), background-color 160ms linear, border-color 160ms linear;
 }
 
-.btn-cyan {
-  background: var(--cyan);
-  color: var(--cyan-ink);
+.btn-brand {
+  background: var(--brand);
+  color: var(--brand-ink);
 }
 
-.btn-cyan:hover {
-  background: #8beaff;
+.btn-brand:hover {
+  background: #1ea7fd;
 }
 
 .btn-line {
@@ -127,16 +139,16 @@
 }
 
 .btn-line:hover {
-  border-color: rgb(92 225 255 / 0.6);
+  border-color: rgb(56 192 248 / 0.7);
 }
 
-.btn-cyan:active,
+.btn-brand:active,
 .btn-line:active {
   transform: scale(0.97);
   transition-duration: 0s;
 }
 
-.btn-cyan:disabled {
+.btn-brand:disabled {
   opacity: 0.55;
   pointer-events: none;
 }
@@ -153,11 +165,11 @@
 }
 
 .link-quiet:hover {
-  text-decoration-color: var(--cyan);
+  text-decoration-color: var(--brand);
 }
 
 .public-site :is(a, button, input, [tabindex]):focus-visible {
-  outline: 2px solid var(--cyan);
+  outline: 2px solid var(--brand);
   outline-offset: 3px;
 }
 
@@ -184,14 +196,14 @@
   }
 }
 
-/* Opening, under 1 s: the wing draws itself, the horizon grows, the title rises. */
-.intro-mark path {
-  fill: transparent;
-  stroke: var(--cyan);
-  stroke-width: 1.4;
-  stroke-dasharray: 220;
-  stroke-dashoffset: 220;
-  animation: intro-draw 560ms cubic-bezier(0.65, 0, 0.35, 1) forwards, intro-fill 240ms 480ms forwards;
+/* Opening, under 1 s: the logo is revealed whole, the horizon grows, the title rises. */
+.intro-logo {
+  animation: intro-logo 620ms var(--spring) both;
+}
+
+@keyframes intro-logo {
+  from { clip-path: inset(0 100% 0 0); opacity: 0.3; transform: translateX(-10px); }
+  to { clip-path: inset(0 0 0 0); opacity: 1; transform: none; }
 }
 
 .intro-horizon {
@@ -208,14 +220,6 @@
 .intro-fade {
   animation: intro-fade 480ms ease-out both;
   animation-delay: calc(360ms + var(--i, 0) * 60ms);
-}
-
-@keyframes intro-draw {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes intro-fill {
-  to { fill: var(--cyan); stroke-width: 0; }
 }
 
 @keyframes intro-grow {
@@ -273,6 +277,16 @@
   background: var(--ink);
 }
 
+/* One logo per view: the header logo waits until the hero logo has scrolled away. */
+.header-logo {
+  transition: opacity 220ms var(--spring);
+}
+
+.header-logo[data-visible="false"] {
+  visibility: hidden;
+  opacity: 0;
+}
+
 .header-cta {
   transition: visibility 0s, opacity 220ms var(--spring), transform 260ms var(--spring);
 }
@@ -315,8 +329,8 @@
 }
 
 .segmented button[aria-pressed="true"] {
-  background: var(--cyan);
-  color: var(--cyan-ink);
+  background: var(--brand);
+  color: var(--brand-ink);
 }
 
 /* Forms (access pages) */
@@ -333,8 +347,8 @@
 }
 
 .field-input:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgb(92 225 255 / 0.18);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgb(0 128 248 / 0.25);
   outline: none;
 }
 
@@ -358,10 +372,6 @@
     transition-delay: 0ms !important;
   }
 
-  .intro-mark path {
-    stroke-dashoffset: 0;
-    fill: var(--cyan);
-  }
 
   .reveal-ready [data-reveal]:not([data-inview]),
   .reveal-ready [data-reveal]:not([data-inview]) [data-chip] {

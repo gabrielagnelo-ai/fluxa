@@ -14,11 +14,11 @@ export default function NotFound() {
       </header>
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-end px-5 pb-16 md:justify-center md:px-10">
         <div className="copy-plate max-w-[760px]">
-          <p className="mono-label"><span className="text-cyan">404</span> · Página não encontrada</p>
-          <h1 className="display mt-4 text-[clamp(56px,10vw,150px)]">Este endereço <span className="text-cyan">não existe.</span></h1>
+          <p className="mono-label"><span className="text-brand">404</span> · Página não encontrada</p>
+          <h1 className="display mt-4 text-[clamp(56px,10vw,150px)]">Este endereço <span className="text-brand">não existe.</span></h1>
           <p className="mt-5 max-w-[42ch] text-[17px] leading-relaxed text-2">O link pode estar incompleto ou a página mudou de lugar. Volte ao início ou entre na sua conta.</p>
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-            <Link href="/" className="btn-cyan">Voltar ao início</Link>
+            <Link href="/" className="btn-brand">Voltar ao início</Link>
             <Link href="/login" className="link-quiet">Entrar na conta</Link>
           </div>
         </div>

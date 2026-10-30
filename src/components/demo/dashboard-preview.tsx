@@ -35,7 +35,7 @@ export function DashboardPreview() {
                   <span>{item.name}</span>
                   <span className="num">{formatCurrency(item.spent)} <span className="text-2">{Math.round((item.spent / exampleSpent) * 100)}%</span></span>
                 </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--line)]"><div className="h-full rounded-full bg-[var(--cyan)]" style={{ width: `${(item.spent / largest) * 100}%` }} /></div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--line)]"><div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${(item.spent / largest) * 100}%` }} /></div>
               </li>
             ))}
           </ul>
