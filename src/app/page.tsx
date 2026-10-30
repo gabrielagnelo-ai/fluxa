@@ -30,10 +30,10 @@ export default function Home() {
       <LandingChrome />
 
       <main id="conteudo">
-        <section data-chapter="0" aria-labelledby="hero-title" className="relative flex min-h-[100svh] flex-col justify-end pb-12 pt-28 lg:justify-center lg:pb-16">
+        <section data-chapter="0" aria-labelledby="hero-title" className="relative flex min-h-[100svh] flex-col justify-start pb-12 pt-20 md:justify-end md:pt-28 lg:justify-center lg:pb-16">
           <div className="mx-auto w-full max-w-[1400px] px-5 md:px-10">
             {/* Brand opening: the real logo, whole, revealed in under 1 s (principle 17). */}
-            <Image src="/branding/fluxa-logo.png" alt="Fluxa" width={420} height={160} priority className="intro-logo mb-6 h-auto w-[168px] md:w-[240px]" />
+            <Image src="/branding/fluxa-logo.png" alt="Fluxa" width={420} height={160} priority className="intro-logo mb-4 h-auto w-[150px] md:mb-6 md:w-[240px]" />
             <p className="mono-label intro-fade" style={vars({ "--i": 0 })}>Finanças pessoais</p>
             <h1 id="hero-title" className="display mt-4 text-[clamp(60px,13vw,210px)]">
               <span className="intro-word" style={vars({ "--i": 0 })}>Seu</span>{" "}
@@ -262,7 +262,7 @@ function LimitsCloseUp() {
           <span>Como o mês deve terminar</span>
           <span className="num text-brand">sobra provável R$ {formatAmount(exampleIncome - examplePlanned)}</span>
         </div>
-        <p className="mt-1 text-2">Previsão: renda de R$ {formatAmount(exampleIncome)} menos R$ {formatAmount(examplePlanned)} de gastos previstos.</p>
+        <p className="mt-1 text-2">Previsão: renda de R$ {formatAmount(exampleIncome)} menos R$ {formatAmount(examplePlanned)} de gastos previstos nas {exampleCategories.length} categorias.</p>
       </figcaption>
     </figure>
   );

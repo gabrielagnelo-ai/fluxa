@@ -54,7 +54,8 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
   renderer.toneMappingExposure = 0.9;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x05080f, 10, 30);
+  const fog = new THREE.Fog(0x05080f, 10, 30);
+  scene.fog = fog;
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 80);
 
   // Light colours come from the logo too; white light would wash the blues out.
@@ -82,7 +83,8 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
   const order = categoryOf.map((_, index) => index).sort(() => random() - 0.5);
   const statementSlot: number[] = [];
   order.forEach((slab, slot) => { statementSlot[slab] = slot; });
-  const highlighted = categoryOf.map(() => random() < 0.12);
+  // Phones show fewer slabs, so more of them carry the logo blue to keep the hero from reading as black.
+  const highlighted = categoryOf.map(() => random() < (lite ? 0.4 : 0.12));
 
   // layouts[l][i] = [x, y, z, rotX, rotY, rotZ]
   const layouts: number[][][] = Array.from({ length: LAYOUTS }, () => []);
@@ -195,6 +197,10 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    // The camera pulls back on narrow screens; the fog moves with it so the slabs keep their colour.
+    const pullBack = camera.aspect < 1 ? Math.min(2.3, Math.max(1, 0.95 / camera.aspect)) : 1;
+    fog.near = 10 * pullBack;
+    fog.far = 30 * pullBack;
     dirty = true;
     start();
   }
@@ -220,8 +226,8 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
       place(time);
       camera.position.copy(cameraPos);
       camera.lookAt(cameraLook);
-      // Phones: lift the scene into the upper part of the screen, above the copy.
-      camera.setViewOffset(width, height, -shift * width, width < height ? height * 0.14 : 0, width, height);
+      // Phones: chapters lift the scene above the copy; the hero drops it below the copy.
+      camera.setViewOffset(width, height, -shift * width, width < height ? height * (0.14 - 0.36 * Math.max(0, 1 - progress)) : 0, width, height);
       renderer.render(scene, camera);
       dirty = false;
       start();
