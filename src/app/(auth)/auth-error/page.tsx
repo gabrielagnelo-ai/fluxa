@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { AuthNotice } from "@/components/auth/auth-notice";
+
+export const metadata: Metadata = { title: "Link indisponível" };
 
 export default async function AuthErrorPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;

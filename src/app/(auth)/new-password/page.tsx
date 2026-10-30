@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthNotice } from "@/components/auth/auth-notice";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { hasVerifiedRecoverySession } from "@/lib/supabase/recovery";
+
+export const metadata: Metadata = { title: "Nova senha" };
 
 export const dynamic = "force-dynamic";
 

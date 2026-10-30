@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { AuthForm } from "@/components/auth/auth-form";
 import { safeAuthDestination } from "@/lib/supabase/auth-flow";
+
+export const metadata: Metadata = { title: "Entrar", description: "Acesse seu planejamento, seus gastos e suas metas no Fluxa." };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;

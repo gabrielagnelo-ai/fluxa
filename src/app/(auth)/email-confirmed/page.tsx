@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { AuthNotice } from "@/components/auth/auth-notice";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+
+export const metadata: Metadata = { title: "E-mail confirmado" };
 
 export const dynamic = "force-dynamic";
 
