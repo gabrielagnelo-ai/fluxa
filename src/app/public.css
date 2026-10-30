@@ -1,0 +1,404 @@
+/* Public routes: landing, access, demo, 404, privacy and terms.
+   Ink dominates, cyan is the only vivid colour. Contrast: --text-2 on --ink is about 9:1,
+   --cyan on --ink about 12:1, --cyan-ink on --cyan about 12:1. */
+.public-site,
+.public-scene {
+  --ink: #05080f;
+  --ink-2: #0a111c;
+  --panel: rgb(9 15 26 / 0.86);
+  --line: rgb(148 185 230 / 0.16);
+  --line-strong: rgb(148 185 230 / 0.3);
+  --text: #e8f0fa;
+  --text-2: #a3b3c8;
+  --cyan: #5ce1ff;
+  --cyan-soft: rgb(92 225 255 / 0.12);
+  --cyan-ink: #03141b;
+  --danger: #ff8a8a;
+  --gain: #6ee7b7;
+  --spring: cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.public-site {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  color: var(--text);
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.public-site.public-solid {
+  background: var(--ink);
+}
+
+.public-site ::selection {
+  background: rgb(92 225 255 / 0.3);
+}
+
+/* Persistent scene (fixed, behind every public route that declares a mode). */
+.public-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 68% 62%, rgb(20 70 100 / 0.32), transparent 62%), var(--ink);
+}
+
+.public-scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+
+.public-scene canvas[data-ready="true"] {
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .public-scene canvas[data-ready="true"] {
+    opacity: 0.6;
+  }
+}
+
+/* Typography */
+.display {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-variation-settings: "wdth" 62;
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.mono-label {
+  font-family: var(--font-plex), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.num {
+  font-family: var(--font-plex), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-cyan {
+  color: var(--cyan);
+}
+
+.text-2 {
+  color: var(--text-2);
+}
+
+/* Actions: one filled action per view, the rest quiet. */
+.btn-cyan,
+.btn-line {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  padding: 0 24px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: transform 160ms var(--spring), background-color 160ms linear, border-color 160ms linear;
+}
+
+.btn-cyan {
+  background: var(--cyan);
+  color: var(--cyan-ink);
+}
+
+.btn-cyan:hover {
+  background: #8beaff;
+}
+
+.btn-line {
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+}
+
+.btn-line:hover {
+  border-color: rgb(92 225 255 / 0.6);
+}
+
+.btn-cyan:active,
+.btn-line:active {
+  transform: scale(0.97);
+  transition-duration: 0s;
+}
+
+.btn-cyan:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.link-quiet {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: rgb(232 240 250 / 0.35);
+  text-underline-offset: 6px;
+  transition: text-decoration-color 160ms linear;
+}
+
+.link-quiet:hover {
+  text-decoration-color: var(--cyan);
+}
+
+.public-site :is(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+/* Product close-ups */
+.detail {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+}
+
+.copy-plate {
+  border-radius: 20px;
+}
+
+@media (max-width: 767px) {
+  .copy-plate {
+    margin-inline: -12px;
+    padding: 20px 12px;
+    background: rgb(5 8 15 / 0.74);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* Opening, under 1 s: the wing draws itself, the horizon grows, the title rises. */
+.intro-mark path {
+  fill: transparent;
+  stroke: var(--cyan);
+  stroke-width: 1.4;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: intro-draw 560ms cubic-bezier(0.65, 0, 0.35, 1) forwards, intro-fill 240ms 480ms forwards;
+}
+
+.intro-horizon {
+  transform-origin: left center;
+  animation: intro-grow 760ms cubic-bezier(0.65, 0, 0.35, 1) 100ms both;
+}
+
+.intro-word {
+  display: inline-block;
+  animation: intro-rise 560ms var(--spring) both;
+  animation-delay: calc(140ms + var(--i, 0) * 70ms);
+}
+
+.intro-fade {
+  animation: intro-fade 480ms ease-out both;
+  animation-delay: calc(360ms + var(--i, 0) * 60ms);
+}
+
+@keyframes intro-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes intro-fill {
+  to { fill: var(--cyan); stroke-width: 0; }
+}
+
+@keyframes intro-grow {
+  from { transform: scaleX(0); }
+}
+
+@keyframes intro-rise {
+  from { opacity: 0; transform: translateY(0.35em); }
+}
+
+@keyframes intro-fade {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+/* Scroll reveals (enabled by script; without it everything is visible). */
+[data-reveal] {
+  transition: opacity 600ms var(--spring), transform 700ms var(--spring);
+  transition-delay: calc(var(--i, 0) * 80ms);
+}
+
+.reveal-ready [data-reveal]:not([data-inview]) {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+[data-bar] {
+  transform-origin: left center;
+  transform: scaleX(var(--w, 1));
+  transition: transform 900ms var(--spring);
+  transition-delay: calc(200ms + var(--i, 0) * 90ms);
+}
+
+.reveal-ready [data-reveal]:not([data-inview]) [data-bar] {
+  transform: scaleX(0);
+}
+
+[data-chip] {
+  transition: opacity 500ms var(--spring), transform 600ms var(--spring);
+  transition-delay: 450ms;
+}
+
+.reveal-ready [data-reveal]:not([data-inview]) [data-chip] {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+
+/* Header */
+.public-header {
+  transition: background-color 200ms linear, border-color 200ms linear;
+}
+
+.public-header[data-solid="true"] {
+  border-color: var(--line);
+  background: rgb(5 8 15 / 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.header-cta {
+  transition: visibility 0s, opacity 220ms var(--spring), transform 260ms var(--spring);
+}
+
+.header-cta[data-visible="false"] {
+  position: absolute;
+  right: 0;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.chapter-progress {
+  transform-origin: left center;
+  transform: scaleX(var(--p, 0));
+}
+
+/* Segmented tabs (demo) */
+.segmented {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px;
+  background: var(--ink-2);
+}
+
+.segmented button {
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 0 6px;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 160ms linear, color 160ms linear;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--cyan);
+  color: var(--cyan-ink);
+}
+
+/* Forms (access pages) */
+.field-input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: rgb(5 8 15 / 0.7);
+  padding: 0 14px;
+  color: var(--text);
+  font-size: 16px;
+  transition: border-color 160ms linear, box-shadow 160ms linear;
+}
+
+.field-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgb(92 225 255 / 0.18);
+  outline: none;
+}
+
+.field-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-site *,
+  .public-site *::before,
+  .public-site *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .intro-mark path {
+    stroke-dashoffset: 0;
+    fill: var(--cyan);
+  }
+
+  .reveal-ready [data-reveal]:not([data-inview]),
+  .reveal-ready [data-reveal]:not([data-inview]) [data-chip] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal-ready [data-reveal]:not([data-inview]) [data-bar] {
+    transform: scaleX(var(--w, 1));
+  }
+
+  .public-scene canvas {
+    transition: none;
+  }
+}
+
+/* Scrims keep copy readable over the scene: copy column on the left of the landing,
+   form on the right of the access pages, bottom-heavy on phones. */
+.public-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transition: opacity 600ms ease;
+}
+
+.public-scene[data-mode="landing"]::after,
+.public-scene[data-mode="lost"]::after {
+  background: linear-gradient(90deg, rgb(5 8 15 / 0.82) 0%, rgb(5 8 15 / 0.45) 34%, transparent 58%);
+}
+
+.public-scene[data-mode="auth"]::after {
+  background: linear-gradient(270deg, rgb(5 8 15 / 0.7) 0%, rgb(5 8 15 / 0.3) 36%, transparent 60%);
+}
+
+@media (max-width: 1023px) {
+  .public-scene[data-mode]::after {
+    background: linear-gradient(180deg, rgb(5 8 15 / 0.25) 0%, rgb(5 8 15 / 0.55) 55%, rgb(5 8 15 / 0.85) 100%);
+  }
+}
