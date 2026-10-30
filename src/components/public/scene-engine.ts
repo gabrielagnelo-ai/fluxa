@@ -19,6 +19,12 @@ const CAMERA: Array<{ pos: [number, number, number]; look: [number, number, numb
   { pos: [0.4, 1.3, 11.5], look: [0, 1.7, 0] }
 ];
 
+// Narrow screens (phones): rows and limits re-framed so the object sits centred in the upper band.
+const CAMERA_NARROW: Partial<Record<number, { pos: [number, number, number]; look: [number, number, number] }>> = {
+  2: { pos: [1.2, 8.6, 5.2], look: [0, 0, -4.2] },
+  4: { pos: [0.4, 3.4, 10.5], look: [0, 1.5, 0] }
+};
+
 const NEUTRAL = new THREE.Color("#1a2943");
 const CATEGORY_COLORS = ["#5ce1ff", "#38a8cc", "#2b7f9c", "#246680", "#1d5066"].map((hex) => new THREE.Color(hex));
 
@@ -167,11 +173,14 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
     const a = Math.floor(clamped);
     const b = Math.min(LAYOUTS - 1, a + 1);
     const t = ease(clamped - a);
-    targetPos.set(...CAMERA[a].pos).lerp(new THREE.Vector3(...CAMERA[b].pos), t);
-    targetLook.set(...CAMERA[a].look).lerp(new THREE.Vector3(...CAMERA[b].look), t);
+    const narrow = width < height;
+    const frameA = (narrow && CAMERA_NARROW[a]) || CAMERA[a];
+    const frameB = (narrow && CAMERA_NARROW[b]) || CAMERA[b];
+    targetPos.set(...frameA.pos).lerp(new THREE.Vector3(...frameB.pos), t);
+    targetLook.set(...frameA.look).lerp(new THREE.Vector3(...frameB.look), t);
     // Narrow screens: pull the camera back so the five bars fit the width.
     const aspect = width / height;
-    if (aspect < 1) targetPos.sub(targetLook).multiplyScalar(Math.min(1.8, Math.max(1, 0.78 / aspect))).add(targetLook);
+    if (aspect < 1) targetPos.sub(targetLook).multiplyScalar(Math.min(2.3, Math.max(1, 0.95 / aspect))).add(targetLook);
     if (!lite && !reducedMotion) targetPos.add(new THREE.Vector3(pointer.x * 0.35, pointer.y * 0.2, 0));
   }
 
@@ -233,7 +242,7 @@ export function createFluxaScene(canvas: HTMLCanvasElement, options: Options) {
       const wide = options.wide();
       targetProgress = mode === "landing" ? scroll : mode === "auth" ? 5 : 0;
       // Frame shift keeps the scene clear of the copy column on wide screens.
-      targetShift = !wide ? 0 : mode === "auth" ? -0.2 : 0.2;
+      targetShift = !wide ? 0 : mode === "auth" ? -0.2 : targetProgress > 4.5 ? 0.27 : 0.2;
       dirty = true;
       start();
     },

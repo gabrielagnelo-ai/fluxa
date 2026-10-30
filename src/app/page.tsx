@@ -90,9 +90,9 @@ export default function Home() {
 
         <section data-chapter="5" aria-labelledby="final-title" className="relative flex min-h-[100svh] flex-col justify-center py-28">
           <div className="mx-auto w-full max-w-[1400px] px-5 md:px-10">
-            <div data-reveal className="copy-plate max-w-[900px]">
+            <div data-reveal className="copy-plate max-w-[640px]">
               <p className="mono-label">Seu mês, com dados seus</p>
-              <h2 id="final-title" className="display mt-4 text-[clamp(52px,9vw,150px)]">
+              <h2 id="final-title" className="display mt-4 text-[clamp(52px,8vw,128px)]">
                 Comece pelo extrato <span className="text-cyan">deste mês.</span>
               </h2>
               <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -133,9 +133,9 @@ function Chapter({ index, id, title, body, children }: { index: number; id: stri
 
 function ExampleTag({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] px-5 py-3">
-      <p className="mono-label !text-[11px] text-[var(--text)]">{children}</p>
-      <p className="mono-label !text-[11px]">Dados fictícios</p>
+    <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3 sm:px-5">
+      <p className="mono-label whitespace-nowrap !text-[11px] !tracking-[0.08em] text-[var(--text)] sm:!tracking-[0.14em]">{children}</p>
+      <p className="mono-label whitespace-nowrap !text-[11px] !tracking-[0.08em] sm:!tracking-[0.14em]"><span className="sm:hidden">Fictício</span><span className="hidden sm:inline">Dados fictícios</span></p>
     </div>
   );
 }

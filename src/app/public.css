@@ -175,12 +175,12 @@
 }
 
 @media (max-width: 767px) {
+  /* Gradient instead of a box: the scene fades out behind the copy, no straight edge. */
   .copy-plate {
-    margin-inline: -12px;
-    padding: 20px 12px;
-    background: rgb(5 8 15 / 0.74);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    margin-inline: -20px;
+    padding: 48px 20px 20px;
+    border-radius: 0;
+    background: linear-gradient(180deg, transparent 0%, rgb(5 8 15 / 0.8) 48px, rgb(5 8 15 / 0.8) calc(100% - 24px), transparent 100%);
   }
 }
 
