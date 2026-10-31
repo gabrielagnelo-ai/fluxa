@@ -10,6 +10,7 @@ import { isCalendarDate, transactionDate, transactionFieldsSchema } from "@/lib/
 import { getCurrentUserId } from "@/services/finance-data-service";
 import { isGoalContributionExcluded, matchGoalMarker } from "@/services/goal-marker-service";
 import { parseDateInput } from "@/utils/period";
+import { plural } from "@/lib/utils";
 
 function refreshTransactions() {
   for (const path of ["/dashboard", "/transactions", "/goals", "/planning", "/insights"]) revalidatePath(path);
@@ -100,7 +101,7 @@ export async function deleteTransactionsInPeriod(formData: FormData) {
       return (await tx.transaction.deleteMany({ where })).count;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     refreshTransactions();
-    return { success: `${count} transação(ões) apagada(s).` };
+    return { success: `${plural(count, "transação apagada", "transações apagadas")}.` };
   } catch (error) {
     secureLogger.error("Period deletion failed", { error });
     return { error: error instanceof Error && error.message === "PERIOD_CHANGED"

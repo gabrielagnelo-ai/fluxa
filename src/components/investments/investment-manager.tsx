@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { investmentTypeLabels } from "@/constants/investments";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, plural } from "@/lib/utils";
 
 type InvestmentAsset = {
   id: string;
@@ -301,7 +301,7 @@ export function InvestmentManager({
               <p className="text-sm text-muted-foreground">Patrimônio investido</p>
               <h2 className="mt-1 text-3xl font-semibold">{formatCurrency(overview.totalCurrent)}</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {overview.assetCount} ativo(s) cadastrados · aplicado: {formatCurrency(overview.totalInvested)}
+                {plural(overview.assetCount, "ativo cadastrado", "ativos cadastrados")} · aplicado: {formatCurrency(overview.totalInvested)}
               </p>
             </div>
             <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -370,7 +370,7 @@ export function InvestmentManager({
                       </div>
                       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                         <span>
-                          {item.count} ativo(s) · {item.share}% da carteira
+                          {plural(item.count, "ativo", "ativos")} · {item.share}% da carteira
                         </span>
                         <span className={item.gain >= 0 ? "text-emerald-500" : "text-red-500"}>
                           {item.gain >= 0 ? "+" : ""}

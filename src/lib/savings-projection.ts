@@ -1,5 +1,5 @@
 export const DEFAULT_SAVINGS_MONTHLY_RATE = 0.0125;
-export const DEFAULT_SAVINGS_MONTHLY_RATE_LABEL = "1,25% ao mes";
+export const DEFAULT_SAVINGS_MONTHLY_RATE_LABEL = "1,25% ao mês";
 
 export function projectCompoundBalance({
   principal,
@@ -71,7 +71,7 @@ export function monthsToReachTarget({
 export function formatMonthDistance(months: number | null) {
   if (months === null) return "sem previsao";
   if (months <= 0) return "meta atingida";
-  if (months === 1) return "1 mes";
+  if (months === 1) return "1 mês";
 
   const years = Math.floor(months / 12);
   const remainingMonths = months % 12;
@@ -79,5 +79,5 @@ export function formatMonthDistance(months: number | null) {
   if (years === 0) return `${months} meses`;
   if (remainingMonths === 0) return years === 1 ? "1 ano" : `${years} anos`;
 
-  return `${years} ano${years > 1 ? "s" : ""} e ${remainingMonths} mes${remainingMonths > 1 ? "es" : ""}`;
+  return `${years} ano${years > 1 ? "s" : ""} e ${remainingMonths} ${remainingMonths > 1 ? "meses" : "mês"}`;
 }

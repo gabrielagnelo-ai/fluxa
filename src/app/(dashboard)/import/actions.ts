@@ -9,7 +9,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { secureLogger } from "@/lib/security/logger";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { sanitizeTransactionForAI } from "@/lib/security/redaction";
-import { normalizeText } from "@/lib/utils";
+import { normalizeText, plural } from "@/lib/utils";
 import { categorizeDescription, defaultCategoryRules } from "@/services/category-service";
 import { ensureDefaultCategories } from "@/services/finance-data-service";
 import { isGoalContributionExcluded, matchGoalMarker } from "@/services/goal-marker-service";
@@ -511,7 +511,7 @@ export async function saveImportedTransactions(payload: unknown) {
     }
     if (!result) return { error: "Não foi possível salvar. Tente novamente." };
     for (const path of ["/dashboard", "/transactions", "/goals", "/planning", "/insights", "/import"]) revalidatePath(path);
-    return { success: `${result.saved} transação(ões) salva(s). ${result.skipped} repetida(s) ignorada(s). ${result.contributions} aporte(s) relacionado(s) a metas.` };
+    return { success: `${plural(result.saved, "transação salva", "transações salvas")}. ${plural(result.skipped, "repetida ignorada", "repetidas ignoradas")}. ${plural(result.contributions, "aporte ligado", "aportes ligados")} a metas.` };
   } catch (error) {
     secureLogger.error("Statement save failed", { error });
     return { error: "Não foi possível concluir a importação. A prévia foi mantida; tente novamente. A conferência de duplicadas também protege novas tentativas." };

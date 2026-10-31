@@ -59,10 +59,10 @@ function DeleteGoalButton({ id }: { id: string }) {
   return (
     <form action={action}>
       <input type="hidden" name="id" value={id} />
-      <Button className="bg-destructive text-white hover:bg-destructive/90" disabled={pending}>
-        <Trash2 className="size-4" />
-        {pending ? "Excluindo..." : "Excluir"}
-      </Button>
+      <button type="submit" className="btn btn-plain is-destructive" disabled={pending} onClick={(event) => { if (!confirm("Excluir esta meta?")) event.preventDefault(); }}>
+        <Trash2 className="size-4" aria-hidden="true" />
+        {pending ? "Excluindo..." : "Excluir meta"}
+      </button>
     </form>
   );
 }

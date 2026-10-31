@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { economicModels } from "@/constants/economic-models";
 import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, formatMonthDistance, monthlyYield, monthsToReachTarget, projectCompoundBalance } from "@/lib/savings-projection";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, plural } from "@/lib/utils";
 
 type LimitFilter = "active" | "planned" | "over" | "all";
 
@@ -181,8 +181,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
           <section className="grid gap-3 md:grid-cols-4">
             <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="já considera vale ou adiantamento" />
-            <CompactMetric icon={WalletCards} label="Contas fixas" value={formatCurrency(overview.paymentPlan.fixedPlanned)} detail={`${fixedBills.length} item(ns) marcado(s) como fixo`} />
-            <CompactMetric icon={SlidersHorizontal} label="Gastos variáveis" value={formatCurrency(overview.paymentPlan.variablePlanned)} detail={`${variableBills.length} item(ns) flexíveis`} />
+            <CompactMetric icon={WalletCards} label="Contas fixas" value={formatCurrency(overview.paymentPlan.fixedPlanned)} detail={`${plural(fixedBills.length, "item marcado", "itens marcados")} como fixo`} />
+            <CompactMetric icon={SlidersHorizontal} label="Gastos variáveis" value={formatCurrency(overview.paymentPlan.variablePlanned)} detail={plural(variableBills.length, "item flexível", "itens flexíveis")} />
             <CompactMetric
               icon={Target}
               label="Sobra para metas"
@@ -192,8 +192,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             />
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-            <div className="grid gap-3 md:grid-cols-2">
+          <section className="planning-columns">
+            <div className="planning-bills">
               <BillList title="Contas fixas" description="O que costuma ser obrigatório pagar." items={fixedBills} month={overview.month} year={overview.year} emptyText="Nenhuma conta fixa marcada ainda." />
               <BillList title="Gastos combinados" description="Limites flexíveis para controlar o mês." items={variableBills} month={overview.month} year={overview.year} emptyText="Nenhum gasto variável planejado ainda." />
             </div>
@@ -223,12 +223,12 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               value={`-${formatCurrency(overview.nextMonthImpact.salaryAdvanceTotal)}`}
               detail={
                 overview.nextMonthImpact.salaryAdvanceCount > 0
-                  ? `${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) no mês anterior`
+                  ? `${plural(overview.nextMonthImpact.salaryAdvanceCount, "entrada", "entradas")} no mês anterior`
                   : "nenhum vale identificado"
               }
               tone={overview.nextMonthImpact.salaryAdvanceTotal > 0 ? "danger" : "neutral"}
             />
-            <CompactMetric icon={WalletCards} label="Gastos previstos" value={formatCurrency(overview.nextMonthImpact.plannedExpenses)} detail={`${overview.nextMonthImpact.plannedCount} categoria(s) planejada(s)`} />
+            <CompactMetric icon={WalletCards} label="Gastos previstos" value={formatCurrency(overview.nextMonthImpact.plannedExpenses)} detail={plural(overview.nextMonthImpact.plannedCount, "categoria planejada", "categorias planejadas")} />
             <CompactMetric
               icon={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? AlertTriangle : CheckCircle2}
               label="Sobra prevista"
@@ -412,13 +412,13 @@ function BillList({
   const total = items.reduce((sum, item) => sum + item.planned, 0);
 
   return (
-    <div className="rounded-xl border border-border bg-background/35 p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-background/35 p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h3 className="font-semibold">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
-        <strong className="text-sm">{formatCurrency(total)}</strong>
+        <strong className="shrink-0 text-sm tabular-nums">{formatCurrency(total)}</strong>
       </div>
 
       <div className="mt-4 space-y-2">
@@ -431,9 +431,9 @@ function BillList({
 
           return (
             <div key={`${item.source}-${item.id}`} className="rounded-lg border border-border/70 bg-card/40 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{item.name}</p>
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <div className="min-w-0 flex-1 basis-40">
+                  <p className="line-clamp-2 break-words font-medium">{item.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatCurrency(item.actual)} pago de {formatCurrency(item.planned)}
                   </p>
@@ -579,11 +579,12 @@ function DeleteCategoryLimitButton({ categoryId, month, year }: { categoryId: st
       <button
         type="submit"
         disabled={pending}
-        className="grid size-7 place-items-center rounded-lg border border-red-500/20 text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+        className="icon-btn is-destructive disabled:opacity-50"
         aria-label="Remover limite desta categoria"
         title="Remover limite desta categoria"
+        onClick={(event) => { if (!confirm("Remover o limite desta categoria?")) event.preventDefault(); }}
       >
-        <Trash2 className="size-3.5" />
+        <Trash2 aria-hidden="true" />
       </button>
     </form>
   );
@@ -605,11 +606,12 @@ function DeletePlannedExpenseButton({ id, name, type, month, year }: { id: strin
       <button
         type="submit"
         disabled={pending}
-        className="grid size-7 place-items-center rounded-lg border border-red-500/20 text-red-400 transition hover:bg-red-500/10"
+        className="icon-btn is-destructive disabled:opacity-50"
         aria-label="Remover conta planejada"
         title="Remover conta planejada"
+        onClick={(event) => { if (!confirm(`Remover ${name} do planejamento?`)) event.preventDefault(); }}
       >
-        <Trash2 className="size-3.5" />
+        <Trash2 aria-hidden="true" />
       </button>
     </form>
   );
