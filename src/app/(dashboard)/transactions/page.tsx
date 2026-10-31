@@ -36,7 +36,7 @@ export default async function TransactionsPage({
           </div>
         }
       />
-      <section className="card summary-strip" aria-label="Resumo do período">
+      <section className="card summary-strip summary-strip-lit" aria-label="Resumo do período">
         <div><p className="overview-label">Saídas</p><strong className="summary-strip-main num">{formatCurrency(expenses)}</strong></div>
         <div><p className="overview-label">Entradas</p><strong className="num">{formatCurrency(income)}</strong></div>
         <div><p className="overview-label">Transações</p><strong className="num">{transactions.length}</strong></div>
