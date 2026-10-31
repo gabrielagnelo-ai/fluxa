@@ -127,10 +127,10 @@ export function LimitsSection() {
 }
 
 const safety = [
-  { icon: EyeOff, title: "A IA não vê seus documentos", text: "Antes de qualquer descrição ir para a inteligência artificial, números de conta, agência, CPF e CNPJ são trocados por marcadores. A análise do período usa dados agregados do mês." },
+  { icon: EyeOff, title: "Documentos fora da IA", text: "Na importação, antes de qualquer descrição ir para a inteligência artificial, números de conta, agência, CPF e CNPJ são trocados por marcadores." },
   { icon: FileLock2, title: "Registros sem dado pessoal", text: "Os registros internos do sistema escondem CPF, e-mail e chaves de acesso." },
   { icon: Unplug, title: "Conexão bancária desligável", text: "Se você conectar um banco, a conexão pode ser desligada a qualquer momento na própria conta." },
-  { icon: Trash2, title: "Seus dados, sua decisão", text: "Em Privacidade e dados você vê o que o Fluxa guarda e pode excluir tudo." }
+  { icon: Trash2, title: "Seus dados, sua decisão", text: "Em Privacidade e dados você vê o que o Fluxa guarda e pode excluir seus dados financeiros do Fluxa." }
 ];
 
 export function SafetySection() {
@@ -159,12 +159,12 @@ const questions = [
   { q: "E se eu importar o mesmo extrato duas vezes?", a: "As linhas que já estão no Fluxa ficam de fora, então nada é contado em dobro." },
   { q: "Como funciona pelo WhatsApp?", a: "Você manda o gasto numa mensagem, como “gastei 32 no mercado”, do número vinculado à sua conta, e recebe a confirmação do registro." },
   { q: "A inteligência artificial pode errar?", a: "Pode. Por isso, ao importar, você revisa os valores e as categorias antes de salvar, e corrige o que precisar." },
-  { q: "Consigo apagar meus dados?", a: "Sim. Em Privacidade e dados você exclui seus dados da conta." }
+  { q: "Consigo apagar meus dados?", a: "Sim. Em Privacidade e dados você exclui seus dados financeiros do Fluxa. O cadastro de acesso continua." }
 ];
 
 export function FaqSection() {
   return (
-    <section id="perguntas" className="landing-section landing-section-stack" aria-labelledby="perguntas-title" data-reveal-group>
+    <section id="perguntas" className="landing-section" aria-labelledby="perguntas-title" data-reveal-group>
       <div className="landing-section-copy" data-stagger style={step(0)}>
         <p className="landing-eyebrow">Perguntas frequentes</p>
         <h2 id="perguntas-title" className="landing-h2">O que costumam <span>perguntar.</span></h2>

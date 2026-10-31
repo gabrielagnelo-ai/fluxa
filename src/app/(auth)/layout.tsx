@@ -1,22 +1,16 @@
 import type { ReactNode } from "react";
-import { FluxaLogo } from "@/components/brand/fluxa-logo";
+import Image from "next/image";
+import Link from "next/link";
 
 export const preferredRegion = "gru1";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="grid min-h-screen lg:grid-cols-[1fr_520px]">
-      <section className="hidden border-r border-border bg-card/70 px-10 py-12 backdrop-blur-xl lg:flex lg:flex-col lg:justify-between">
-        <FluxaLogo showSlogan />
-        <div>
-          <p className="text-sm font-medium text-primary">Entenda para onde seu dinheiro vai.</p>
-          <p className="mt-4 max-w-xl text-5xl font-semibold tracking-normal">Seu dinheiro explicado de forma simples.</p>
-          <p className="mt-5 max-w-lg text-muted-foreground">
-            Importe extratos, categorize gastos automaticamente e acompanhe sua vida financeira em um dashboard claro.
-          </p>
-        </div>
-      </section>
-      <section className="flex items-center justify-center px-5 py-10">{children}</section>
-    </main>
+    <div className="auth-shell">
+      <header className="auth-header">
+        <Link href="/" aria-label="Fluxa, voltar ao início" className="landing-logo"><Image src="/branding/fluxa-logo.svg" alt="Fluxa" width={420} height={160} priority className="h-8 w-auto" /></Link>
+      </header>
+      <main className="auth-main">{children}</main>
+    </div>
   );
 }
