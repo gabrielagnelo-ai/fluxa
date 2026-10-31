@@ -1137,3 +1137,5 @@ dialog.alert-dialog::backdrop { background: var(--overlay); }
 .insights-analysis { font-size: 1rem; max-width: 72ch; }
 .tx-edit { color: var(--label-2); margin-right: -0.5rem; }
 .sheet-danger { display: flex; justify-content: center; margin-top: 1rem; }
+.row-delete { color: var(--label-2); }
+@media (hover: hover) and (pointer: fine) { .row-delete:hover { color: #ffa3a5; } }

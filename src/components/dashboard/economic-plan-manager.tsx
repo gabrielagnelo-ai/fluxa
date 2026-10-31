@@ -575,7 +575,7 @@ function DeleteCategoryLimitButton({ categoryId, month, year }: { categoryId: st
       <button
         type="submit"
         disabled={pending}
-        className="icon-btn is-destructive disabled:opacity-50"
+        className="icon-btn row-delete disabled:opacity-50"
         aria-label="Remover limite desta categoria"
         title="Remover limite desta categoria"
         onClick={(event) => { if (!confirm("Remover o limite desta categoria?")) event.preventDefault(); }}
@@ -602,7 +602,7 @@ function DeletePlannedExpenseButton({ id, name, type, month, year }: { id: strin
       <button
         type="submit"
         disabled={pending}
-        className="icon-btn is-destructive disabled:opacity-50"
+        className="icon-btn row-delete disabled:opacity-50"
         aria-label="Remover conta planejada"
         title="Remover conta planejada"
         onClick={(event) => { if (!confirm(`Remover ${name} do planejamento?`)) event.preventDefault(); }}
