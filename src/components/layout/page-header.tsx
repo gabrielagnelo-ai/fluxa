@@ -3,14 +3,14 @@ import type { ReactNode } from "react";
 export function PageHeader({ eyebrow, title, description, actions }: {
   eyebrow?: ReactNode; title: string; description?: string; actions?: ReactNode;
 }) {
-  return <>
-    <header className="fluxa-header">
-      <div className="fluxa-header-copy">
-        {eyebrow && <div className="fluxa-header-eyebrow">{eyebrow}</div>}
-        <h1 className="text-foreground">{title}</h1>
-        {description && <p className="fluxa-header-description">{description}</p>}
+  return (
+    <header className="page-header">
+      <div className="page-header-copy">
+        {eyebrow && <div className="page-eyebrow">{eyebrow}</div>}
+        <h1 className="page-title">{title}</h1>
+        {description && <p className="page-description">{description}</p>}
       </div>
-      {actions && <div className="fluxa-header-actions">{actions}</div>}
+      {actions && <div className="page-actions">{actions}</div>}
     </header>
-  </>;
+  );
 }

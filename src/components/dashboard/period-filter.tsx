@@ -1,24 +1,65 @@
-import { CalendarDays, ChevronDown, Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+"use client";
+
+import { useRef } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { formatDateInput } from "@/utils/period";
 
+type Preset = { key: string; label: string; shortLabel: string; start: string; end: string };
+
+function monthRange(offset: number, span = 1) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset - (span - 1), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
+  return { start: formatDateInput(start), end: formatDateInput(end) };
+}
+
+function presets(): Preset[] {
+  return [
+    { key: "current", label: "Este mês", shortLabel: "Este mês", ...monthRange(0) },
+    { key: "previous", label: "Mês passado", shortLabel: "Anterior", ...monthRange(-1) },
+    { key: "quarter", label: "3 meses", shortLabel: "3 meses", ...monthRange(0, 3) }
+  ];
+}
+
+/** Period as a segmented control (Apple pattern); a custom range opens a sheet with the two dates. */
 export function PeriodFilter({ start, end }: { start: Date; end: Date }) {
+  const pathname = usePathname();
+  const sheet = useRef<HTMLDialogElement>(null);
   const startValue = formatDateInput(start);
   const endValue = formatDateInput(end);
-  const startDate = new Date(`${startValue}T12:00:00Z`);
-  const endDate = new Date(`${endValue}T12:00:00Z`);
-  const monthEnd = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth() + 1, 0)).getUTCDate();
-  const fullMonth = startValue.slice(0, 7) === endValue.slice(0, 7) && startValue.endsWith("-01") && endDate.getUTCDate() === monthEnd;
-  const monthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" }).format(startDate);
-  const shortDate = (date: Date) => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", timeZone: "UTC" }).format(date).replace(/\./g, "");
-  const label = fullMonth ? monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1) : `${shortDate(startDate)} — ${shortDate(endDate)}`;
-  return <details className="period-picker">
-    <summary aria-label={`Alterar período: ${label}`}><CalendarDays aria-hidden="true" /><span>{label}</span><ChevronDown className="period-chevron" aria-hidden="true" /></summary>
-    <form className="period-filter" action=""><p className="period-filter-title">Período de análise</p>
-      <label><span>Início</span><Input name="start" type="date" defaultValue={startValue} /></label>
-      <label><span>Fim</span><Input name="end" type="date" defaultValue={endValue} /></label>
-      <Button><Filter className="size-4" />Atualizar período</Button>
-    </form>
-  </details>;
+  const options = presets();
+  const selected = options.find(option => option.start === startValue && option.end === endValue);
+
+  return (
+    <div className="period-control">
+      <div className="segmented" role="group" aria-label="Período">
+        {options.map(option => (
+          <Link key={option.key} href={`${pathname}?start=${option.start}&end=${option.end}`} scroll={false}
+            aria-current={selected?.key === option.key ? "page" : undefined} aria-label={option.label}>
+            <span className="sm:hidden">{option.shortLabel}</span><span className="hidden sm:inline">{option.label}</span>
+          </Link>
+        ))}
+        <button type="button" aria-pressed={!selected} aria-haspopup="dialog" onClick={() => sheet.current?.showModal()}>
+          <span>Outro</span>
+        </button>
+      </div>
+
+      <dialog ref={sheet} className="sheet" aria-labelledby="period-sheet-title" onClick={event => { if (event.target === event.currentTarget) sheet.current?.close(); }}>
+        <form action={pathname} method="get">
+          <div className="sheet-grabber" aria-hidden="true" />
+          <div className="sheet-bar">
+            <button type="button" className="btn btn-plain" onClick={() => sheet.current?.close()}>Cancelar</button>
+            <h2 id="period-sheet-title" className="sheet-title">Outro período</h2>
+            <button type="submit" className="btn btn-plain" style={{ fontWeight: 700 }}>Aplicar</button>
+          </div>
+          <div className="field-group">
+            <label className="field-row"><span>Início</span><input name="start" type="date" defaultValue={startValue} required /></label>
+            <label className="field-row"><span>Fim</span><input name="end" type="date" defaultValue={endValue} required /></label>
+          </div>
+          <p className="field-note">Os números da tela passam a considerar só as movimentações entre essas datas.</p>
+        </form>
+      </dialog>
+    </div>
+  );
 }

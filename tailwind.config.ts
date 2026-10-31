@@ -5,6 +5,9 @@ const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["-apple-system", "BlinkMacSystemFont", "system-ui", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"]
+      },
       colors: {
         border: "hsl(var(--border))",
         background: "hsl(var(--background))",
@@ -19,8 +22,8 @@ const config: Config = {
         success: "hsl(var(--success))"
       },
       boxShadow: {
-        glow: "0 18px 70px rgb(37 99 235 / 0.20)",
-        card: "0 18px 45px rgb(2 6 23 / 0.24)"
+        glow: "0 8px 24px rgb(0 0 0 / 0.32)",
+        card: "0 8px 24px rgb(0 0 0 / 0.28)"
       }
     }
   },

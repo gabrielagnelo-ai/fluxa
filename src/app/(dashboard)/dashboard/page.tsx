@@ -1,4 +1,4 @@
-import { formatCurrency } from "@/lib/utils";
+import type { CSSProperties } from "react";
 import { BalanceBaselineCard } from "@/components/dashboard/balance-baseline-card";
 import { CategoryForecastCard } from "@/components/dashboard/category-forecast-card";
 import { CreditAnalysis } from "@/components/dashboard/credit-analysis";
@@ -30,7 +30,7 @@ import {
   getGoalsForCurrentUser
 } from "@/services/finance-data-service";
 import { getPlanningOverview } from "@/services/planning-service";
-import { getPeriodLabel, getPeriodRange } from "@/utils/period";
+import { getPeriodRange } from "@/utils/period";
 
 export default async function DashboardPage({
   searchParams
@@ -64,31 +64,34 @@ export default async function DashboardPage({
     salaryAdvance: salaryAdvanceCredits(transactions)
   });
 
+  const categories = expensesByCategory(transactions);
+  const hasData = transactions.length > 0 || evolutionTransactions.length > 0;
+
   return (
     <div className="fluxa-page dashboard-page">
       <TutorialStarter eligible={shouldShowFirstSteps} incomeConfigured={Number(planningOverview.plan?.monthlyIncome ?? 0) > 0} limitsConfigured={planningOverview.categoryLimits.some(item => item.planned > 0)} />
-      <PageHeader title="Seu panorama financeiro" description={`Acompanhe seu dinheiro em ${getPeriodLabel(period)}.`} actions={<PeriodFilter start={period.start} end={period.end} />} />
+      <PageHeader title="Visão geral" description={describePeriod(period)} actions={<PeriodFilter start={period.start} end={period.end} />} />
 
-      <OverviewPanels balance={currentBalance} estimated={!balanceBaseline}
-        income={periodSummary.income} expenses={periodSummary.expenses}
-        categories={expensesByCategory(transactions)}
-        goals={goalSnapshots} />
-      <FinanceCharts categoryData={expensesByCategory(transactions)} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} />
-      <section aria-label="Detalhes financeiros do mês">
-        <div className="dashboard-detail-grid">
-          <section className="dashboard-period-totals" aria-label="Indicadores do período"><div>Receitas<strong>{formatCurrency(periodSummary.income)}</strong></div><div>Despesas<strong>{formatCurrency(periodSummary.expenses)}</strong></div><div>Resultado do período<strong className={periodSummary.balance < 0 ? "text-red-400" : "text-emerald-400"}>{formatCurrency(periodSummary.balance)}</strong></div></section>
-          <p className="period-metric-note">Entradas e saídas registradas no período selecionado. Resultado = receitas − despesas; não inclui o saldo inicial nem representa o saldo disponível no banco.</p>
+      <div className="dashboard-grid">
+        <div className="span-7 rise" style={{ "--i": 0 } as CSSProperties}>
+          <OverviewPanels balance={currentBalance} estimated={!balanceBaseline} income={periodSummary.income} expenses={periodSummary.expenses} hasData={hasData} />
+        </div>
+        <div className="span-5 rise" style={{ "--i": 1 } as CSSProperties}><ProjectionCard {...projection} /></div>
+        <div className="span-6 rise" style={{ "--i": 2 } as CSSProperties}><InternalAlertsCard alerts={alerts} /></div>
+        <div className="span-6 rise" style={{ "--i": 3 } as CSSProperties}><CategoryForecastCard forecasts={forecasts} /></div>
+      </div>
 
-          <div className="dashboard-section-heading"><h2>Seu mês em detalhe</h2><p>Projeções, alertas e acompanhamento das suas metas.</p></div>
-          <section className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
-            <ProjectionCard {...projection} />
-            <WeeklyExpenseInsight {...weeklyInsight} />
-          </section>
-          <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <CategoryForecastCard forecasts={forecasts} />
-            <InternalAlertsCard alerts={alerts} />
-          </section>
-          <CreditAnalysis origins={creditOrigins(transactions)} />
+      <div className="dashboard-section-heading"><h2 className="section-title">Para onde o dinheiro foi</h2></div>
+      <div className="dashboard-grid">
+        <div className="span-7"><FinanceCharts categoryData={categories} evolutionData={[]} view="categories" /></div>
+        <div className="span-5"><WeeklyExpenseInsight {...weeklyInsight} /></div>
+        <div className="span-12"><FinanceCharts categoryData={categories} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} view="evolution" /></div>
+        <div className="span-12"><CreditAnalysis origins={creditOrigins(transactions)} /></div>
+      </div>
+
+      <div className="dashboard-section-heading"><h2 className="section-title">Metas e conta</h2></div>
+      <div className="dashboard-grid">
+        <div className="span-12">
           <GoalsEvolution
             goals={goals.map((goal) => ({
               id: goal.id,
@@ -101,9 +104,20 @@ export default async function DashboardPage({
               }))
             }))}
           />
-          <BalanceBaselineCard baseline={balanceBaseline} currentBalance={currentBalance} defaultDate={period.start} />
         </div>
-      </section>
+        <div className="span-12"><BalanceBaselineCard baseline={balanceBaseline} currentBalance={currentBalance} defaultDate={period.start} /></div>
+      </div>
     </div>
   );
+}
+
+function describePeriod({ start, end }: { start: Date; end: Date }) {
+  const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+  const fullMonth = start.getDate() === 1 && end.getFullYear() === start.getFullYear() && end.getMonth() === start.getMonth() && end.getDate() === lastDay;
+  if (fullMonth) {
+    const label = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(start);
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  const format = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "short", year: "numeric" });
+  return `${format.format(start).replace(/\./g, "")} a ${format.format(end).replace(/\./g, "")}`;
 }
