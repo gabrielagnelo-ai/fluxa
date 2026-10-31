@@ -1201,3 +1201,10 @@ dialog.alert-dialog::backdrop { background: var(--overlay); }
 /* Sign-in and sign-up sit in a glass card over the aurora (fields inside stay solid). */
 .auth-card { padding: 1.5rem; border-radius: 1.5rem; }
 @media (max-width: 479px) { .auth-card { padding: 1.25rem; } }
+/* Selected segment on glass: the same soft text shade as the cards, so the label holds 4.5:1 whatever light passes behind. */
+.segmented > [aria-current="page"], .segmented > [aria-pressed="true"], .segmented > [aria-selected="true"] { text-shadow: 0 0 2px rgb(6 12 26 / 0.5), 0 0 10px rgb(6 12 26 / 0.6); }
+/* The transactions summary sits under the brightest light at the top of a phone: a little more milky sheen, same tint. */
+.summary-strip { background: linear-gradient(180deg, rgb(255 255 255 / 0.34), rgb(255 255 255 / 0.18) 45%, rgb(255 255 255 / 0.18)), rgb(18 28 52 / 0.32); }
+@media (prefers-reduced-transparency: reduce) { .summary-strip { background: #3b4b6b; } }
+/* Links in empty states are real touch targets (44px). */
+.empty-state a { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 2.75rem; }
