@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Flag } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CountUp } from "@/components/motion/count-up";
+import { useInView } from "@/components/motion/use-in-view";
+import { formatAxisShort, formatCurrency } from "@/lib/utils";
 
 type GoalEvolutionItem = {
   id: string;
@@ -19,13 +21,13 @@ type GoalEvolutionItem = {
 
 function buildEvolutionData(goals: GoalEvolutionItem[]) {
   const contributions = goals
-    .flatMap((goal) => goal.contributions)
+    .flatMap(goal => goal.contributions)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   let accumulated = 0;
   const grouped = new Map<string, { month: string; aportes: number; acumulado: number; date: Date }>();
 
-  contributions.forEach((contribution) => {
+  contributions.forEach(contribution => {
     const date = new Date(contribution.date);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const month = new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(date).replace(".", "");
@@ -41,93 +43,89 @@ function buildEvolutionData(goals: GoalEvolutionItem[]) {
 }
 
 export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
-  const [mounted, setMounted] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(chartRef);
+  const [animate, setAnimate] = useState(false);
   const evolutionData = useMemo(() => buildEvolutionData(goals), [goals]);
   const totalContributed = goals.reduce((sum, goal) => sum + goal.contributedAmount, 0);
   const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
   const totalProgress = totalTarget > 0 ? Math.min(100, Math.round((totalContributed / totalTarget) * 100)) : 0;
 
   useEffect(() => {
-    setMounted(true);
+    setAnimate(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <section className="card" aria-labelledby="goals-title">
+      <div className="card-header">
         <div>
-          <h2 className="font-semibold">Evolucao das metas</h2>
-          <p className="text-sm text-muted-foreground">Progresso calculado pelo dinheiro guardado identificado no extrato ou WhatsApp.</p>
+          <h2 id="goals-title" className="card-title">Metas e reserva</h2>
+          <p className="card-subtitle">Progresso pelo dinheiro guardado que o Fluxa identificou no extrato ou no WhatsApp.</p>
         </div>
-        <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
-          <Flag className="size-5" />
-        </span>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {goals.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-sm text-muted-foreground">
-            Crie uma meta e registre quando guardar dinheiro. O progresso aparece aqui automaticamente.
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="space-y-3">
-                <div className="rounded-lg border border-border bg-muted/30 p-4">
-                  <p className="text-sm text-muted-foreground">Progresso geral</p>
-                  <strong className="mt-1 block text-2xl">{totalProgress}%</strong>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {formatCurrency(totalContributed)} de {formatCurrency(totalTarget)}
-                  </p>
-                  <div className="mt-3 h-2 rounded-full bg-background">
-                    <div className="h-2 rounded-full bg-primary shadow-[0_0_18px_rgba(37,99,235,0.35)]" style={{ width: `${totalProgress}%` }} />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {goals.map((goal) => {
-                    const progress = goal.targetAmount > 0 ? Math.min(100, Math.round((goal.contributedAmount / goal.targetAmount) * 100)) : 0;
-
-                    return (
-                      <div key={goal.id} className="rounded-lg border border-border bg-muted/20 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{goal.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatCurrency(goal.contributedAmount)} de {formatCurrency(goal.targetAmount)}
-                            </p>
-                          </div>
-                          <strong className="shrink-0 text-primary">{progress}%</strong>
-                        </div>
-                        <div className="mt-3 h-2 rounded-full bg-background">
-                          <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${progress}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="h-80 rounded-lg border border-border bg-muted/20 p-4">
-                {!mounted ? (
-                  <div className="h-full animate-pulse rounded-md bg-muted" />
-                ) : evolutionData.length === 0 ? (
-                  <div className="grid h-full place-items-center text-center text-sm text-muted-foreground">
-                    Nenhum dinheiro guardado identificado ainda.
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={evolutionData}>
-                      <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                      <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `R$ ${Number(value) / 1000}k`} />
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      <Area type="monotone" dataKey="acumulado" stroke="#2563EB" fill="#2563EB" fillOpacity={0.18} strokeWidth={3} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
+        <Link href="/goals" aria-label="Abrir metas" className="icon-btn btn-gray"><ChevronRight aria-hidden="true" /></Link>
+      </div>
+      {goals.length === 0 ? (
+        <div className="empty-state">
+          Defina uma meta e acompanhe quanto falta para chegar lá. O progresso aparece aqui sozinho.
+          <br /><Link href="/goals">Criar minha primeira meta<ChevronRight size={16} aria-hidden="true" /></Link>
+        </div>
+      ) : (
+        <div className={evolutionData.length >= 2 ? "goals-layout has-chart" : "goals-layout"}>
+          <div>
+            <div className="card-body goals-total-block">
+              <p className="overview-label">Guardado</p>
+              <strong className="projection-value"><CountUp value={totalContributed} /></strong>
+              <p className="projection-note num">{totalProgress}% de {formatCurrency(totalTarget)}</p>
+              <div className="meter" aria-hidden="true"><span style={{ width: `${totalProgress}%` }} /></div>
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+            <ul className="list">
+              {goals.map(goal => {
+                const progress = goal.targetAmount > 0 ? Math.min(100, Math.round((goal.contributedAmount / goal.targetAmount) * 100)) : 0;
+                return (
+                  <li key={goal.id}>
+                    <div className="list-row">
+                      <div className="row-main">
+                        <span className="row-title truncate">{goal.name}</span>
+                        <span className="row-sub num">{formatCurrency(goal.contributedAmount)} de {formatCurrency(goal.targetAmount)}</span>
+                        <div className="meter" aria-hidden="true"><span style={{ width: `${progress}%` }} /></div>
+                      </div>
+                      <span className="row-value">{progress}%</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          {evolutionData.length >= 2 && <div ref={chartRef} className="goals-chart" role="img" aria-label={`Dinheiro guardado acumulado: ${formatCurrency(totalContributed)}`}>
+            {!inView ? (
+              <div className="h-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={evolutionData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="goals-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1EA7FD" stopOpacity={0.42} /><stop offset="100%" stopColor="#0033AF" stopOpacity={0} /></linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgb(255 255 255 / 0.08)" vertical={false} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={8} padding={{ left: 12, right: 8 }} tick={{ fill: "rgb(235 235 245 / 0.6)", fontSize: 11 }} />
+                  <YAxis axisLine={false} tickLine={false} width={60} tick={{ fill: "rgb(235 235 245 / 0.6)", fontSize: 11 }} tickFormatter={formatAxisShort} />
+                  <Tooltip content={<GoalTooltip />} cursor={{ stroke: "rgb(255 255 255 / 0.22)", strokeDasharray: "3 4" }} />
+                  <Area type="monotone" dataKey="acumulado" name="Guardado" stroke="#1EA7FD" fill="url(#goals-fill)" strokeWidth={2} strokeLinecap="round" activeDot={{ r: 4.5, fill: "#1EA7FD", stroke: "#3b4b6b", strokeWidth: 2 }} isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function GoalTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="chart-tooltip">
+      {label && <p className="chart-tooltip-label">{label}</p>}
+      <div className="chart-tooltip-row"><span>Guardado até aqui</span><strong className="num">{formatCurrency(Number(payload[0].value))}</strong></div>
+    </div>
   );
 }

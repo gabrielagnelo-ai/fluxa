@@ -1,94 +1,139 @@
+import type { Metadata } from "next";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, CheckCircle2, FileUp, Flag, ShieldCheck, Sparkles } from "lucide-react";
-import { FluxaLogo } from "@/components/brand/fluxa-logo";
-import { Card, CardContent } from "@/components/ui/card";
-import { DashboardPreview } from "@/components/demo/dashboard-preview";
+import { FileSpreadsheet, MessageCircle, MonitorSmartphone } from "lucide-react";
+import { RevealObserver } from "@/components/motion/reveal-observer";
+import { CategorySwap } from "@/components/public/category-swap";
+import { MotionToggle } from "@/components/public/motion-toggle";
+import { PhonePreview } from "@/components/public/phone-preview";
+import { PublicNav } from "@/components/public/public-nav";
+import { PublicFooter } from "@/components/public/public-footer";
+import { WhatsAppExample } from "@/components/public/whatsapp-example";
+import { CategorizeSection, FaqSection, FinalCta, LimitsSection, SafetySection, SpendingSection } from "@/components/public/landing-sections";
+import { exampleCategories, exampleStatement, formatAmount } from "@/components/public/example-month";
 
-const benefits = [
-  { title: "Importação inteligente", description: "CSV, XLSX e PDF em um fluxo simples.", icon: FileUp },
-  { title: "Categorias automáticas", description: "Regras e IA para reduzir trabalho manual.", icon: Sparkles },
-  { title: "Dashboard claro", description: "Saldo, gastos e receitas por período.", icon: BarChart3 },
-  { title: "Metas e orçamento", description: "Limites por categoria e acompanhamento.", icon: Flag },
-  { title: "Visual seguro", description: "Interface limpa, moderna e responsiva.", icon: ShieldCheck }
+export const metadata: Metadata = {
+  title: { absolute: "Fluxa | Seu dinheiro, explicado" },
+  description: "Importe o extrato do seu banco ou mande o gasto por mensagem no WhatsApp. O Fluxa separa cada gasto por categoria e mostra para onde o mês foi."
+};
+
+const facts = [
+  { icon: FileSpreadsheet, text: "Extrato em CSV, XLSX ou PDF" },
+  { icon: MessageCircle, text: "Gasto por mensagem no WhatsApp" },
+  { icon: MonitorSmartphone, text: "Demonstração sem criar conta" }
 ];
 
-const steps = [
-  "Importe extratos bancários ou registre gastos pelo WhatsApp.",
-  "Revise categorias e metas identificadas automaticamente.",
-  "Acompanhe saldo, gastos previstos, metas e insights em tempo real."
-];
-
-const primaryCta =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm shadow-glow transition hover:-translate-y-0.5 hover:shadow-glow";
-const secondaryCta =
-  "inline-flex h-10 items-center justify-center rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted";
+const step = (index: number) => ({ "--i": index }) as CSSProperties;
 
 export default function Home() {
   return (
-    <main className="min-h-screen overflow-hidden">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
-        <FluxaLogo />
-        <div className="flex items-center gap-2">
-          <Link href="/login" className="rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:text-foreground">
-            Entrar
-          </Link>
-          <Link href="/signup" className={primaryCta}>
-            Começar agora
-          </Link>
-        </div>
-      </nav>
+    <div className="landing">
+      <RevealObserver />
+      <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
+      <PublicNav />
 
-      <section className="mx-auto max-w-7xl px-4 pb-12 pt-8 text-center sm:px-6 lg:px-8">
-        <p className="mx-auto inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-primary">
-          Entenda para onde seu dinheiro vai.
-        </p>
-        <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-semibold tracking-normal text-foreground sm:text-6xl">
-          Seu dinheiro explicado de forma simples.
-        </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
-          Importe extratos, categorize gastos automaticamente e acompanhe sua vida financeira em um dashboard claro.
-        </p>
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link href="/signup" className={`${primaryCta} w-full sm:w-auto`}>
-            Começar agora
-            <ArrowRight className="size-4" />
-          </Link>
-          <Link href="/demo" className={`${secondaryCta} w-full sm:w-auto`}>
-            Ver demonstração
-          </Link>
-        </div>
-        <p className="mt-4 text-sm text-muted-foreground">Explore a demonstração com dados fictícios, sem criar uma conta.</p>
-        <DashboardPreview />
-      </section>
+      <main id="conteudo">
+        <section className="landing-hero" aria-labelledby="hero-title">
+          <div className="landing-hero-copy">
+            <p className="landing-eyebrow rise" style={step(0)}>Finanças pessoais</p>
+            <h1 id="hero-title" className="landing-title rise" style={step(1)}>Seu dinheiro, <span>explicado.</span></h1>
+            <p className="landing-lead rise" style={step(2)}>
+              Importe o extrato do seu banco ou mande o gasto por mensagem no WhatsApp. O Fluxa separa cada gasto por categoria e mostra para onde o mês foi.
+            </p>
+            <div className="landing-ctas rise" style={step(3)}>
+              <Link href="/signup" className="btn btn-filled btn-large">Começar com meus dados</Link>
+              <Link href="/demo" className="btn btn-gray btn-large">Ver a demonstração</Link>
+            </div>
+            <p className="landing-cta-note rise" style={step(3)}>A demonstração usa dados fictícios e não pede cadastro.</p>
+          </div>
 
-      <section className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:px-6 md:grid-cols-2 lg:grid-cols-5 lg:px-8">
-        {benefits.map((benefit) => (
-          <Card key={benefit.title} className="min-h-32">
-            <CardContent className="p-5">
-              <benefit.icon className="mb-4 size-5 text-primary" />
-              <p className="text-sm font-semibold">{benefit.title}</p>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{benefit.description}</p>
-            </CardContent>
-          </Card>
+          <div className="landing-stage">
+            <div className="landing-float landing-float-left" data-reveal data-loop style={step(6)}><LimitExample className="float-inner" /></div>
+            <PhonePreview />
+            <div className="landing-float landing-float-right" data-reveal data-loop style={step(8)}><CategoryExample className="float-inner" /></div>
+          </div>
+
+          <div className="motion-toggle-row"><MotionToggle /></div>
+
+          <ul className="landing-facts" aria-label="O que o Fluxa faz">
+            {facts.map((fact, index) => <li key={fact.text} data-reveal style={step(index)}><span className="row-icon" aria-hidden="true"><fact.icon /></span>{fact.text}</li>)}
+          </ul>
+        </section>
+
+        <section id="importar" className="landing-section" aria-labelledby="importar-title" data-reveal-group>
+          <div className="landing-section-copy" data-stagger style={step(0)}>
+            <p className="landing-eyebrow">Importar</p>
+            <h2 id="importar-title" className="landing-h2">Você traz o extrato. <span>O Fluxa faz o resto.</span></h2>
+            <p className="landing-body">
+              Envie o arquivo do banco em CSV, XLSX ou PDF; linhas já importadas ficam de fora. No dia a dia, mande o gasto por mensagem no WhatsApp, com o número vinculado à sua conta.
+            </p>
+          </div>
+          <div className="landing-section-media">
+            <StatementExample />
+            <WhatsAppExample style={step(2)} stagger />
+          </div>
+        </section>
+
+        <CategorizeSection />
+        <SpendingSection />
+        <LimitsSection />
+        <SafetySection />
+        <FaqSection />
+        <FinalCta />
+      </main>
+      <PublicFooter />
+    </div>
+  );
+}
+
+function ExampleHeader({ title, children }: { title: string; children?: ReactNode }) {
+  return <div className="example-header"><span>{title}</span>{children ?? <span className="example-tag">Dados fictícios</span>}</div>;
+}
+
+function StatementExample() {
+  const duplicate = exampleStatement[2];
+  return (
+    <figure className="card example-card" data-stagger style={step(1)}>
+      <ExampleHeader title="extrato-outubro.csv" />
+      <ol className="list">
+        {exampleStatement.slice(0, 4).map((row, index) => (
+          <li key={row.raw} className="list-row example-statement-row row-in" style={{ "--r": index } as CSSProperties}>
+            <span className="example-day num">{row.day}</span>
+            <span className="row-main row-title">{row.raw}</span>
+            <span className="row-value">{row.amount > 0 ? "+" : "−"}{formatAmount(row.amount)}</span>
+          </li>
         ))}
-      </section>
+        <li className="list-row example-statement-row is-duplicate row-in" style={{ "--r": 4 } as CSSProperties}>
+          <span className="example-day num">{duplicate.day}</span>
+          <span className="row-main row-title"><s>{duplicate.raw}</s></span>
+          <span className="tag tag-pop" style={{ "--r": 4 } as CSSProperties}>repetida, fica de fora</span>
+        </li>
+      </ol>
+    </figure>
+  );
+}
 
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <div>
-            <p className="text-sm font-medium text-primary">Como funciona</p>
-            <h2 className="mt-2 max-w-md text-3xl font-semibold">Da importação à clareza financeira.</h2>
-          </div>
-          <div className="grid gap-3">
-            {steps.map((step) => (
-              <div key={step} className="flex gap-3 rounded-lg border border-border bg-card/70 p-4">
-                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" />
-                <p className="text-sm text-muted-foreground">{step}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </main>
+function CategoryExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
+  return (
+    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de categoria aplicada por regra ou sugestão">
+      <ExampleHeader title="Categoria" />
+      <CategorySwap />
+    </figure>
+  );
+}
+
+function LimitExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
+  const market = exampleCategories.find(item => item.name === "Mercado") ?? exampleCategories[0];
+  const usage = Math.round((market.spent / market.planned) * 100);
+  return (
+    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de limite por categoria">
+      <ExampleHeader title="Limite do mês" />
+      <div className="example-category">
+        <p className="example-category-name">{market.name}</p>
+        <p className="row-sub num">R$ {formatAmount(market.spent)} de R$ {formatAmount(market.planned)}</p>
+        <div className="meter"><span style={{ width: `${usage}%` }} /></div>
+        <p className="row-sub num" style={{ marginTop: "0.5rem" }}>{usage}% do combinado</p>
+      </div>
+    </figure>
   );
 }

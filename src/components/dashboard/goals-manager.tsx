@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { CalendarClock, TrendingUp, Trash2 } from "lucide-react";
+import { CalendarClock, Pencil, Plus, TrendingUp, Trash2 } from "lucide-react";
+import { SheetButton } from "@/components/ui/sheet-button";
 import { deleteGoal, upsertGoal } from "@/app/(dashboard)/goals/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, monthlyYield, monthsUntilDate, projectCompoundBalance } from "@/lib/savings-projection";
 import { formatCurrency } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 
 type GoalItem = {
   id: string;
@@ -27,25 +29,25 @@ function GoalForm({ goal }: { goal?: GoalItem }) {
   );
 
   return (
-    <form action={action} className="grid gap-3 md:grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_auto]">
+    <form action={action} className="grid items-end gap-3 md:grid-cols-4">
       {goal?.id && <input type="hidden" name="id" value={goal.id} />}
-      <Input name="name" defaultValue={goal?.name} placeholder="Nome da meta" required />
-      <Input name="targetAmount" defaultValue={goal?.targetAmount} type="number" min="0" step="0.01" placeholder="Valor alvo" required />
-      <Input name="dueDate" defaultValue={goal?.dueDate?.slice(0, 10)} type="date" />
-      <select name="status" defaultValue={goal?.status ?? "ACTIVE"} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+      <Field label="Nome da meta"><Input name="name" defaultValue={goal?.name} placeholder="Ex.: Reserva de emergência" required /></Field>
+      <Field label="Valor alvo (R$)"><Input name="targetAmount" defaultValue={goal?.targetAmount} type="number" min="0" step="0.01" placeholder="0,00" required /></Field>
+      <Field label="Data da meta (opcional)"><Input name="dueDate" defaultValue={goal?.dueDate?.slice(0, 10)} type="date" /></Field>
+      <Field label="Situação"><select name="status" defaultValue={goal?.status ?? "ACTIVE"} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
         <option value="ACTIVE">Ativa</option>
         <option value="PAUSED">Pausada</option>
         <option value="COMPLETED">Concluída</option>
-      </select>
-      <Button disabled={pending}>{pending ? "Salvando..." : goal ? "Atualizar" : "Criar"}</Button>
-      <textarea
+      </select></Field>
+      <Field label="Palavras para identificar o depósito" className="md:col-span-4"><textarea
         name="markers"
         defaultValue={goal?.markers.join(", ")}
-        className="min-h-20 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 md:col-span-5"
-        placeholder="Palavras para identificar deposito: META RESERVA, APLICACAO RESERVA"
-      />
-      {state?.error && <p className="md:col-span-5 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
-      {state?.success && <p className="md:col-span-5 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
+        className="min-h-20 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        placeholder="Ex.: META RESERVA, APLICACAO RESERVA"
+      /></Field>
+      <Button disabled={pending} className="md:col-span-4 md:justify-self-end">{pending ? "Salvando..." : goal ? "Atualizar meta" : "Criar meta"}</Button>
+      {state?.error && <p className="md:col-span-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
+      {state?.success && <p className="md:col-span-4 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
     </form>
   );
 }
@@ -59,30 +61,35 @@ function DeleteGoalButton({ id }: { id: string }) {
   return (
     <form action={action}>
       <input type="hidden" name="id" value={id} />
-      <Button className="bg-destructive text-white hover:bg-destructive/90" disabled={pending}>
-        <Trash2 className="size-4" />
-        {pending ? "Excluindo..." : "Excluir"}
-      </Button>
+      <button type="submit" className="btn btn-plain is-destructive" disabled={pending} onClick={(event) => { if (!confirm("Excluir esta meta?")) event.preventDefault(); }}>
+        <Trash2 className="size-4" aria-hidden="true" />
+        {pending ? "Excluindo..." : "Excluir meta"}
+      </button>
     </form>
   );
 }
 
 export function GoalsManager({ goals }: { goals: GoalItem[] }) {
+  const totalSaved = goals.reduce((sum, goal) => sum + goal.savedAmount, 0);
+  const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+  const activeCount = goals.filter((goal) => goal.status === "ACTIVE").length;
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <h2 className="font-semibold">Nova meta</h2>
-          <p className="text-sm text-muted-foreground">O Fluxa cria palavras para reconhecer quando voce guardou dinheiro para essa meta.</p>
-        </CardHeader>
-        <CardContent>
+      <section className="card summary-strip" aria-label="Resumo das metas">
+        <div><p className="overview-label">Guardado</p><strong className="summary-strip-main num">{formatCurrency(totalSaved)}</strong></div>
+        <div><p className="overview-label">Alvo somado</p><strong className="num">{formatCurrency(totalTarget)}</strong></div>
+        <div><p className="overview-label">Metas ativas</p><strong className="num">{activeCount}</strong></div>
+      </section>
+      <div className="screen-actions">
+        <SheetButton label="Nova meta" title="Nova meta" filled icon={<Plus className="size-4" aria-hidden="true" />}>
+          <p className="field-note" style={{ margin: "0 0 0.75rem" }}>O Fluxa cria palavras para reconhecer quando você guardou dinheiro para essa meta.</p>
           <GoalForm />
-        </CardContent>
-      </Card>
+        </SheetButton>
+      </div>
 
       {goals.length === 0 ? (
         <Card>
-          <CardContent className="pt-5 text-sm text-muted-foreground">Nenhuma meta cadastrada para este usuário.</CardContent>
+          <CardContent className="pt-5 text-sm text-muted-foreground">Nenhuma meta ainda. Toque em Nova meta para criar a primeira.</CardContent>
         </Card>
       ) : (
         goals.map((goal) => {
@@ -126,11 +133,14 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
                     </div>
                     <strong className="mt-1 block text-lg">{formatCurrency(projectedBalance)}</strong>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Projecao sem novos depositos: {formatCurrency(projectedYield)} de rendimento estimado.
+                      Projeção sem novos depósitos: {formatCurrency(projectedYield)} de rendimento estimado.
                     </p>
                   </div>
                 </div>
-                <GoalForm goal={goal} />
+                <details className="goal-editor">
+                  <summary><Pencil className="size-4" aria-hidden="true" />Editar meta</summary>
+                  <div className="goal-editor-body"><GoalForm goal={goal} /></div>
+                </details>
               </CardContent>
             </Card>
           );

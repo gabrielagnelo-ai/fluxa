@@ -313,7 +313,7 @@ export async function updatePlannedExpense(_previousState: unknown, formData: Fo
     select: { month: true, year: true }
   });
 
-  if (!existingExpense) return { error: "Conta nao encontrada." };
+  if (!existingExpense) return { error: "Conta não encontrada." };
 
   if (existingExpense.month === parsed.data.month && existingExpense.year === parsed.data.year) {
     await prisma.plannedExpense.updateMany({
@@ -364,7 +364,7 @@ const deleteCategoryLimitSchema = z.object({
 
 export async function deleteCategoryLimit(formData: FormData) {
   const parsed = deleteCategoryLimitSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: "Limite invalido." };
+  if (!parsed.success) return { error: "Limite inválido." };
 
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Faca login para remover limites." };
@@ -420,7 +420,7 @@ export async function deletePlannedExpense(formData: FormData) {
     select: { month: true, year: true, note: true }
   });
 
-  if (!existingExpense) return { error: "Conta nao encontrada." };
+  if (!existingExpense) return { error: "Conta não encontrada." };
 
   if (existingExpense.month === parsed.data.month && existingExpense.year === parsed.data.year) {
     await prisma.plannedExpense.updateMany({

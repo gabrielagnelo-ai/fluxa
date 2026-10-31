@@ -1,48 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { FluxaLogo } from "@/components/brand/fluxa-logo";
-import { cn } from "@/lib/utils";
+import { CircleHelp, Search } from "lucide-react";
+import { Logo } from "@/components/branding/logo";
+import { useTutorial } from "@/components/onboarding/guided-tutorial";
+import { openSearch } from "./command-launcher";
 import { isNavigationActive, primaryNavigationItems, secondaryNavigationItems } from "./navigation";
 import { SignOutButton } from "./sign-out-button";
-import styles from "./sidebar.module.css";
 
-export function Sidebar() {
+const STORAGE_KEY = "fluxa-sidebar";
+
+/** Desktop navigation: a floating Liquid Glass sidebar that collapses to icons (state kept in localStorage). */
+export function AppSidebar() {
   const pathname = usePathname();
+  const { startTutorial } = useTutorial();
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem("fluxa-sidebar-collapsed");
-      if (saved !== null) setCollapsed(saved === "true");
-    } catch { /* Navigation remains available when storage is disabled. */ }
+  useEffect(() => { setCollapsed(document.documentElement.dataset.sidebar === "collapsed"); }, []);
+
+  const toggle = useCallback(() => {
+    setCollapsed(current => {
+      const next = !current;
+      if (next) document.documentElement.dataset.sidebar = "collapsed"; else delete document.documentElement.dataset.sidebar;
+      try { window.localStorage.setItem(STORAGE_KEY, next ? "collapsed" : "expanded"); } catch { /* The choice still holds for this visit. */ }
+      return next;
+    });
   }, []);
 
-  function toggleSidebar() {
-    setCollapsed((current) => {
-      try { window.localStorage.setItem("fluxa-sidebar-collapsed", String(!current)); } catch { /* Keep this session's choice. */ }
-      return !current;
-    });
-  }
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === ".") { event.preventDefault(); toggle(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [toggle]);
+
+  const link = (item: (typeof primaryNavigationItems)[number]) => (
+    <Link key={item.href} href={item.href} aria-current={isNavigationActive(pathname, item.href) ? "page" : undefined} className="sidebar-link" data-tip={item.label} aria-label={collapsed ? item.label : undefined}>
+      <item.icon aria-hidden="true" /><span className="sidebar-label">{item.label}</span>
+    </Link>
+  );
 
   return (
-    <aside className={cn(styles.sidebar, collapsed && styles.collapsed)}>
-      <div className={styles.header}>
-        <Link href="/dashboard" aria-label="Fluxa, início" className={styles.brand}><FluxaLogo compact={collapsed} /></Link>
-        <button type="button" onClick={toggleSidebar} className={styles.toggle} title={collapsed ? "Expandir menu" : "Recolher menu"} aria-label={collapsed ? "Expandir menu" : "Recolher menu"} aria-expanded={!collapsed}>{collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}</button>
+    <aside className="app-sidebar glass" aria-label="Menu do Fluxa">
+      <div className="sidebar-top">
+        {/* The Fluxa mark is the collapse control (principle 26): no extra button. */}
+        <button type="button" onClick={toggle} className="sidebar-brand" aria-expanded={!collapsed} aria-label={collapsed ? "Expandir navegação (⌘.)" : "Recolher navegação (⌘.)"} data-tip={collapsed ? "Expandir navegação" : "Recolher navegação"}>
+          <span className="sidebar-logo-full"><Logo size="sm" /></span>
+          <Image unoptimized priority src="/branding/fluxa-fx.png" alt="" width={32} height={32} className="sidebar-logo-mark" />
+        </button>
       </div>
-      <nav aria-label="Navegação principal" className={styles.navigation}>
-        {[primaryNavigationItems, secondaryNavigationItems].map((items, groupIndex) => <div key={groupIndex} className={styles.group}>
-        {items.map((item) => {
-          const active = isNavigationActive(pathname, item.href);
-          return <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined} aria-label={item.label} aria-current={active ? "page" : undefined} className={styles.link}><item.icon aria-hidden="true" />{!collapsed && <span>{item.label}</span>}</Link>;
-        })}
-        </div>)}
+      <button type="button" className="sidebar-search" onClick={openSearch} data-tip="Buscar" aria-label={collapsed ? "Buscar" : undefined}><Search aria-hidden="true" /><span className="sidebar-label">Buscar</span><kbd aria-hidden="true">⌘K</kbd></button>
+      <nav aria-label="Navegação principal" className="sidebar-nav">
+        {primaryNavigationItems.map(link)}
+        <p className="sidebar-group-title"><span className="sidebar-label">Conta</span></p>
+        {secondaryNavigationItems.map(link)}
       </nav>
-      <div className={styles.footer}><SignOutButton collapsed={collapsed} /></div>
+      <div className="sidebar-footer">
+        <button type="button" onClick={startTutorial} className="sidebar-link" data-tip="Como usar" aria-label={collapsed ? "Como usar" : undefined}><CircleHelp aria-hidden="true" /><span className="sidebar-label">Como usar</span></button>
+        <SignOutButton />
+      </div>
     </aside>
   );
 }

@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { Sparkles, Trash2, UploadCloud } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { ChevronRight, Sparkles, Trash2, UploadCloud } from "lucide-react";
 import { classifyImportedTransactions, parsePdfStatement, previewImportedTransactions, saveImportedTransactions } from "@/app/(dashboard)/import/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { ImportReview } from "@/lib/import-deduplication";
-import { normalizeText } from "@/lib/utils";
+import { formatCurrency, normalizeText, plural } from "@/lib/utils";
 import { defaultCategoryRules } from "@/services/category-service";
 import { parseStatementFile } from "@/services/import-service";
 import type { ParsedTransaction } from "@/types/finance";
@@ -74,6 +74,10 @@ export function ImportDropzone({
   const [reading, setReading] = useState(false);
   const [pending, startTransition] = useTransition();
   const [aiPending, startAiTransition] = useTransition();
+  const [editing, setEditing] = useState<number | null>(null);
+  const sheetRef = useRef<HTMLDialogElement>(null);
+  const editingItem = editing !== null ? transactions[editing] : undefined;
+  useEffect(() => { if (editing !== null && sheetRef.current && !sheetRef.current.open) sheetRef.current.showModal(); }, [editing]);
 
   function applyAutomaticTag(transaction: ParsedTransaction) {
     const normalizedDescription = normalizeText(transaction.description);
@@ -120,7 +124,7 @@ export function ImportDropzone({
       setReview(null);
       setTransactions((current) => [...current, ...nextTransactions]);
       setFileNames((current) => [...current, ...selectedFiles.map((file) => file.name)]);
-      setMessage(`${nextTransactions.length} transações lidas de ${selectedFiles.length} arquivo(s). Revise e salve.`);
+      setMessage(`${nextTransactions.length} transações lidas de ${plural(selectedFiles.length, "arquivo", "arquivos")}. Revise e salve.`);
     } catch (exception) {
       setError(exception instanceof Error ? exception.message : "Falha ao ler arquivos.");
     } finally {
@@ -159,6 +163,11 @@ export function ImportDropzone({
     setMessage(undefined);
     setError(undefined);
     setReview(null);
+  }
+
+  function formatDay(value: string) {
+    const [year, month, day] = value.slice(0, 10).split("-");
+    return day && month ? `${day}/${month}/${year}` : value;
   }
 
   function updateRow(index: number, values: Partial<PreviewTransaction>) {
@@ -243,7 +252,7 @@ export function ImportDropzone({
         })
       );
       setMessage(
-        `${classifications.length} transação(ões) classificadas com IA. ${skipped} já tinham categoria e não foram enviadas.${createdCategories.length ? ` ${createdCategories.length} categoria(s) criada(s): ${createdCategories.map((category) => category.name).join(", ")}.` : ""} Revise antes de salvar.`
+        `${plural(classifications.length, "transação classificada", "transações classificadas")} com IA. ${skipped} já tinham categoria e não foram enviadas.${createdCategories.length ? ` ${createdCategories.length} categoria(s) criada(s): ${createdCategories.map((category) => category.name).join(", ")}.` : ""} Revise antes de salvar.`
       );
       } catch { setError("Não foi possível classificar. Tente novamente ou escolha as categorias manualmente."); }
     });
@@ -254,7 +263,7 @@ export function ImportDropzone({
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><h2 className="font-semibold">Importar extratos</h2><p className="text-sm text-muted-foreground">Envie, revise e confira duplicadas antes de salvar. Até 5.000 transações por lote.</p></CardHeader>
+        <CardHeader><h2 className="font-semibold">Envie o arquivo</h2><p className="text-sm text-muted-foreground">Até 5.000 transações por lote.</p></CardHeader>
         <CardContent>
           <label className="mb-4 block text-sm font-medium">Conta de origem<Input value={account} disabled={busy} maxLength={80} onChange={(event) => { setAccount(event.target.value); setReview(null); }} placeholder="Ex.: Nubank final 1234" className="mt-1 block max-w-md" /></label>
           <p className="mb-4 text-sm text-muted-foreground">Use sempre o mesmo nome para esta conta. Contas diferentes podem ter pagamentos iguais.</p>
@@ -272,35 +281,61 @@ export function ImportDropzone({
       </Card>
       {transactions.length > 0 && <Card>
         <CardHeader className="space-y-3">
-          <div><h2 className="font-semibold">Revise as {transactions.length} transações</h2><p className="text-sm text-muted-foreground">Edite qualquer campo ou remova uma linha. Depois, confira o que já existe no histórico.</p></div>
-          <div className="flex flex-wrap gap-2">
-            <button className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm" onClick={clearPreview} disabled={busy}><Trash2 className="size-4" />Limpar prévia</button>
-            <Button onClick={classifyWithAi} disabled={busy}><Sparkles className="size-4" />{aiPending ? "Classificando…" : "Classificar com IA"}</Button>
-            <Button onClick={() => checkDuplicates()} disabled={busy || account.trim().length < 2}>{pending ? "Aguarde…" : "Conferir duplicadas"}</Button>
-            <Button onClick={save} disabled={busy || !review || selectedCount === 0}>{pending ? "Aguarde…" : `Salvar ${selectedCount} transações`}</Button>
+          <div><h2 className="font-semibold">Revise as {transactions.length} {transactions.length === 1 ? "transação" : "transações"}</h2><p className="text-sm text-muted-foreground">Toque numa linha para editar ou remover. Depois, confira o que já existe no histórico.</p></div>
+          <div className="import-steps">
+            <Button onClick={() => checkDuplicates()} disabled={busy || account.trim().length < 2} className={review ? "btn-quiet" : undefined}>{pending && !review ? "Aguarde…" : "Conferir duplicadas"}</Button>
+            <Button onClick={save} disabled={busy || !review || selectedCount === 0} className={review ? undefined : "btn-quiet"}>{pending && review ? "Aguarde…" : `Salvar ${review ? selectedCount : transactions.length} ${(review ? selectedCount : transactions.length) === 1 ? "transação" : "transações"}`}</Button>
+            <Button onClick={classifyWithAi} disabled={busy} className="btn-quiet"><Sparkles className="size-4" />{aiPending ? "Classificando…" : "Classificar com IA"}</Button>
+            <button type="button" className="btn btn-plain import-clear" onClick={clearPreview} disabled={busy}><Trash2 className="size-4" aria-hidden="true" />Limpar prévia</button>
           </div>
-          {review && <div role="status" className="rounded-xl border border-border p-3 text-sm"><strong>{review.filter((row) => row.status === "new").length} novas</strong> · {review.filter((row) => row.status === "imported").length} já importadas · {review.filter((row) => row.status === "possible").length} possíveis repetidas.<p className="mt-1 text-muted-foreground">Repetidas ficam de fora. Se uma possível repetida for outro pagamento real, marque “Importar mesmo assim”. A conferência é refeita ao salvar.</p></div>}
+          {!review && <p className="import-hint">{account.trim().length < 2 ? "Informe a conta de origem e confira as duplicadas para liberar o salvamento." : "Confira as duplicadas para liberar o salvamento."}</p>}
+          {review && selectedCount === 0 && <p className="import-hint">Tudo já está no histórico. Nada novo para salvar.</p>}
+          {review && <div role="status" className="rounded-xl border border-border p-3 text-sm"><strong>{review.filter((row) => row.status === "new").length} novas</strong> · {review.filter((row) => row.status === "imported").length} já importadas · {review.filter((row) => row.status === "possible").length} possíveis repetidas.<p className="mt-1 text-muted-foreground">Repetidas ficam de fora. Se uma possível repetida for outro pagamento real, abra a linha e marque “Importar mesmo assim”. A conferência é refeita ao salvar.</p></div>}
         </CardHeader>
-        <CardContent>
-          <fieldset disabled={busy} className="min-w-0 divide-y divide-border">
-            {transactions.map((item, index) => {
-              const status = review?.[index]?.status;
-              return <article key={item.uiId} className="space-y-3 py-5 first:pt-0">
-                <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-xs text-muted-foreground">{item.source} · linha {item.rowIndex + 1}</p>{status && <p className={status === "new" ? "text-sm text-emerald-500" : "text-sm text-amber-500"}>{status === "new" ? "Nova transação" : status === "imported" ? "Já importada — será ignorada" : "Possível repetida — confira"}</p>}</div><button type="button" className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Remover ${item.description} da prévia`} onClick={() => { setTransactions((rows) => rows.filter((row) => row.uiId !== item.uiId)); setReview(null); }}><Trash2 className="size-4" /></button></div>
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <label className="min-w-0 text-xs text-muted-foreground">Descrição<Input className="mt-1" maxLength={300} required value={item.description} onChange={(event) => updateRow(index, { description: event.target.value })} /></label>
-                  <label className="min-w-0 text-xs text-muted-foreground">Data<Input className="mt-1" type="date" required value={item.date.slice(0, 10)} onChange={(event) => updateRow(index, { date: event.target.value })} /></label>
-                  <label className="min-w-0 text-xs text-muted-foreground">Valor (R$)<Input className="mt-1" type="number" inputMode="decimal" min="0.01" step="0.01" required value={item.amount || ""} onChange={(event) => updateRow(index, { amount: Number(event.target.value) })} /></label>
-                  <label className="min-w-0 text-xs text-muted-foreground">Tipo<select className="premium-input mt-1 h-10 w-full rounded-xl px-3 text-sm" value={item.type} onChange={(event) => updateRow(index, { type: event.target.value as "INCOME" | "EXPENSE" })}><option value="EXPENSE">Gasto</option><option value="INCOME">Receita</option></select></label>
-                  <label className="min-w-0 text-xs text-muted-foreground">Categoria<select className="premium-input mt-1 h-10 w-full rounded-xl px-3 text-sm" value={item.category ?? "Outros"} onChange={(event) => updateCategory(index, event.target.value)}>{categoryNames.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
-                </div>
-                <details className="text-sm"><summary className="cursor-pointer text-muted-foreground">Regra de categoria e meta</summary><div className="mt-3 grid gap-3 sm:grid-cols-2"><label>Regra<select className="premium-input mt-1 h-10 w-full rounded-xl px-3" value={item.tag ?? ""} onChange={(event) => updateTag(index, event.target.value)}><option value="">Nenhuma regra</option>{tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label}</option>)}</select></label><label>Meta<select className="premium-input mt-1 h-10 w-full rounded-xl px-3" value={item.goalId ?? ""} onChange={(event) => updateGoal(index, event.target.value)}><option value="">Nenhuma</option>{goalOptions.map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label></div></details>
-                {status === "possible" && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(item.forceImport)} onChange={(event) => updateForceImport(index, event.target.checked)} />Importar mesmo assim: este é outro pagamento real.</label>}
-              </article>;
-            })}
-          </fieldset>
-        </CardContent>
+        <ul className="list import-list">
+          {transactions.map((item, index) => {
+            const status = review?.[index]?.status;
+            return (
+              <li key={item.uiId}>
+                <button type="button" className="list-row import-row" onClick={() => setEditing(index)} disabled={busy} aria-haspopup="dialog">
+                  <span className="row-main">
+                    <span className="row-title import-row-title">{item.description || "Sem descrição"}</span>
+                    <span className="row-sub num">{formatDay(item.date)} · {item.category ?? "Outros"}{item.goalId ? " · meta" : ""}</span>
+                    {status && <span className={status === "new" ? "tag import-tag-new" : "tag is-warning"}>{status === "new" ? "Nova" : status === "imported" ? "Já importada, fica de fora" : item.forceImport ? "Possível repetida, será importada" : "Possível repetida, confira"}</span>}
+                  </span>
+                  <span className="row-value">{item.type === "INCOME" ? "+" : "−"}{formatCurrency(item.amount || 0)}</span>
+                  <ChevronRight className="row-chevron" aria-hidden="true" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </Card>}
+      <dialog ref={sheetRef} className="sheet" aria-labelledby="import-edit-title" onClose={() => setEditing(null)} onClick={(event) => { if (event.target === event.currentTarget) sheetRef.current?.close(); }}>
+        {editingItem && editing !== null && <div>
+          <div className="sheet-grabber" aria-hidden="true" />
+          <div className="sheet-bar">
+            <span />
+            <h2 id="import-edit-title" className="sheet-title">Editar transação</h2>
+            <button type="button" className="btn btn-plain btn-plain-strong" onClick={() => sheetRef.current?.close()}>OK</button>
+          </div>
+          <p className="field-note" style={{ margin: "0 1rem 0.75rem" }}>{editingItem.source} · linha {editingItem.rowIndex + 1}</p>
+          <div className="field-group">
+            <label className="field-row field-row-stack"><span>Descrição</span><input maxLength={300} required value={editingItem.description} onChange={(event) => updateRow(editing, { description: event.target.value })} /></label>
+            <label className="field-row"><span>Data</span><input type="date" required value={editingItem.date.slice(0, 10)} onChange={(event) => updateRow(editing, { date: event.target.value })} /></label>
+            <label className="field-row"><span>Valor (R$)</span><input type="number" inputMode="decimal" min="0.01" step="0.01" required value={editingItem.amount || ""} onChange={(event) => updateRow(editing, { amount: Number(event.target.value) })} /></label>
+            <label className="field-row"><span>Tipo</span><select value={editingItem.type} onChange={(event) => updateRow(editing, { type: event.target.value as "INCOME" | "EXPENSE" })}><option value="EXPENSE">Gasto</option><option value="INCOME">Receita</option></select></label>
+            <label className="field-row"><span>Categoria</span><select value={editingItem.category ?? "Outros"} onChange={(event) => updateCategory(editing, event.target.value)}>{categoryNames.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+          </div>
+          <p className="sheet-section-title">Regra e meta</p>
+          <div className="field-group">
+            <label className="field-row"><span>Regra</span><select value={editingItem.tag ?? ""} onChange={(event) => updateTag(editing, event.target.value)}><option value="">Nenhuma regra</option>{tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label}</option>)}</select></label>
+            <label className="field-row"><span>Meta</span><select value={editingItem.goalId ?? ""} onChange={(event) => updateGoal(editing, event.target.value)}><option value="">Nenhuma</option>{goalOptions.map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label>
+          </div>
+          {review?.[editing]?.status === "possible" && <label className="field-check"><input type="checkbox" checked={Boolean(editingItem.forceImport)} onChange={(event) => updateForceImport(editing, event.target.checked)} />Importar mesmo assim: este é outro pagamento real.</label>}
+          <button type="button" className="btn btn-plain import-remove" onClick={() => { const id = editingItem.uiId; sheetRef.current?.close(); setTransactions((rows) => rows.filter((row) => row.uiId !== id)); setReview(null); }}><Trash2 className="size-4" aria-hidden="true" />Remover da prévia</button>
+        </div>}
+      </dialog>
     </div>
   );
 }

@@ -68,8 +68,8 @@ export function AiInsightsPanel({
             <input type="hidden" name="end" value={formatDateInput(end)} />
             <Button disabled={pending}>{pending ? "Analisando..." : "Gerar análise com IA"}</Button>
           </form>
-          <div className="h-[62vh] min-h-[520px] overflow-y-scroll overscroll-contain rounded-lg border border-border bg-muted/30 p-5 text-sm leading-7">
-            <div className="space-y-3 pr-2">{renderAnalysis(state.text)}</div>
+          <div className="insights-analysis rounded-lg border border-border bg-muted/30 p-5 leading-7" aria-live="polite">
+            <div className="space-y-3">{renderAnalysis(state.text)}</div>
           </div>
           <p className="text-xs text-muted-foreground">
             Modo atual: {state.provider === "gemini" ? "Gemini API" : "análise local sem API externa"}.

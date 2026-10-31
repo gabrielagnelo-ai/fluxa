@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { economicModels } from "@/constants/economic-models";
 import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, formatMonthDistance, monthlyYield, monthsToReachTarget, projectCompoundBalance } from "@/lib/savings-projection";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, plural } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
+import { SheetButton } from "@/components/ui/sheet-button";
 
 type LimitFilter = "active" | "planned" | "over" | "all";
 
@@ -95,7 +97,7 @@ type PlanningOverview = {
 
 const limitTypeLabels = {
   FIXED: "Fixo",
-  VARIABLE: "Variavel"
+  VARIABLE: "Variável"
 };
 
 const filterLabels: Record<LimitFilter, string> = {
@@ -151,6 +153,11 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
   return (
     <div className="space-y-4">
+      <section className="card summary-strip" aria-label="Resumo do planejamento">
+        <div><p className="overview-label">Sobra para metas</p><strong className={cn("summary-strip-main num", overview.paymentPlan.availableForGoals < 0 && "is-negative")}>{formatCurrency(overview.paymentPlan.availableForGoals)}</strong><p className="summary-strip-note">renda menos fixos e variáveis</p></div>
+        <div><p className="overview-label">Renda planejada</p><strong className="num">{formatCurrency(overview.nextMonthImpact.adjustedIncome)}</strong><p className="summary-strip-note">já considera vale ou adiantamento</p></div>
+        <div><p className="overview-label">Previsto</p><strong className="num">{formatCurrency(overview.paymentPlan.fixedPlanned + overview.paymentPlan.variablePlanned)}</strong><p className="summary-strip-note">{plural(fixedBills.length, "fixo", "fixos")} · {plural(variableBills.length, "variável", "variáveis")}</p></div>
+      </section>
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -162,15 +169,17 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form action={plannedExpenseAction} className="grid gap-3 rounded-xl border border-border bg-background/35 p-3 xl:grid-cols-[1fr_150px_150px_auto]">
+          <div className="screen-actions">
+            <SheetButton label="Adicionar conta" title="Nova conta" icon={<Plus className="size-4" aria-hidden="true" />}>
+          <form action={plannedExpenseAction} className="grid gap-3">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
-            <Input name="name" placeholder="Ex: Apple Watch parcela" />
-            <Input name="amount" inputMode="decimal" placeholder="Valor" />
-            <select name="type" defaultValue="FIXED" className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
+            <Field label="Nova conta"><Input name="name" placeholder="Ex: Apple Watch parcela" /></Field>
+            <Field label="Valor (R$)"><Input name="amount" inputMode="decimal" placeholder="0,00" /></Field>
+            <Field label="Tipo"><select name="type" defaultValue="FIXED" className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm">
               <option value="FIXED">Fixo</option>
-              <option value="VARIABLE">Variavel</option>
-            </select>
+              <option value="VARIABLE">Variável</option>
+            </select></Field>
             <Button disabled={plannedExpensePending} className="whitespace-nowrap">
               <Plus className="size-4" />
               {plannedExpensePending ? "Adicionando..." : "Adicionar conta"}
@@ -178,24 +187,14 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             {plannedExpenseState?.error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive xl:col-span-4">{plannedExpenseState.error}</p>}
             {plannedExpenseState?.success && <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary xl:col-span-4">{plannedExpenseState.success}</p>}
           </form>
+            </SheetButton>
+          </div>
 
-          <section className="grid gap-3 md:grid-cols-4">
-            <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="ja considera vale/adiantamento" />
-            <CompactMetric icon={WalletCards} label="Contas fixas" value={formatCurrency(overview.paymentPlan.fixedPlanned)} detail={`${fixedBills.length} item(ns) marcado(s) como fixo`} />
-            <CompactMetric icon={SlidersHorizontal} label="Gastos variaveis" value={formatCurrency(overview.paymentPlan.variablePlanned)} detail={`${variableBills.length} item(ns) flexiveis`} />
-            <CompactMetric
-              icon={Target}
-              label="Sobra para metas"
-              value={formatCurrency(overview.paymentPlan.availableForGoals)}
-              detail="renda menos fixos e variaveis"
-              tone={overview.paymentPlan.availableForGoals < 0 ? "danger" : "success"}
-            />
-          </section>
 
-          <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-            <div className="grid gap-3 md:grid-cols-2">
-              <BillList title="Contas fixas" description="O que costuma ser obrigatorio pagar." items={fixedBills} month={overview.month} year={overview.year} emptyText="Nenhuma conta fixa marcada ainda." />
-              <BillList title="Gastos combinados" description="Limites flexiveis para controlar o mes." items={variableBills} month={overview.month} year={overview.year} emptyText="Nenhum gasto variavel planejado ainda." />
+          <section className="planning-columns">
+            <div className="planning-bills">
+              <BillList title="Contas fixas" description="O que costuma ser obrigatório pagar." items={fixedBills} month={overview.month} year={overview.year} emptyText="Nenhuma conta fixa marcada ainda." />
+              <BillList title="Gastos combinados" description="Limites flexíveis para controlar o mês." items={variableBills} month={overview.month} year={overview.year} emptyText="Nenhum gasto variável planejado ainda." />
             </div>
             <GoalPlanCard goals={overview.goals} availableForGoals={overview.paymentPlan.availableForGoals} />
           </section>
@@ -205,9 +204,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
       <Card className={cn(overview.nextMonthImpact.hasSalaryAdvance && "border-red-500/30 bg-red-500/[0.04]")}>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold">Projecao de {overview.nextMonthImpact.monthLabel}</h2>
+            <h2 className="font-semibold">Projeção de {overview.nextMonthImpact.monthLabel}</h2>
             <p className="text-sm text-muted-foreground">
-              Veja quanto pode sobrar considerando sua renda, vales ou adiantamentos do mes anterior e os gastos previstos.
+              Veja quanto pode sobrar considerando sua renda, vales ou adiantamentos do mês anterior e os gastos previstos.
             </p>
           </div>
           <span className={cn("grid size-10 place-items-center rounded-lg", overview.nextMonthImpact.hasSalaryAdvance ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary")}>
@@ -223,12 +222,12 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               value={`-${formatCurrency(overview.nextMonthImpact.salaryAdvanceTotal)}`}
               detail={
                 overview.nextMonthImpact.salaryAdvanceCount > 0
-                  ? `${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) no mes anterior`
+                  ? `${plural(overview.nextMonthImpact.salaryAdvanceCount, "entrada", "entradas")} no mês anterior`
                   : "nenhum vale identificado"
               }
               tone={overview.nextMonthImpact.salaryAdvanceTotal > 0 ? "danger" : "neutral"}
             />
-            <CompactMetric icon={WalletCards} label="Gastos previstos" value={formatCurrency(overview.nextMonthImpact.plannedExpenses)} detail={`${overview.nextMonthImpact.plannedCount} categoria(s) planejada(s)`} />
+            <CompactMetric icon={WalletCards} label="Gastos previstos" value={formatCurrency(overview.nextMonthImpact.plannedExpenses)} detail={plural(overview.nextMonthImpact.plannedCount, "categoria planejada", "categorias planejadas")} />
             <CompactMetric
               icon={overview.nextMonthImpact.leftoverAfterPlanned < 0 ? AlertTriangle : CheckCircle2}
               label="Sobra prevista"
@@ -238,7 +237,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             />
           </section>
           <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-sm text-muted-foreground">
-            Pense assim: renda planejada menos vales/adiantamentos do mes anterior, depois menos todos os valores previstos nas categorias.
+            Pense assim: renda planejada menos vales ou adiantamentos do mês anterior, depois menos todos os valores previstos nas categorias.
           </div>
         </CardContent>
       </Card>
@@ -254,24 +253,24 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form action={action} onReset={(event) => event.preventDefault()} className="grid gap-3 xl:grid-cols-[180px_180px_1fr_90px_90px_90px_auto]">
+          <form action={action} onReset={(event) => event.preventDefault()} className="grid items-end gap-3 xl:grid-cols-[180px_180px_1fr_90px_90px_90px_auto]">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
-            <Input name="monthlyIncome" defaultValue={overview.plan?.monthlyIncome ?? overview.actualIncome} type="number" min="0" step="0.01" placeholder="Renda mensal" />
-            <select name="model" value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+            <Field label="Renda mensal (R$)"><Input name="monthlyIncome" defaultValue={overview.plan?.monthlyIncome ?? overview.actualIncome} type="number" min="0" step="0.01" placeholder="0,00" /></Field>
+            <Field label="Divisão da renda"><select name="model" value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
               {economicModels.map((model) => (
                 <option key={model.id} value={model.id}>
                   {model.name}
                 </option>
               ))}
               <option value="custom">Personalizado</option>
-            </select>
+            </select></Field>
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-              {isCustom ? "Ajuste os percentuais. A soma precisa ser 100%." : "Necessidades sao contas essenciais. Desejos sao gastos flexiveis. Metas sao dinheiro guardado."}
+              {isCustom ? "Ajuste os percentuais. A soma precisa ser 100%." : "Necessidades são contas essenciais. Desejos são gastos flexíveis. Metas são dinheiro guardado."}
             </div>
-            <Input name="needsPercent" defaultValue={needsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Necessidades %" />
-            <Input name="wantsPercent" defaultValue={wantsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Desejos %" />
-            <Input name="savingsPercent" defaultValue={savingsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Metas %" />
+            <Field label="Necessidades (%)"><Input name="needsPercent" defaultValue={needsPercent} type="number" min="0" max="100" disabled={!isCustom} /></Field>
+            <Field label="Desejos (%)"><Input name="wantsPercent" defaultValue={wantsPercent} type="number" min="0" max="100" disabled={!isCustom} /></Field>
+            <Field label="Metas (%)"><Input name="savingsPercent" defaultValue={savingsPercent} type="number" min="0" max="100" disabled={!isCustom} /></Field>
             <Button disabled={pending}>{pending ? "Salvando..." : "Salvar"}</Button>
             {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive xl:col-span-7">{state.error}</p>}
             {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary xl:col-span-7">{state.success}</p>}
@@ -279,7 +278,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
           {overview.planSource && (
             <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary">
-              Base deste mes: {overview.planSource}. Ajuste os valores e clique em Salvar para gravar o planejamento de {overview.monthLabel}.
+              Base deste mês: {overview.planSource}. Ajuste os valores e clique em Salvar para gravar o planejamento de {overview.monthLabel}.
             </p>
           )}
 
@@ -325,7 +324,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
             <section className="grid gap-3 md:grid-cols-4">
               <CompactMetric icon={CircleDollarSign} label="Previsto" value={formatCurrency(overview.limitSummary.plannedTotal)} detail={`${overview.limitSummary.plannedCount} com valor definido`} />
-              <CompactMetric icon={CheckCircle2} label="Ja gasto" value={formatCurrency(overview.limitSummary.actualWithLimit)} detail="gasto acompanhado" />
+              <CompactMetric icon={CheckCircle2} label="Já gasto" value={formatCurrency(overview.limitSummary.actualWithLimit)} detail="gasto acompanhado" />
               <CompactMetric
                 icon={overview.limitSummary.difference < 0 ? AlertTriangle : CheckCircle2}
                 label="Saldo"
@@ -343,33 +342,30 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             </section>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex w-fit flex-wrap gap-1 rounded-lg border border-border bg-background/50 p-1">
+              <div className="segmented self-start" role="group" aria-label="Filtrar categorias">
                 {(Object.keys(filterLabels) as LimitFilter[]).map((filter) => (
                   <button
                     key={filter}
                     type="button"
                     onClick={() => setLimitFilter(filter)}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground",
-                      limitFilter === filter && "bg-primary text-primary-foreground hover:text-primary-foreground"
-                    )}
+                    aria-pressed={limitFilter === filter}
                   >
                     {filterLabels[filter]}
                   </button>
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">Use Todas para definir um valor em uma categoria que ainda nao apareceu no mes.</p>
+              <p className="text-sm text-muted-foreground">Use Todas para definir um valor em uma categoria que ainda não apareceu no mês.</p>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[760px] text-sm">
+            <div className="stack-table-wrap overflow-x-auto rounded-xl border border-border">
+              <table className="stack-table w-full min-w-[760px] text-sm">
                 <thead className="bg-background/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="px-4 py-3 font-medium">Categoria</th>
                     <th className="px-4 font-medium">Tipo</th>
                     <th className="px-4 font-medium">Valor previsto</th>
-                    <th className="px-4 text-right font-medium">Ja gasto</th>
-                    <th className="px-4 font-medium">Situacao</th>
+                    <th className="px-4 text-right font-medium">Já gasto</th>
+                    <th className="px-4 font-medium">Situação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -382,8 +378,8 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alteracoes..." : "As mudancas salvam ao alterar o tipo ou sair do campo de valor."}</p>
-              <Button disabled={limitPending}>{limitPending ? "Salvando..." : "Salvar limites"}</Button>
+              <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alterações..." : "As mudanças salvam ao alterar o tipo ou sair do campo de valor."}</p>
+              <Button disabled={limitPending} className="btn-quiet">{limitPending ? "Salvando..." : "Salvar limites"}</Button>
             </div>
             {limitState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{limitState.error}</p>}
             {limitState?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{limitState.success}</p>}
@@ -412,13 +408,13 @@ function BillList({
   const total = items.reduce((sum, item) => sum + item.planned, 0);
 
   return (
-    <div className="rounded-xl border border-border bg-background/35 p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-background/35 p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h3 className="font-semibold">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
-        <strong className="text-sm">{formatCurrency(total)}</strong>
+        <strong className="shrink-0 text-sm tabular-nums">{formatCurrency(total)}</strong>
       </div>
 
       <div className="mt-4 space-y-2">
@@ -431,9 +427,9 @@ function BillList({
 
           return (
             <div key={`${item.source}-${item.id}`} className="rounded-lg border border-border/70 bg-card/40 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{item.name}</p>
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <div className="min-w-0 flex-1 basis-40">
+                  <p className="line-clamp-2 break-words font-medium">{item.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatCurrency(item.actual)} pago de {formatCurrency(item.planned)}
                   </p>
@@ -466,16 +462,16 @@ function PlannedExpenseInlineForm({ item, month, year }: { item: PlanningOvervie
         <input type="hidden" name="month" value={month} />
         <input type="hidden" name="year" value={year} />
         <input type="hidden" name="note" value={item.note ?? ""} />
-        <Input name="name" defaultValue={item.name} aria-label="Nome da conta planejada" placeholder="Nome da conta" />
-        <div className="grid grid-cols-[1fr_120px] gap-2">
-          <Input name="amount" defaultValue={item.planned.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} inputMode="decimal" aria-label="Valor planejado" />
-          <select name="type" defaultValue={item.type} className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
+        <Field label="Nome da conta"><Input name="name" defaultValue={item.name} placeholder="Nome da conta" /></Field>
+        <div className="grid grid-cols-[1fr_120px] items-end gap-2">
+          <Field label="Valor (R$)"><Input name="amount" defaultValue={item.planned.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} inputMode="decimal" /></Field>
+          <Field label="Tipo"><select name="type" defaultValue={item.type} className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm">
             <option value="FIXED">Fixo</option>
-            <option value="VARIABLE">Variavel</option>
-          </select>
+            <option value="VARIABLE">Variável</option>
+          </select></Field>
         </div>
         <Button disabled={pending} className="h-10 w-full px-3 text-sm">
-          {pending ? "Salvando..." : "Salvar alteracoes"}
+          {pending ? "Salvando..." : "Salvar alterações"}
         </Button>
       </form>
       <div className="mt-2 flex items-center justify-between gap-3">
@@ -497,15 +493,15 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold">Metas de economia</h3>
-          <p className="text-sm text-muted-foreground">Use a sobra do mes para decidir quanto guardar.</p>
+          <p className="text-sm text-muted-foreground">Use a sobra do mês para decidir quanto guardar.</p>
         </div>
         <Target className={cn("size-5", availableForGoals < 0 ? "text-red-500" : "text-emerald-500")} />
       </div>
 
       <div className="mt-4 rounded-lg border border-border/70 bg-card/40 p-3">
-        <p className="text-sm text-muted-foreground">Disponivel para guardar</p>
+        <p className="text-sm text-muted-foreground">Disponível para guardar</p>
         <strong className={cn("mt-1 block text-2xl", availableForGoals < 0 ? "text-red-500" : "text-emerald-500")}>{formatCurrency(availableForGoals)}</strong>
-        <p className="mt-1 text-xs text-muted-foreground">Calculado depois dos gastos fixos e variaveis planejados.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Calculado depois dos gastos fixos e variáveis planejados.</p>
       </div>
 
       <div className="mt-4 space-y-2">
@@ -540,12 +536,12 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
               </div>
               <div className="mt-3 grid gap-2 rounded-lg border border-border/70 bg-background/35 p-2 text-xs text-muted-foreground">
                 <p>
-                  Rendimento estimado: <span className="font-medium text-emerald-400">{formatCurrency(monthlyYield(goal.savedAmount))}</span> no proximo mes.
+                  Rendimento estimado: <span className="font-medium text-emerald-400">{formatCurrency(monthlyYield(goal.savedAmount))}</span> no próximo mês.
                 </p>
                 {suggestion > 0 ? (
                   <>
                     <p>
-                      Sugestao de deposito: <span className="font-medium text-foreground">{formatCurrency(suggestedContribution)}</span> por mes.
+                      Sugestão de depósito: <span className="font-medium text-foreground">{formatCurrency(suggestedContribution)}</span> por mês.
                     </p>
                     <p>
                       Com {DEFAULT_SAVINGS_MONTHLY_RATE_LABEL}, pode chegar em{" "}
@@ -554,7 +550,7 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
                     <p>Saldo projetado em 12 meses: {formatCurrency(projectedInOneYear)}.</p>
                   </>
                 ) : (
-                  <p>Saldo projetado em 12 meses sem novos depositos: {formatCurrency(projectedInOneYear)}.</p>
+                  <p>Saldo projetado em 12 meses sem novos depósitos: {formatCurrency(projectedInOneYear)}.</p>
                 )}
               </div>
             </div>
@@ -579,11 +575,12 @@ function DeleteCategoryLimitButton({ categoryId, month, year }: { categoryId: st
       <button
         type="submit"
         disabled={pending}
-        className="grid size-7 place-items-center rounded-lg border border-red-500/20 text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+        className="icon-btn row-delete disabled:opacity-50"
         aria-label="Remover limite desta categoria"
         title="Remover limite desta categoria"
+        onClick={(event) => { if (!confirm("Remover o limite desta categoria?")) event.preventDefault(); }}
       >
-        <Trash2 className="size-3.5" />
+        <Trash2 aria-hidden="true" />
       </button>
     </form>
   );
@@ -605,11 +602,12 @@ function DeletePlannedExpenseButton({ id, name, type, month, year }: { id: strin
       <button
         type="submit"
         disabled={pending}
-        className="grid size-7 place-items-center rounded-lg border border-red-500/20 text-red-400 transition hover:bg-red-500/10"
+        className="icon-btn row-delete disabled:opacity-50"
         aria-label="Remover conta planejada"
         title="Remover conta planejada"
+        onClick={(event) => { if (!confirm(`Remover ${name} do planejamento?`)) event.preventDefault(); }}
       >
-        <Trash2 className="size-3.5" />
+        <Trash2 aria-hidden="true" />
       </button>
     </form>
   );
@@ -654,12 +652,12 @@ function CategoryLimitRow({
 
   return (
     <tr className="border-b border-border/60 last:border-0">
-      <td className="px-4 py-3">
+      <td className="px-4 py-3" data-cell="a">
         <input type="hidden" name="categoryId" value={item.categoryId} />
         <p className="font-medium">{item.categoryName}</p>
         <p className={cn("mt-1 text-xs", error ? "text-red-400" : "text-muted-foreground")}>{error ?? status.detail}</p>
       </td>
-      <td className="px-4">
+      <td className="px-4" data-cell="c" data-label="Tipo">
         <select
           name="type"
           value={type}
@@ -669,6 +667,7 @@ function CategoryLimitRow({
             save({ type: nextType });
           }}
           disabled={isSaving}
+          aria-label={`Tipo de ${item.categoryName}`}
           className="h-9 w-32 rounded-md border border-border bg-background px-2 disabled:opacity-60"
         >
           {Object.entries(limitTypeLabels).map(([value, label]) => (
@@ -678,7 +677,7 @@ function CategoryLimitRow({
           ))}
         </select>
       </td>
-      <td className="px-4">
+      <td className="px-4" data-cell="b" data-label="Valor previsto">
         <Input
           name="amount"
           type="text"
@@ -694,11 +693,12 @@ function CategoryLimitRow({
           }}
           disabled={isSaving}
           placeholder="0,00"
+          aria-label={`Valor previsto para ${item.categoryName}`}
           className="max-w-32 disabled:opacity-60"
         />
       </td>
-      <td className="px-4 text-right font-semibold">{formatCurrency(item.actual)}</td>
-      <td className="min-w-56 px-4">
+      <td className="px-4 text-right font-semibold" data-cell="d" data-label="Já gasto">{formatCurrency(item.actual)}</td>
+      <td className="min-w-56 px-4" data-cell="e">
         <div className="flex items-center gap-3">
           <div className="h-2 flex-1 rounded-full bg-background">
             <div className={cn("h-2 rounded-full", status.barClass)} style={{ width: `${item.planned > 0 ? Math.min(100, item.usage) : 0}%` }} />
@@ -741,7 +741,7 @@ function getLimitStatus(item: PlanningOverview["categoryLimits"][number]) {
   if (item.planned <= 0) {
     return {
       label: "Sem valor",
-      detail: item.actual > 0 ? "Gasto sem valor previsto" : "Sem movimento no mes",
+      detail: item.actual > 0 ? "Gasto sem valor previsto" : "Sem movimento no mês",
       barClass: "bg-muted",
       textClass: "text-muted-foreground"
     };

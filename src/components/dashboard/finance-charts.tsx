@@ -1,212 +1,218 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Area, Bar, ComposedChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { cn, formatCurrency } from "@/lib/utils";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useInView } from "@/components/motion/use-in-view";
+import { cn, displayName, formatAxisShort, formatCurrency } from "@/lib/utils";
 
-const colors = ["#2563EB", "#10B981", "#EF4444", "#14B8A6", "#F97316", "#8B5CF6", "#FACC15", "#64748B"];
+// Five logo blues (measured in public/branding/fluxa-logo.png), each at least 3:1 against the card,
+// alternating darker and lighter so neighbours stay apart; everything after the fifth category is grouped as "Outras" in gray.
+const categoryColors = ["#1EA7FD", "#B5FFFF", "#33BCFD", "#80D8F8", "#38C0F8"];
+const OTHERS_COLOR = "#9AA3B6";
+const RING_SLICES = 5;
+const OTHERS = "__outras__";
+const VISIBLE_CATEGORIES = 6;
+const axisTick = { fill: "rgb(235 235 245 / 0.6)", fontSize: 11, fontFamily: "inherit" };
+const gridStroke = "rgb(255 255 255 / 0.07)";
+
+// One series at a time (principle 24); "Comparar" puts income and expenses side by side as bars.
+const views = [
+  { key: "saldo", label: "Resultado", color: "#1EA7FD", deep: "#0033AF" },
+  { key: "receitas", label: "Entradas", color: "#30D158", deep: "#30D158" },
+  { key: "despesas", label: "Saídas", color: "#FFA3A5", deep: "#FF4245" },
+  { key: "comparar", label: "Comparar", color: "#1EA7FD", deep: "#0033AF" }
+] as const;
+type ViewKey = (typeof views)[number]["key"];
 
 type CategoryData = { name: string; value: number };
 type EvolutionData = { month: string; receitas: number; despesas: number; saldo: number };
 
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color?: string }>; label?: string }) {
-  if (!active || !payload?.length) return null;
-
-  const orderedPayload = [...payload].sort((a, b) => {
-    const order = ["Receitas", "Despesas", "Resultado"];
-    return order.indexOf(a.name) - order.indexOf(b.name);
-  });
-
-  return (
-    <div className="rounded-lg border border-border bg-[#0B1220]/95 px-3 py-2 text-xs shadow-2xl shadow-black/30 backdrop-blur">
-      {label && <p className="mb-2 font-medium capitalize text-foreground">{label}</p>}
-      <div className="space-y-1.5">
-        {orderedPayload.map((item) => (
-          <div key={item.name} className="flex min-w-44 items-center justify-between gap-4">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <span className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
-              {item.name}
-            </span>
-            <strong className="font-semibold text-foreground">{formatCurrency(Number(item.value))}</strong>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+function percentOf(value: number, total: number) {
+  return total ? (value / total * 100).toFixed(1).replace(".", ",") : "0";
 }
 
-function formatAxisCurrency(value: number) {
-  const abs = Math.abs(Number(value));
-  const prefix = Number(value) < 0 ? "-" : "";
-  if (abs >= 1000) return `${prefix}R$${(abs / 1000).toFixed(abs >= 10000 ? 0 : 1)}k`;
-  return `${prefix}R$${abs.toFixed(0)}`;
-}
-
-export function FinanceCharts({
-  categoryData,
-  evolutionData,
-  view = "both"
-}: {
-  categoryData: CategoryData[];
-  evolutionData: EvolutionData[];
-  view?: "both" | "evolution";
-}) {
-  const chartId = useId().replace(/:/g, "");
-  const [chartStyle, setChartStyle] = useState<"area" | "bar">("area");
-  const [mounted, setMounted] = useState(false);
-  const totalExpenses = categoryData.reduce((sum, category) => sum + category.value, 0);
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [range, setRange] = useState(6);
-  const [hiddenSeries, setHiddenSeries] = useState<string[]>([]);
+function useAnimate() {
   const [animate, setAnimate] = useState(false);
-  const largestCategory = [...categoryData].sort((a, b) => b.value - a.value)[0];
-  const lastMonth = evolutionData.at(-1);
-  const previousMonth = evolutionData.at(-2);
-  const saldoTrend = lastMonth && previousMonth ? lastMonth.saldo - previousMonth.saldo : 0;
-
-  const sortedCategories = useMemo(() => [...categoryData].sort((a, b) => b.value - a.value), [categoryData]);
-
-  const activeCategory = sortedCategories.find(item => item.name === (hoveredCategory ?? selectedCategory)) ?? largestCategory;
-  const activeCategoryIndex = sortedCategories.findIndex(item => item.name === activeCategory?.name);
-  const highlightedCategory = hoveredCategory ?? selectedCategory;
-  const selectedCategoryData = sortedCategories.find(item => item.name === selectedCategory);
-  const stepCategory = (direction: number) => {
-    const index = (activeCategoryIndex + direction + sortedCategories.length) % sortedCategories.length;
-    setHoveredCategory(null);
-    setSelectedCategory(sortedCategories[index]?.name ?? null);
-  };
-  const chartEvolution = range ? evolutionData.slice(-range) : evolutionData;
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setAnimate(!media.matches);
-    update(); media.addEventListener("change", update);
-    setMounted(true);
+    update();
+    media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
+  return animate;
+}
 
-  if (!mounted) {
-    return (
-      <div className={view === "evolution" ? "finance-chart-wide" : "finance-charts-layout"}>
-        {view === "both" && <Card className="h-96 animate-pulse" />}
-        <Card className="h-96 animate-pulse" />
-      </div>
-    );
-  }
+export function FinanceCharts({ categoryData, evolutionData, view = "both" }: {
+  categoryData: CategoryData[];
+  evolutionData: EvolutionData[];
+  view?: "both" | "categories" | "evolution";
+}) {
+  return (
+    <>
+      {view !== "evolution" && <CategoryRing categoryData={categoryData} />}
+      {view !== "categories" && <EvolutionChart evolutionData={evolutionData} />}
+    </>
+  );
+}
+
+function CategoryRing({ categoryData }: { categoryData: CategoryData[] }) {
+  const animate = useAnimate();
+  const ringRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(ringRef);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const sorted = useMemo(() => [...categoryData].sort((a, b) => b.value - a.value), [categoryData]);
+  const total = sorted.reduce((sum, item) => sum + item.value, 0);
+  const ringIndexOf = (name: string) => { const index = sorted.findIndex(item => item.name === name); return index >= 0 && index < RING_SLICES ? index : -1; };
+  const colorOf = (name: string) => { const index = ringIndexOf(name); return index >= 0 ? categoryColors[index] : OTHERS_COLOR; };
+  const ringKeyOf = (name: string) => ringIndexOf(name) >= 0 ? name : OTHERS;
+  const othersValue = sorted.slice(RING_SLICES).reduce((sum, item) => sum + item.value, 0);
+  const ringData = [...sorted.slice(0, RING_SLICES), ...(othersValue > 0 ? [{ name: OTHERS, value: othersValue }] : [])];
+  const highlighted = hovered ?? selected;
+  const highlightedRing = highlighted ? ringKeyOf(highlighted) : null;
+  const focus = sorted.find(item => item.name === highlighted);
+  const visible = showAll ? sorted : sorted.slice(0, VISIBLE_CATEGORIES);
 
   return (
-    <div className={view === "evolution" ? "finance-chart-wide" : "finance-charts-layout"}>
-      {view === "both" && <Card className="category-chart-card">
-        <CardHeader>
-          <h2 className="font-semibold">Distribuição dos gastos</h2>
-          <p className="text-sm text-muted-foreground">{categoryData.length} categorias · {formatCurrency(totalExpenses)} no período</p>
-        </CardHeader>
-        <CardContent>
-          {!sortedCategories.length ? <div className="chart-empty"><p>Sem despesas no período.</p></div> :
-          <div className="category-chart-layout">
-            <div className="category-visual">
-              <div className="category-donut" role="img" aria-label={`Distribuição dos gastos em ${categoryData.length} categorias. Use os controles de categoria para consultar os valores.`}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart accessibilityLayer={false}>
-                    <defs>{colors.map((color,index) => <linearGradient key={color} id={`${chartId}-category-${index}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor={color}/><stop offset="100%" stopColor={colors[(index + 1) % colors.length]}/></linearGradient>)}</defs>
-                    <Pie data={sortedCategories} isAnimationActive={animate} animationDuration={260}
-                      onMouseEnter={entry => setHoveredCategory(entry.name ?? null)} onMouseLeave={() => setHoveredCategory(null)}
-                      onClick={entry => setSelectedCategory(selectedCategory === entry.name ? null : entry.name ?? null)}
-                      dataKey="value" nameKey="name" innerRadius="63%" outerRadius="86%" paddingAngle={2} cornerRadius={6} stroke="transparent" strokeWidth={1}>
-                      {sortedCategories.map((entry,index) => <Cell key={entry.name} className="category-ring-segment" data-highlighted={highlightedCategory === entry.name} fill={`url(#${chartId}-category-${index % colors.length})`} opacity={!highlightedCategory || highlightedCategory === entry.name ? 1 : .78} />)}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="category-detail">
-                <div key={activeCategory?.name} className="category-external-readout widget-page-content">
-                  <span>{hoveredCategory ? "Em destaque" : selectedCategory ? "Selecionado" : "Maior gasto"}</span>
-                  <strong title={activeCategory?.name}>{activeCategory?.name}</strong>
-                  <div><b>{formatCurrency(activeCategory?.value ?? 0)}</b><span>{totalExpenses ? ((activeCategory?.value ?? 0) / totalExpenses * 100).toFixed(1).replace(".",",") : 0}%</span></div>
-                </div>
-                <div className="category-navigation" role="group" aria-label="Explorar categorias">
-                  <button type="button" aria-label="Categoria anterior" disabled={sortedCategories.length < 2} onClick={() => stepCategory(-1)}><ChevronLeft size={16} aria-hidden="true" /></button>
-                  <span>{activeCategoryIndex + 1} de {sortedCategories.length}</span>
-                  <button type="button" aria-label="Próxima categoria" disabled={sortedCategories.length < 2} onClick={() => stepCategory(1)}><ChevronRight size={16} aria-hidden="true" /></button>
-                </div>
-                <p className="category-chart-hint">Explore as fatias ou use as setas.</p>
-                <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{selectedCategoryData ? `${selectedCategoryData.name}: ${formatCurrency(selectedCategoryData.value)}, ${(selectedCategoryData.value / totalExpenses * 100).toFixed(1).replace(".", ",")}% dos gastos.` : "Maior gasto em destaque."}</span>
-              </div>
-            </div>
-          </div>}
-        </CardContent>
-      </Card>}
+    <section className="card" aria-labelledby="categories-title">
+      <div className="card-header">
+        <div>
+          <h2 id="categories-title" className="card-title">Gastos por categoria</h2>
+          <p className="card-subtitle num">{sorted.length ? `${formatCurrency(total)} em ${sorted.length} ${sorted.length === 1 ? "categoria" : "categorias"} no período` : "Nenhum gasto no período"}</p>
+        </div>
+      </div>
+      {!sorted.length ? (
+        <p className="empty-state">Suas categorias aparecem aqui depois de importar um extrato.</p>
+      ) : (
+        <div className="cat-ring-layout">
+          <div ref={ringRef} className="cat-ring" role="img" aria-label={`Distribuição dos gastos: as ${Math.min(RING_SLICES, sorted.length)} maiores categorias${othersValue > 0 ? " e as outras somadas" : ""}, na ordem da lista, a partir do topo no sentido horário.`}>
+            {inView ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart accessibilityLayer={false}>
+                  <Pie data={ringData} dataKey="value" nameKey="name" innerRadius="80%" outerRadius="100%" paddingAngle={2} cornerRadius={4} stroke="transparent"
+                    startAngle={90} endAngle={-270} isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out"
+                    onMouseEnter={entry => setHovered(entry.name === OTHERS ? sorted[RING_SLICES]?.name ?? null : entry.name ?? null)} onMouseLeave={() => setHovered(null)}>
+                    {ringData.map((entry, index) => (
+                      <Cell key={entry.name} fill={entry.name === OTHERS ? OTHERS_COLOR : categoryColors[index]} opacity={!highlightedRing || highlightedRing === entry.name ? 1 : 0.3} className="category-ring-segment" />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <div className="cat-ring-placeholder" />}
+          </div>
+          <div className="min-w-0">
+            <ul className="cat-ring-legend">
+              {visible.map(item => (
+                <li key={item.name}>
+                  <button type="button" className={cn("cat-ring-legend-row", highlightedRing && highlightedRing !== ringKeyOf(item.name) && "is-dimmed")} aria-pressed={selected === item.name}
+                    onMouseEnter={() => setHovered(item.name)} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered(item.name)} onBlur={() => setHovered(null)}
+                    onClick={() => setSelected(current => current === item.name ? null : item.name)}>
+                    <i style={{ background: colorOf(item.name) }} aria-hidden="true" />
+                    <span className="cat-ring-legend-name">{displayName(item.name)}</span>
+                    <span className="cat-ring-legend-value num">{formatCurrency(item.value)}</span>
+                    <span className="cat-ring-legend-share num">{percentOf(item.value, total)}%</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {sorted.length > VISIBLE_CATEGORIES && (
+              <button type="button" className="btn btn-plain category-more" aria-expanded={showAll} onClick={() => setShowAll(value => !value)}>
+                {showAll ? "Mostrar menos" : `Mostrar todas as ${sorted.length}`}
+              </button>
+            )}
+            <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{focus ? `${displayName(focus.name)}: ${formatCurrency(focus.value)}, ${percentOf(focus.value, total)}% dos gastos.` : ""}</span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
-      <Card className="overflow-hidden">
-        <CardHeader>
-          <div className={view === "evolution" ? "reference-chart-heading" : "flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between"}>
-            <div>
-              <h2 className="font-semibold">Evolução financeira</h2>
-              <p className="text-sm text-muted-foreground">Receitas, despesas e resultado de cada mês, sem saldo inicial.</p>
+function EvolutionChart({ evolutionData }: { evolutionData: EvolutionData[] }) {
+  const animate = useAnimate();
+  const chartRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(chartRef);
+  const [active, setActive] = useState<ViewKey>("saldo");
+  const [range, setRange] = useState(6);
+  const [pointIndex, setPointIndex] = useState<number | null>(null);
+  const data = evolutionData.slice(-range);
+  const current = views.find(item => item.key === active) ?? views[0];
+  const point = data[pointIndex ?? data.length - 1];
+  const lastMonth = evolutionData.at(-1);
+  const previousMonth = evolutionData.at(-2);
+  const trend = lastMonth && previousMonth ? lastMonth.saldo - previousMonth.saldo : 0;
+  const onMove = (state: { activeTooltipIndex?: number | string | null } | undefined) => {
+    const index = Number(state?.activeTooltipIndex);
+    setPointIndex(Number.isFinite(index) ? index : null);
+  };
+
+  return (
+    <section className="card" aria-labelledby="evolution-title">
+      <div className="card-header">
+        <div>
+          <h2 id="evolution-title" className="card-title">Evolução por mês</h2>
+          <p className="card-subtitle">{lastMonth && previousMonth ? <span className="num">O resultado de {lastMonth.month} ficou {trend >= 0 ? "+" : ""}{formatCurrency(trend)} em relação a {previousMonth.month}.</span> : "Entradas, saídas e resultado de cada mês, sem o saldo inicial."}</p>
+        </div>
+      </div>
+      {evolutionData.length === 0 ? (
+        <div className="evolution-canvas is-empty"><div className="chart-empty"><p>Seu histórico aparece aqui</p><span>Com um extrato importado, cada mês mostra entradas, saídas e resultado.</span></div></div>
+      ) : (
+        <>
+          <div className="chart-controls">
+            <div className="segmented" role="group" aria-label="O que mostrar">
+              {views.map(item => <button type="button" key={item.key} aria-pressed={active === item.key} onClick={() => setActive(item.key)}>{item.label}</button>)}
             </div>
-            {lastMonth && (
-              <div className={view === "evolution" ? "reference-chart-metrics" : "grid grid-cols-2 gap-2 sm:grid-cols-3"}>
-                <div className="rounded-lg border border-border bg-muted/25 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Receita</p>
-                  <strong className="text-sm text-emerald-500">{formatCurrency(lastMonth.receitas)}</strong>
-                </div>
-                <div className="rounded-lg border border-border bg-muted/25 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Despesa</p>
-                  <strong className="text-sm text-red-500">{formatCurrency(lastMonth.despesas)}</strong>
-                </div>
-                <div className="rounded-lg border border-border bg-muted/25 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Tendência</p>
-                  <strong className={cn("text-sm", saldoTrend >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {saldoTrend >= 0 ? "+" : ""}{formatCurrency(saldoTrend)}
-                  </strong>
-                </div>
-              </div>
+            <div className="segmented" role="group" aria-label="Meses exibidos">
+              {[3, 6].map(value => <button type="button" key={value} aria-pressed={range === value} onClick={() => { setRange(value); setPointIndex(null); }}>{value} meses</button>)}
+            </div>
+          </div>
+          {/* Readout outside the plot: the month under the finger or cursor, the last month otherwise. */}
+          {point && (
+            <div className="chart-readout" aria-live="polite">
+              <span className="chart-readout-month">{point.month.charAt(0).toUpperCase() + point.month.slice(1)}{pointIndex === null ? ", último mês" : ""}</span>
+              {active === "comparar" ? (
+                <span className="chart-readout-pair num"><b style={{ color: "#4ADE80" }}>{formatCurrency(point.receitas)}</b> entradas · <b style={{ color: "#FFA3A5" }}>{formatCurrency(point.despesas)}</b> saídas</span>
+              ) : (
+                <strong className={cn("num", active === "saldo" && point.saldo < 0 && "is-negative")}>{active === "saldo" && point.saldo > 0 ? "+" : ""}{formatCurrency(point[active])}</strong>
+              )}
+            </div>
+          )}
+          <div ref={chartRef} className="evolution-canvas" onMouseLeave={() => setPointIndex(null)}>
+            {!inView ? <div className="h-full" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                {active === "comparar" ? (
+                  <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }} barGap={4} barCategoryGap="30%" onMouseMove={onMove} onMouseLeave={() => setPointIndex(null)}>
+                    <CartesianGrid stroke={gridStroke} vertical={false} />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={10} tick={axisTick} />
+                    <YAxis axisLine={false} tickLine={false} tick={axisTick} tickFormatter={formatAxisShort} width={56} tickCount={4} />
+                    <Tooltip content={() => null} cursor={{ fill: "rgb(255 255 255 / 0.05)" }} />
+                    <Bar dataKey="receitas" name="Entradas" fill="#30D158" radius={[6, 6, 6, 6]} maxBarSize={20} isAnimationActive={animate} animationDuration={800} />
+                    <Bar dataKey="despesas" name="Saídas" fill="#FFA3A5" radius={[6, 6, 6, 6]} maxBarSize={20} isAnimationActive={animate} animationBegin={120} animationDuration={800} />
+                  </BarChart>
+                ) : (
+                  <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }} onMouseMove={onMove} onMouseLeave={() => setPointIndex(null)}>
+                    <defs>
+                      <linearGradient id={`evolution-${current.key}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={current.color} stopOpacity={0.45} />
+                        <stop offset="100%" stopColor={current.deep} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke={gridStroke} vertical={false} />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={10} padding={{ left: 12, right: 12 }} tick={axisTick} />
+                    <YAxis axisLine={false} tickLine={false} tick={axisTick} tickFormatter={formatAxisShort} width={56} tickCount={4} />
+                    <Tooltip content={() => null} cursor={{ stroke: "rgb(255 255 255 / 0.4)", strokeWidth: 1 }} />
+                    <Area key={current.key} type="monotone" dataKey={current.key} name={current.label} stroke={current.color} fill={`url(#evolution-${current.key})`} strokeWidth={2.5} strokeLinecap="round"
+                      dot={{ r: 3, fill: current.color, strokeWidth: 0 }} activeDot={{ r: 6, fill: current.color, stroke: "#3b4b6b", strokeWidth: 3 }}
+                      isAnimationActive={animate} animationDuration={1000} animationEasing="ease-out" />
+                  </AreaChart>
+                )}
+              </ResponsiveContainer>
             )}
           </div>
-        </CardHeader>
-        <div className="chart-controls" aria-label="Controles da evolução financeira"><div className="chart-range chart-type" aria-label="Tipo de gráfico"><button type="button" aria-pressed={chartStyle === "area"} onClick={() => setChartStyle("area")}>Áreas</button><button type="button" aria-pressed={chartStyle === "bar"} onClick={() => setChartStyle("bar")}>Barras</button></div><div className="chart-range" aria-label="Histórico exibido">{[{value:1,label:"1 mês"},{value:3,label:"3 meses"},{value:6,label:"6 meses"}].map(item => <button type="button" key={item.value} aria-pressed={range === item.value} onClick={() => setRange(item.value)}>{item.label}</button>)}</div><div className="chart-series">{[{key:"receitas",label:"Receitas",color:"#10B981"},{key:"despesas",label:"Despesas",color:"#EF4444"},{key:"saldo",label:"Resultado",color:"#2563EB"}].map(item => <button type="button" key={item.key} aria-pressed={!hiddenSeries.includes(item.key)} onClick={() => setHiddenSeries(items => items.includes(item.key) ? items.filter(key => key !== item.key) : [...items,item.key])}><span style={{background:item.color}} />{item.label}</button>)}</div></div>
-        <CardContent className={view === "evolution" ? "overview-chart-canvas" : "h-[22rem] sm:h-[24rem] 2xl:h-[31rem]"}>
-          {evolutionData.length === 0 ? (
-            <div className="chart-empty"><p>Seu histórico financeiro aparece aqui</p><span>Importe um extrato para acompanhar entradas, despesas e saldo ao longo do tempo.</span><Link href="/import">Importar extrato</Link></div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartEvolution} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                <defs>
-                  <linearGradient id={`${chartId}-incomeGradient`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#24edbc" stopOpacity={0.55} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={chartStyle === "bar" ? .9 : .02} />
-                  </linearGradient>
-                  <linearGradient id={`${chartId}-expenseGradient`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ff6583" stopOpacity={0.48} />
-                    <stop offset="95%" stopColor="#EF4444" stopOpacity={chartStyle === "bar" ? .9 : .02} />
-                  </linearGradient>
-                  <linearGradient id={`${chartId}-balanceGradient`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#32c9ff" stopOpacity={0.5} />
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={chartStyle === "bar" ? .9 : .02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="#334155" strokeDasharray="3 3" vertical={false} opacity={0.45} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94A3B8", fontSize: 12 }} tickFormatter={formatAxisCurrency} width={72} />
-                <Tooltip content={<ChartTooltip />} />
-                {chartStyle === "area" ? <>
-                <Area hide={hiddenSeries.includes("receitas")} isAnimationActive={animate} animationDuration={260} type="monotone" dataKey="receitas" name="Receitas" stroke="#10B981" fill={`url(#${chartId}-incomeGradient)`} strokeWidth={3} dot={chartEvolution.length === 1 ? { r: 5 } : false} activeDot={{ r: 5 }} />
-                <Area hide={hiddenSeries.includes("despesas")} isAnimationActive={animate} animationDuration={260} type="monotone" dataKey="despesas" name="Despesas" stroke="#EF4444" fill={`url(#${chartId}-expenseGradient)`} strokeWidth={3} dot={chartEvolution.length === 1 ? { r: 5 } : false} activeDot={{ r: 5 }} />
-                <Area hide={hiddenSeries.includes("saldo")} isAnimationActive={animate} animationDuration={260} type="monotone" dataKey="saldo" name="Resultado" stroke="#2563EB" fill={`url(#${chartId}-balanceGradient)`} strokeWidth={3} dot={chartEvolution.length === 1 ? { r: 5 } : false} activeDot={{ r: 5 }} />
-                </> : <>
-                  <Bar hide={hiddenSeries.includes("receitas")} dataKey="receitas" name="Receitas" fill={`url(#${chartId}-incomeGradient)`} radius={[8,8,0,0]} maxBarSize={28} isAnimationActive={animate} animationDuration={260}/>
-                  <Bar hide={hiddenSeries.includes("despesas")} dataKey="despesas" name="Despesas" fill={`url(#${chartId}-expenseGradient)`} radius={[8,8,0,0]} maxBarSize={28} isAnimationActive={animate} animationDuration={260}/>
-                  <Bar hide={hiddenSeries.includes("saldo")} dataKey="saldo" name="Resultado" fill={`url(#${chartId}-balanceGradient)`} radius={8} maxBarSize={28} isAnimationActive={animate} animationDuration={260}/>
-                </>}
-
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        </>
+      )}
+    </section>
   );
 }

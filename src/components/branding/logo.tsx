@@ -27,13 +27,13 @@ export function Logo({
           className="relative shrink-0"
           style={{ width: config.mark, height: config.mark }}
         >
-          <Image
+          <Image unoptimized
             src="/branding/fluxa-fx.png"
             alt="Fluxa"
             fill
             sizes={`${config.mark}px`}
             className="object-contain"
-            priority={size !== "sm"}
+            priority
           />
         </div>
       </div>
@@ -46,13 +46,13 @@ export function Logo({
         className="relative shrink-0 overflow-hidden"
         style={{ width: config.logoWidth, height: config.logoHeight }}
       >
-        <Image
+        <Image unoptimized
           src="/branding/fluxa-logo.png"
           alt="Fluxa"
           fill
           sizes={`${config.logoWidth}px`}
           className="object-contain"
-          priority={size !== "sm"}
+          priority
         />
       </div>
       {showSlogan && <span className="hidden min-w-0 text-xs leading-snug text-muted-foreground sm:block">Entenda para onde seu dinheiro vai.</span>}

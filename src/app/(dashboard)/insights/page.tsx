@@ -15,11 +15,10 @@ export default async function InsightsPage({
   const notifications = buildNotifications(context);
 
   return (
-    <div className="fluxa-page">
+    <div className="fluxa-page workspace-page insights-page">
       <PageHeader
-        eyebrow="IA e alertas"
         title="Inteligência financeira"
-        description={`Análise baseada no mesmo fluxo filtrado do dashboard: ${getPeriodLabel(period)}.`}
+        description={`O que os números de ${getPeriodLabel(period)} dizem.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
       <AiInsightsPanel localAnalysis={localAnalysis} notifications={notifications} start={period.start} end={period.end} />

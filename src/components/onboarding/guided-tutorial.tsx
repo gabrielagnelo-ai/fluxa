@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Toast } from "@/components/ui/toast";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Flag, SlidersHorizontal, UploadCloud, WalletCards, X } from "lucide-react";
 
 const STORAGE_KEY = "fluxa-guided-tutorial-v1";
@@ -181,7 +182,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         {!collapsed && <div className="tutorial-guide-body"><p>{currentStep.description}</p><button type="button" className="tutorial-target-link" onClick={focusCurrentArea}>Ir para esta área<ArrowRight size={13} aria-hidden="true" /></button><div className="tutorial-progress" aria-hidden="true">{steps.map((item, index) => <span key={item.title} className={index <= step ? "is-reached" : undefined}/>)}</div><div className="tutorial-guide-actions"><button type="button" onClick={step ? () => goToStep(step - 1) : skip}>{step ? <><ArrowLeft size={14} aria-hidden="true" />Voltar</> : "Pular tutorial"}</button><button type="button" className="tutorial-primary" onClick={() => goToStep(step + 1)}>{step === steps.length - 1 ? "Concluir tutorial" : "Próximo"}{step === steps.length - 1 ? <Check size={15} aria-hidden="true" /> : <ArrowRight size={15} aria-hidden="true" />}</button></div></div>}
       </section>
     </>}
-    {notice && <div className="tutorial-notice" role="status"><Check size={16} aria-hidden="true" />Tutorial concluído. Retome em “Como usar” quando precisar.<button type="button" onClick={() => setNotice(false)} aria-label="Fechar aviso"><X size={14} /></button></div>}
+    {notice && <Toast title="Tutorial concluído" detail="Retome em “Como usar” quando precisar." duration={null} onClose={() => setNotice(false)} />}
   </TutorialContext.Provider>;
 }
 

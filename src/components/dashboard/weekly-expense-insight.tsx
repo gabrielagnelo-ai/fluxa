@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, ChevronRight, Sparkles } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn, formatCurrency } from "@/lib/utils";
+import { ArrowDownRight, ArrowUpRight, ChevronRight } from "lucide-react";
+import type { CSSProperties } from "react";
+import { CountUp } from "@/components/motion/count-up";
+import { formatCurrency } from "@/lib/utils";
 
 type WeeklyExpenseInsightProps = {
   total: number;
@@ -18,65 +19,40 @@ type WeeklyExpenseInsightProps = {
 };
 
 export function WeeklyExpenseInsight({ total, previousTotal, difference, trendPercent, increased, decreased, days }: WeeklyExpenseInsightProps) {
-  const maxDay = Math.max(...days.map((day) => day.amount), 1);
-  const tone = increased ? "text-red-400" : decreased ? "text-emerald-400" : "text-muted-foreground";
+  const maxDay = Math.max(...days.map(day => day.amount), 1);
+  // The percentage only reads well against a real previous week; the line below always gives the difference in reais.
   const TrendIcon = increased ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <Card className="overflow-hidden border-border/80 bg-card/95">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Gastos da semana</p>
-            <div className="mt-1 flex flex-wrap items-end gap-2">
-              <strong className="text-2xl leading-none text-foreground">{formatCurrency(total)}</strong>
-              {trendPercent > 0 && (
-                <span className={cn("inline-flex items-center gap-1 text-sm font-semibold", tone)}>
-                  <TrendIcon className="size-4" />
-                  {trendPercent}%
-                </span>
-              )}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {previousTotal > 0 ? `${formatCurrency(Math.abs(difference))} ${increased ? "acima" : "abaixo"} da semana anterior.` : "Comparativo será exibido com mais histórico."}
-            </p>
-          </div>
-          <Link
-            href="/transactions"
-            aria-label="Ver transações da semana"
-            className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-background/60 text-muted-foreground transition hover:border-primary/50 hover:text-primary"
-          >
-            <ChevronRight className="size-5" />
-          </Link>
+    <section className="card" aria-labelledby="weekly-title">
+      <div className="card-header">
+        <div>
+          <h2 id="weekly-title" className="card-title">Gastos da semana</h2>
+          <p className="card-subtitle">Semana do último gasto registrado, de segunda a domingo.</p>
         </div>
-
-        <div className="mt-6 grid grid-cols-7 items-end gap-3">
-          {days.map((day) => {
-            const height = day.amount > 0 ? Math.max(18, Math.round((day.amount / maxDay) * 86)) : 12;
-
+        <Link href="/transactions" aria-label="Ver transações da semana" className="icon-btn btn-gray"><ChevronRight aria-hidden="true" /></Link>
+      </div>
+      <div className="card-body">
+        <div className="weekly-total">
+          <strong className="projection-value"><CountUp value={total} /></strong>
+          {previousTotal >= 100 && trendPercent > 0 && trendPercent <= 200 && (increased || decreased) && <span className={increased ? "tag is-danger" : "tag"}><TrendIcon aria-hidden="true" />{increased ? "+" : "−"}{trendPercent}%</span>}
+        </div>
+        <p className="projection-note">
+          {previousTotal > 0 ? `${formatCurrency(Math.abs(difference))} ${increased ? "acima" : "abaixo"} da semana anterior.` : "O comparativo aparece quando houver uma semana anterior registrada."}
+        </p>
+        <ol className="weekly-bars" aria-label="Gastos por dia">
+          {days.map((day, index) => {
+            const height = day.amount > 0 ? Math.max(10, Math.round((day.amount / maxDay) * 100)) : 0;
             return (
-              <div key={day.date} className="flex flex-col items-center gap-2">
-                <div className="flex h-24 items-end">
-                  <div
-                    className={cn(
-                      "weekly-gradient-bar w-4 rounded-full transition-all",
-                      day.amount > 0 ? "bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.35)]" : "border border-dashed border-muted-foreground/35 bg-transparent"
-                    )}
-                    style={{ height }}
-                    title={`${day.label}: ${formatCurrency(day.amount)}`}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground">{day.label}</span>
-              </div>
+              <li key={day.date}>
+                <span className={height ? "weekly-bar-track" : "weekly-bar-track is-zero"}><span className={height ? "weekly-bar" : "weekly-bar is-zero"} style={{ height: `${height}%`, "--d": index } as CSSProperties} /></span>
+                <span className="weekly-day" aria-hidden="true">{day.label}</span>
+                <span className="sr-only">{day.label}: {formatCurrency(day.amount)}</span>
+              </li>
             );
           })}
-        </div>
-
-        <div className="mt-5 flex items-center gap-2 border-t border-border/70 pt-4 text-sm text-muted-foreground">
-          <Sparkles className="size-4 text-primary" />
-          <span>Resumo dos gastos da semana</span>
-        </div>
-      </CardContent>
-    </Card>
+        </ol>
+      </div>
+    </section>
   );
 }

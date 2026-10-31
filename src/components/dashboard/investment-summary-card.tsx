@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BriefcaseBusiness, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, plural } from "@/lib/utils";
 
 type InvestmentSummaryCardProps = {
   compact?: boolean;
@@ -43,7 +43,7 @@ export function InvestmentSummaryCard({ totalCurrent, gain, gainPercent, assetCo
               Investimentos
             </p>
             <h2 className="mt-2 text-2xl font-semibold">{formatCurrency(totalCurrent)}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{assetCount} ativo(s) cadastrados</p>
+            <p className="mt-1 text-sm text-muted-foreground">{plural(assetCount, "ativo cadastrado", "ativos cadastrados")}</p>
           </div>
           <Link
             href="/investments"
