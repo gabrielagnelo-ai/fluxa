@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { AberturaLogo } from "@/components/brand/abertura-logo";
+import { Aurora } from "@/components/motion/aurora";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <AberturaLogo />
+        <Aurora />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

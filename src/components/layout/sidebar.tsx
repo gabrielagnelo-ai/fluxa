@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleHelp, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import { CircleHelp, Search } from "lucide-react";
 import { Logo } from "@/components/branding/logo";
 import { useTutorial } from "@/components/onboarding/guided-tutorial";
 import { openSearch } from "./command-launcher";
@@ -47,12 +47,10 @@ export function AppSidebar() {
   return (
     <aside className="app-sidebar glass" aria-label="Menu do Fluxa">
       <div className="sidebar-top">
-        <Link href="/dashboard" aria-label="Fluxa, visão geral" className="sidebar-brand">
+        {/* The Fluxa mark is the collapse control (principle 26): no extra button. */}
+        <button type="button" onClick={toggle} className="sidebar-brand" aria-expanded={!collapsed} aria-label={collapsed ? "Expandir navegação (⌘.)" : "Recolher navegação (⌘.)"} data-tip={collapsed ? "Expandir navegação" : "Recolher navegação"}>
           <span className="sidebar-logo-full"><Logo size="sm" /></span>
           <Image unoptimized priority src="/branding/fluxa-fx.png" alt="" width={32} height={32} className="sidebar-logo-mark" />
-        </Link>
-        <button type="button" className="icon-btn sidebar-toggle" onClick={toggle} aria-expanded={!collapsed} aria-label={collapsed ? "Expandir menu (⌘.)" : "Recolher menu (⌘.)"} data-tip={collapsed ? "Expandir menu" : "Recolher menu"}>
-          {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
         </button>
       </div>
       <button type="button" className="sidebar-search" onClick={openSearch} data-tip="Buscar" aria-label={collapsed ? "Buscar" : undefined}><Search aria-hidden="true" /><span className="sidebar-label">Buscar</span><kbd aria-hidden="true">⌘K</kbd></button>
