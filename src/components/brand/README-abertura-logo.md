@@ -16,7 +16,7 @@ import { AberturaLogo } from "@/components/brand/abertura-logo";
 
 ## Como se comporta
 - Toca uma vez por sessão (`sessionStorage`, chave `fluxa:abertura-vista`). Para ver de novo: `?replay` na URL.
-- Não segura a página: ela carrega por trás e aparece quando a camada some. Se o motor não chegar em 700 ms (primeira visita em rede lenta), a abertura desiste e a página aparece.
+- Não segura a página: ela carrega por trás e aparece quando a camada some. Se a abertura não puder entrar em 820 ms (motor e PNG; primeira visita em rede lenta), ela desiste e a página aparece. Se entrar tarde, pula a água e começa no logo inteiro, para fechar em até cerca de 1,1 s desde a primeira pintura.
 - Um toque ou tecla pula (a camada some em 180 ms).
 - `prefers-reduced-motion`: só um fade curto (0,55 s), sem movimento.
 - Alvo do encolher: o primeiro elemento visível entre `[data-abertura-alvo]`, a imagem `fluxa-logo` do cabeçalho e a `fluxa-fx` da barra lateral (aí só o símbolo pousa e a palavra apaga). Sem nenhum, vai para o canto superior esquerdo. Para fixar o alvo, ponha `data-abertura-alvo` no logo do cabeçalho.
