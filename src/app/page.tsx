@@ -5,6 +5,8 @@ import { FileSpreadsheet, MessageCircle, MonitorSmartphone } from "lucide-react"
 import { RevealObserver } from "@/components/motion/reveal-observer";
 import { PhonePreview } from "@/components/public/phone-preview";
 import { PublicNav } from "@/components/public/public-nav";
+import { PublicFooter } from "@/components/public/public-footer";
+import { CategorizeSection, FaqSection, FinalCta, LimitsSection, SafetySection, SpendingSection } from "@/components/public/landing-sections";
 import { exampleCategories, exampleStatement, formatAmount } from "@/components/public/example-month";
 
 export const metadata: Metadata = {
@@ -66,7 +68,15 @@ export default function Home() {
             <WhatsAppExample style={step(2)} stagger />
           </div>
         </section>
+
+        <CategorizeSection />
+        <SpendingSection />
+        <LimitsSection />
+        <SafetySection />
+        <FaqSection />
+        <FinalCta />
       </main>
+      <PublicFooter />
     </div>
   );
 }
@@ -133,7 +143,7 @@ function LimitExample({ className = "", style }: { className?: string; style?: C
       <ExampleHeader title="Limite do mês" />
       <div className="example-category">
         <p className="example-category-name">{market.name}</p>
-        <p className="row-sub num">R$ {formatAmount(market.spent)} de R$ {formatAmount(market.planned)}</p>
+        <p className="row-sub num">R$ {formatAmount(market.spent)} de R$ {formatAmount(market.planned)}</p>
         <div className="meter"><span style={{ width: `${usage}%` }} /></div>
         <p className="row-sub num" style={{ marginTop: "0.5rem" }}>{usage}% do combinado</p>
       </div>

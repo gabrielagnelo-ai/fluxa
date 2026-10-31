@@ -23,7 +23,7 @@ export function PhonePreview() {
           <p className="phone-period">Outubro</p>
           <div className="card phone-card">
             <p className="overview-label">Saldo atual</p>
-            <p className="phone-balance num">R$ {formatAmount(exampleBalance)}</p>
+            <p className="phone-balance num">R$ {formatAmount(exampleBalance)}</p>
             <dl className="phone-period-grid">
               <div><dt>Entradas</dt><dd className="num">{formatAmount(exampleIncome)}</dd></div>
               <div><dt>Saídas</dt><dd className="num">{formatAmount(exampleSpent)}</dd></div>
