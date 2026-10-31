@@ -10,6 +10,10 @@ import { usePathname } from "next/navigation";
 export function RevealObserver() {
   const pathname = usePathname();
   useEffect(() => {
+    const root = document.documentElement;
+    // Hydrated late (slow network): the CSS safety net has already shown everything, keep it shown.
+    if (!root.dataset.revealReady && performance.now() > 2400) document.querySelectorAll("[data-reveal]").forEach(element => element.classList.add("is-visible"));
+    root.dataset.revealReady = "true";
     const seen = new WeakSet<Element>();
     const io = new IntersectionObserver(entries => {
       for (const entry of entries) {

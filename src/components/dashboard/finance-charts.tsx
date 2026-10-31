@@ -6,11 +6,15 @@ import { AlertTriangle } from "lucide-react";
 import { useInView } from "@/components/motion/use-in-view";
 import { cn, displayName, formatAxisShort, formatCurrency } from "@/lib/utils";
 
-// Category tones come from the logo blues (measured in public/branding/fluxa-logo.png), plus one neutral.
-const categoryColors = ["#0080F8", "#56D1FE", "#024BCF", "#B5FFFF", "#1EA7FD", "#0033AF", "#80D8F8", "#8E8E93"];
+// Five logo blues (measured in public/branding/fluxa-logo.png) alternating light and dark so neighbours
+// stay apart in luminance; everything after the fifth category is grouped as "Outras" in gray.
+const categoryColors = ["#0080F8", "#B5FFFF", "#024BCF", "#56D1FE", "#0033AF"];
+const OTHERS_COLOR = "#636366";
+const RING_SLICES = 5;
+const OTHERS = "__outras__";
 const series = [
-  { key: "receitas", label: "Entradas", color: "#30D158", fill: 0.1 },
-  { key: "despesas", label: "Saídas", color: "#FF4245", fill: 0.08 },
+  { key: "receitas", label: "Entradas", color: "#30D158", fill: 0 },
+  { key: "despesas", label: "Saídas", color: "#FF4245", fill: 0 },
   { key: "saldo", label: "Resultado", color: "#1EA7FD", fill: 0.42 }
 ] as const;
 const VISIBLE_CATEGORIES = 6;
@@ -104,7 +108,12 @@ export function FinanceCharts({
     return () => media.removeEventListener("change", update);
   }, []);
 
-  const colorOf = (name: string) => categoryColors[Math.max(0, sortedCategories.findIndex(item => item.name === name)) % categoryColors.length];
+  const ringIndexOf = (name: string) => { const index = sortedCategories.findIndex(item => item.name === name); return index >= 0 && index < RING_SLICES ? index : -1; };
+  const colorOf = (name: string) => { const index = ringIndexOf(name); return index >= 0 ? categoryColors[index] : OTHERS_COLOR; };
+  const ringKeyOf = (name: string) => ringIndexOf(name) >= 0 ? name : OTHERS;
+  const othersValue = sortedCategories.slice(RING_SLICES).reduce((sum, item) => sum + item.value, 0);
+  const ringData = [...sortedCategories.slice(0, RING_SLICES), ...(othersValue > 0 ? [{ name: OTHERS, value: othersValue }] : [])];
+  const highlightedRing = highlighted ? ringKeyOf(highlighted) : null;
 
   return (
     <>
@@ -121,16 +130,16 @@ export function FinanceCharts({
             <p className="empty-state">Suas categorias aparecem aqui depois de importar um extrato.</p>
           ) : (
             <div className="category-layout">
-              <div ref={donutRef} className="category-donut" role="img" aria-label={`Distribuição dos gastos em ${sortedCategories.length} categorias. A lista ao lado traz os valores.`}>
+              <div ref={donutRef} className="category-donut" role="img" aria-label={`Distribuição dos gastos: as ${Math.min(RING_SLICES, sortedCategories.length)} maiores categorias${othersValue > 0 ? " e as outras somadas" : ""}, na mesma ordem da lista, a partir do topo no sentido horário.`}>
                 {donutInView ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart accessibilityLayer={false}>
-                      <Pie data={sortedCategories} dataKey="value" nameKey="name" innerRadius="70%" outerRadius="96%" paddingAngle={2.5} cornerRadius={8} stroke="transparent"
+                      <Pie data={ringData} dataKey="value" nameKey="name" innerRadius="70%" outerRadius="96%" paddingAngle={2} cornerRadius={6} stroke="transparent"
                         startAngle={90} endAngle={-270} isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out"
-                        onMouseEnter={entry => setHoveredCategory(entry.name ?? null)} onMouseLeave={() => setHoveredCategory(null)}
-                        onClick={entry => setSelectedCategory(current => current === entry.name ? null : entry.name ?? null)}>
-                        {sortedCategories.map((entry, index) => (
-                          <Cell key={entry.name} className="category-ring-segment" data-highlighted={highlighted === entry.name} fill={categoryColors[index % categoryColors.length]} opacity={!highlighted || highlighted === entry.name ? 1 : 0.35} />
+                        onMouseEnter={entry => setHoveredCategory(entry.name === OTHERS ? sortedCategories[RING_SLICES]?.name ?? null : entry.name ?? null)} onMouseLeave={() => setHoveredCategory(null)}
+                        onClick={entry => { if (entry.name !== OTHERS) setSelectedCategory(current => current === entry.name ? null : entry.name ?? null); }}>
+                        {ringData.map((entry, index) => (
+                          <Cell key={entry.name} className="category-ring-segment" data-highlighted={highlightedRing === entry.name} fill={entry.name === OTHERS ? OTHERS_COLOR : categoryColors[index]} opacity={!highlightedRing || highlightedRing === entry.name ? 1 : 0.3} />
                         ))}
                       </Pie>
                     </PieChart>
@@ -146,7 +155,7 @@ export function FinanceCharts({
                     const near = Boolean(limit && !over && limit.status === "warning");
                     return (
                       <li key={item.name}>
-                        <button type="button" className={cn("list-row category-row", highlighted && highlighted !== item.name && "is-dimmed")} aria-pressed={selectedCategory === item.name} disabled={item.value === 0}
+                        <button type="button" className={cn("list-row category-row", highlightedRing && highlightedRing !== ringKeyOf(item.name) && "is-dimmed")} aria-pressed={selectedCategory === item.name} disabled={item.value === 0}
                           onMouseEnter={() => setHoveredCategory(item.name)} onMouseLeave={() => setHoveredCategory(null)} onFocus={() => setHoveredCategory(item.name)} onBlur={() => setHoveredCategory(null)}
                           onClick={() => setSelectedCategory(current => current === item.name ? null : item.name)}>
                           <i className="category-dot" style={{ background: item.value > 0 ? colorOf(item.name) : "var(--fill-2)" }} aria-hidden="true" />

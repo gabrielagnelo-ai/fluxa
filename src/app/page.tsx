@@ -52,10 +52,10 @@ export default function Home() {
             <p className="landing-cta-note rise" style={step(3)}>A demonstração usa dados fictícios e não pede cadastro.</p>
           </div>
 
-          <div className="landing-stage rise" style={step(4)}>
-            <LimitExample className="landing-float landing-float-left rise" style={step(10)} />
+          <div className="landing-stage">
+            <LimitExample className="landing-float landing-float-left" style={step(6)} />
             <PhonePreview />
-            <CategoryExample className="landing-float landing-float-right rise" style={step(13)} />
+            <CategoryExample className="landing-float landing-float-right" style={step(8)} />
           </div>
 
           <ul className="landing-facts" aria-label="O que o Fluxa faz">
@@ -123,7 +123,7 @@ function WhatsAppExample({ className = "", style }: { className?: string; style?
 
 function CategoryExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
   return (
-    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de categoria aplicada por regra">
+    <figure className={`card example-card ${className}`} style={style} data-reveal aria-label="Exemplo de categoria aplicada por regra">
       <ExampleHeader title="Categoria" />
       <div className="example-category">
         <p className="row-sub num">07/10 · COMPRA DEB</p>
@@ -139,7 +139,7 @@ function LimitExample({ className = "", style }: { className?: string; style?: C
   const market = exampleCategories.find(item => item.name === "Mercado") ?? exampleCategories[0];
   const usage = Math.round((market.spent / market.planned) * 100);
   return (
-    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de limite por categoria">
+    <figure className={`card example-card ${className}`} style={style} data-reveal aria-label="Exemplo de limite por categoria">
       <ExampleHeader title="Limite do mês" />
       <div className="example-category">
         <p className="example-category-name">{market.name}</p>

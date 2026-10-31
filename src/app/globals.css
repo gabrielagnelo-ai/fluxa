@@ -325,7 +325,9 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
   [data-sidebar="collapsed"] .app-main { margin-left: 5.25rem; }
   [data-sidebar="collapsed"] .sidebar-label, [data-sidebar="collapsed"] .sidebar-search kbd, [data-sidebar="collapsed"] .sidebar-logo-full { display: none; }
   [data-sidebar="collapsed"] .sidebar-logo-mark { display: block; }
-  [data-sidebar="collapsed"] .sidebar-top { flex-direction: column; gap: 0.5rem; }
+  [data-sidebar="collapsed"] .sidebar-top { flex-direction: column; align-items: center; gap: 0.5rem; padding-right: 0; }
+  [data-sidebar="collapsed"] .sidebar-nav, [data-sidebar="collapsed"] .sidebar-footer { align-items: center; }
+  [data-sidebar="collapsed"] .sidebar-footer form { width: 2.75rem; }
   [data-sidebar="collapsed"] .sidebar-brand { margin: 0; align-self: center; }
   [data-sidebar="collapsed"] :is(.sidebar-link, .sidebar-search) { justify-content: center; padding: 0; width: 2.75rem; margin-inline: auto; }
   [data-sidebar="collapsed"] .sidebar-group-title { height: 0.5px; margin: 0.625rem 0.5rem; background: var(--separator); }
@@ -552,7 +554,8 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 .weekly-total { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
 .weekly-bars { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.5rem; }
 .weekly-bars li { display: flex; flex-direction: column; align-items: center; gap: 0.375rem; }
-.weekly-bar-track { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 6rem; border-radius: 0.5rem; background: rgb(118 118 128 / 0.12); overflow: hidden; }
+.weekly-bar-track { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 6rem; border-radius: 0.5rem; background: rgb(118 118 128 / 0.05); overflow: hidden; }
+.weekly-bar.is-zero { height: 0.25rem !important; min-height: 0.25rem; background: var(--fill-2); }
 .weekly-bar { display: block; width: 100%; border-radius: 0.5rem; background: var(--accent); transform-origin: bottom; animation: bar-grow 420ms var(--ease-spring) both; }
 .weekly-day { font-size: 0.8125rem; color: var(--label-2); }
 @keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
@@ -608,7 +611,7 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 .category-more { margin: 0.25rem 0.75rem 0; }
 @media (min-width: 640px) {
   .category-layout { grid-template-columns: 12rem minmax(0, 1fr); align-items: start; padding: 0.75rem 0 0.75rem 1.25rem; }
-  .category-donut { width: 12rem; position: sticky; top: 1.5rem; }
+  .category-donut { width: 12rem; position: sticky; top: 5rem; }
 }
 @media (min-width: 1100px) {
   .category-layout { grid-template-columns: 15rem minmax(0, 1fr); gap: 0.5rem 2rem; }
@@ -751,9 +754,13 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 [data-reveal] .weekly-bar { animation: none; transition: transform 800ms var(--ease-spring); transition-delay: calc(var(--d, 0) * 50ms + 200ms); }
 @media (prefers-reduced-motion: no-preference) {
   .js [data-reveal]:not(.is-visible) { opacity: 0; transform: translateY(20px) scale(0.985); }
+  /* Safety net before hydration: content shows by itself after 2.5 s. */
+  .js:not([data-reveal-ready]) [data-reveal]:not(.is-visible) { animation: reveal-fallback 0s 2.5s forwards; }
   .js [data-reveal]:not(.is-visible) .meter > span { transform: scaleX(0); }
   .js [data-reveal]:not(.is-visible) .weekly-bar { transform: scaleY(0); }
-  .js .countup:not([data-done]) { opacity: 0; animation: countup-fallback 0s 1.2s forwards; }
+  .js .countup:not([data-done]):not([data-armed]) { opacity: 0; animation: countup-fallback 0s 2.5s forwards; }
+  .js .countup[data-armed]:not([data-done]) { opacity: 0; }
 }
 @keyframes countup-fallback { to { opacity: 1; } }
+@keyframes reveal-fallback { to { opacity: 1; transform: none; } }
 .chart-stage { position: relative; height: 100%; }

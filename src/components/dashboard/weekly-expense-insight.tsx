@@ -45,7 +45,7 @@ export function WeeklyExpenseInsight({ total, previousTotal, difference, trendPe
             const height = day.amount > 0 ? Math.max(10, Math.round((day.amount / maxDay) * 100)) : 0;
             return (
               <li key={day.date}>
-                <span className="weekly-bar-track"><span className="weekly-bar" style={{ height: `${height}%`, "--d": index } as CSSProperties} /></span>
+                <span className="weekly-bar-track"><span className={height ? "weekly-bar" : "weekly-bar is-zero"} style={{ height: `${height}%`, "--d": index } as CSSProperties} /></span>
                 <span className="weekly-day" aria-hidden="true">{day.label}</span>
                 <span className="sr-only">{day.label}: {formatCurrency(day.amount)}</span>
               </li>
