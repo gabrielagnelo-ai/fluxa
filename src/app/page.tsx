@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FileSpreadsheet, MessageCircle, MonitorSmartphone } from "lucide-react";
 import { RevealObserver } from "@/components/motion/reveal-observer";
 import { CategorySwap } from "@/components/public/category-swap";
+import { MotionToggle } from "@/components/public/motion-toggle";
 import { PhonePreview } from "@/components/public/phone-preview";
 import { PublicNav } from "@/components/public/public-nav";
 import { PublicFooter } from "@/components/public/public-footer";
@@ -50,6 +51,8 @@ export default function Home() {
             <PhonePreview />
             <div className="landing-float landing-float-right" data-reveal data-loop style={step(8)}><CategoryExample className="float-inner" /></div>
           </div>
+
+          <div className="motion-toggle-row"><MotionToggle /></div>
 
           <ul className="landing-facts" aria-label="O que o Fluxa faz">
             {facts.map((fact, index) => <li key={fact.text} data-reveal style={step(index)}><span className="row-icon" aria-hidden="true"><fact.icon /></span>{fact.text}</li>)}

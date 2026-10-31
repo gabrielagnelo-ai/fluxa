@@ -682,17 +682,17 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 .landing-login { color: var(--label); font-weight: 600; }
 .landing-nav-cta { min-height: 2.75rem; padding-inline: 1.125rem; font-size: 0.9375rem; }
 
-.landing-hero { max-width: 72rem; margin: 0 auto; padding: clamp(2.5rem, 7vw, 5rem) 1rem 0; text-align: center; }
+.landing-hero { max-width: 72rem; margin: 0 auto; padding: clamp(1.5rem, 4vw, 2.75rem) 1rem 0; text-align: center; }
 .landing-hero-copy { max-width: 46rem; margin: 0 auto; }
 .landing-eyebrow { font-size: 0.9375rem; font-weight: 600; color: var(--label-2); }
-.landing-title { margin-top: 0.5rem; font-size: clamp(2.75rem, 9vw, 5.75rem); line-height: 1.02; font-weight: 700; letter-spacing: -0.035em; text-wrap: balance; }
+.landing-title { margin-top: 0.375rem; font-size: clamp(2.5rem, 8vw, 4.75rem); line-height: 1.02; font-weight: 700; letter-spacing: -0.035em; text-wrap: balance; }
 .landing-title span, .landing-h2 span { color: #2fa9ff; }
-.landing-lead { max-width: 36rem; margin: 1.25rem auto 0; font-size: clamp(1.0625rem, 2.2vw, 1.3125rem); line-height: 1.45; color: var(--label-2); text-wrap: pretty; }
-.landing-ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 2rem; }
+.landing-lead { max-width: 36rem; margin: 1rem auto 0; font-size: clamp(1.0625rem, 2.2vw, 1.3125rem); line-height: 1.45; color: var(--label-2); text-wrap: pretty; }
+.landing-ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 1.5rem; }
 .landing-cta-note { margin-top: 0.875rem; font-size: 0.9375rem; color: var(--label-2); }
 @media (max-width: 479px) { .landing-ctas > .btn { width: 100%; } }
 
-.landing-stage { position: relative; display: flex; justify-content: center; align-items: flex-start; margin-top: clamp(2.5rem, 6vw, 4rem); isolation: isolate; }
+.landing-stage { position: relative; display: flex; justify-content: center; align-items: flex-start; margin-top: clamp(1.5rem, 3vw, 2rem); isolation: isolate; }
 /* Soft light behind the phone, in the logo blues. */
 .landing-stage::before {
   content: ""; position: absolute; z-index: -1; left: 50%; top: 8%; width: min(46rem, 120vw); aspect-ratio: 1.1;
@@ -1126,3 +1126,11 @@ dialog.alert-dialog::backdrop { background: var(--overlay); }
 @media (prefers-reduced-motion: reduce) { .swap-in { animation: none; } }
 /* Vibrancy plate behind text links on glass: a soft radial shade, no outline, keeps 4.5:1 over bright light. */
 .glass .landing-login { background: radial-gradient(closest-side, rgb(8 14 28 / 0.6), rgb(8 14 28 / 0.38) 65%, rgb(8 14 28 / 0.12)); }
+
+.motion-toggle-row { display: flex; justify-content: center; margin-top: 0.5rem; }
+.motion-toggle { min-height: 2.75rem; font-size: 0.875rem; font-weight: 500; color: var(--label-2); background: transparent; }
+.motion-toggle svg { width: 1rem; height: 1rem; }
+@media (hover: hover) and (pointer: fine) { .motion-toggle:hover { background: var(--fill); } }
+@media (prefers-reduced-motion: reduce) { .motion-toggle-row { display: none; } }
+[data-motion="paused"] .landing-float .float-inner { animation-play-state: paused !important; }
+.phone-period-inline { font-size: 0.75rem; font-weight: 500; color: var(--label-2); }

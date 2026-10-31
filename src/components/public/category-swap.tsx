@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { landingMotionPaused, MOTION_EVENT } from "./motion-toggle";
 
 const examples = [
   { line: "07/10 · COMPRA DEB", name: "Mercado do bairro", amount: "−R$ 620,00", category: "Mercado", how: "Regra: contém “mercado”" },
@@ -13,18 +14,22 @@ export function CategorySwap() {
   const ref = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     let timer = 0;
-    const io = new IntersectionObserver(([entry]) => {
+    let visible = false;
+    const sync = () => {
       window.clearInterval(timer);
-      if (entry?.isIntersecting) timer = window.setInterval(() => setIndex(current => (current + 1) % examples.length), 4200);
-    });
+      if (visible && !media.matches && !landingMotionPaused()) timer = window.setInterval(() => setIndex(current => (current + 1) % examples.length), 4200);
+    };
+    const io = new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); sync(); });
     if (ref.current) io.observe(ref.current);
-    return () => { io.disconnect(); window.clearInterval(timer); };
+    window.addEventListener(MOTION_EVENT, sync);
+    media.addEventListener("change", sync);
+    return () => { io.disconnect(); window.clearInterval(timer); window.removeEventListener(MOTION_EVENT, sync); media.removeEventListener("change", sync); };
   }, []);
   const item = examples[index];
   return (
-    <div ref={ref} className="example-category" aria-live="off">
+    <div ref={ref} className="example-category" aria-hidden="true">
       <div key={index} className="swap-in">
         <p className="row-sub num">{item.line}</p>
         <p className="example-category-name">{item.name}</p>

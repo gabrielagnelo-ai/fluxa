@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Calculator, Ellipsis, Home, MessageCircle, Upload, WalletCards } from "lucide-react";
 import { exampleBalance, exampleCategories, exampleIncome, exampleSpent, exampleStatement, formatAmount } from "./example-month";
+import { landingMotionPaused, MOTION_EVENT } from "./motion-toggle";
 
 const tabs = [
   { label: "Início", icon: Home, active: true },
@@ -24,17 +25,23 @@ const LOOP = 12000;
 export function PhonePreview() {
   const figure = useRef<HTMLElement>(null);
   const balanceRef = useRef<HTMLSpanElement>(null);
-  const [stage, setStage] = useState(5);
+  const [stage, setStage] = useState(4);
   const [rowsShown, setRowsShown] = useState(recent.length);
   const [whatsappSaved, setWhatsappSaved] = useState(true);
 
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     let timers: number[] = [];
     let frame = 0;
     let running = false;
+    let visible = false;
     const clear = () => { timers.forEach(window.clearTimeout); timers = []; cancelAnimationFrame(frame); };
+    // Final state: the whole story at once (balance after the WhatsApp expense, reply visible).
+    const showFinal = () => {
+      clear(); running = false;
+      setStage(4); setRowsShown(recent.length); setWhatsappSaved(true);
+      if (balanceRef.current) balanceRef.current.textContent = formatAmount(exampleBalance - WHATSAPP_AMOUNT);
+    };
     const count = (from: number, to: number, duration: number) => {
       const start = performance.now();
       const tick = (now: number) => {
@@ -56,16 +63,19 @@ export function PhonePreview() {
       timers.push(window.setTimeout(() => setStage(5), timeline[5]));
       timers.push(window.setTimeout(() => { if (running) play(); }, LOOP));
     };
-    // Plays only while visible on screen and the tab is in front.
-    const io = new IntersectionObserver(([entry]) => {
-      const visible = Boolean(entry?.isIntersecting) && !document.hidden;
-      if (visible && !running) { running = true; play(); }
-      if (!visible && running) { running = false; clear(); }
-    }, { threshold: 0.35 });
+    const allowed = () => !media.matches && !landingMotionPaused() && !document.hidden;
+    // Plays only while visible, with the tab in front, motion allowed and not paused by the visitor.
+    const sync = () => {
+      if (media.matches) { showFinal(); return; }
+      if (visible && allowed()) { if (!running) { running = true; play(); } }
+      else if (running) { running = false; clear(); }
+    };
+    const io = new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); sync(); }, { threshold: 0.35 });
     if (figure.current) io.observe(figure.current);
-    const onVisibility = () => { if (document.hidden) { running = false; clear(); } };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => { io.disconnect(); clear(); document.removeEventListener("visibilitychange", onVisibility); };
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener(MOTION_EVENT, sync);
+    media.addEventListener("change", sync);
+    return () => { io.disconnect(); clear(); document.removeEventListener("visibilitychange", sync); window.removeEventListener(MOTION_EVENT, sync); media.removeEventListener("change", sync); };
   }, []);
 
   const result = exampleIncome - exampleSpent - (whatsappSaved ? WHATSAPP_AMOUNT : 0);
@@ -75,13 +85,12 @@ export function PhonePreview() {
     <figure ref={figure} className="phone" data-reveal style={{ "--i": 3 } as CSSProperties} data-stage={stage} aria-label="Tela de visão geral do Fluxa com dados fictícios, registrando um gasto pelo WhatsApp">
       <div className="phone-screen" aria-hidden="true">
         <div className="phone-status"><span className="num">9:41</span></div>
-        <div className={stage >= 3 && stage < 5 ? "phone-banner is-shown" : "phone-banner"}>
+        <div className={stage === 3 || stage === 4 ? "phone-banner is-shown" : "phone-banner"}>
           <span className="phone-banner-icon"><MessageCircle /></span>
           <span className="phone-banner-text">{stage >= 4 ? <>Registrado no Fluxa: gasto de <b className="num">R$&nbsp;32,00</b> em Mercado</> : <>Você: gastei 32 no mercado</>}</span>
         </div>
         <div className="phone-content">
-          <p className="phone-title">Visão geral</p>
-          <p className="phone-period">Outubro</p>
+          <p className="phone-title">Visão geral <span className="phone-period-inline">· outubro</span></p>
           <div className="card phone-card">
             <p className="overview-label">Saldo atual</p>
             <p className="phone-balance num">R$&nbsp;<span ref={balanceRef}>{formatAmount(exampleBalance - (whatsappSaved ? WHATSAPP_AMOUNT : 0))}</span></p>
@@ -92,22 +101,22 @@ export function PhonePreview() {
             </dl>
           </div>
           <div className="card phone-card phone-list">
+            <p className="phone-card-title">Últimas transações</p>
+            <ul className="phone-rows">
+              {rows.map(row => (
+                <li key={row.raw} className={row.isNew ? "phone-row is-new" : "phone-row"}>
+                  <div><span>{row.raw}</span><span className="num">−{formatAmount(row.amount)}</span></div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="card phone-card phone-list">
             <p className="phone-card-title">Gastos por categoria</p>
             <ul>
               {topCategories.map((item, index) => (
                 <li key={item.name}>
                   <div><span>{item.name}</span><span className="num">{formatAmount(item.spent + (item.name === "Mercado" && whatsappSaved ? WHATSAPP_AMOUNT : 0))}</span></div>
                   <span className="meter"><span className="phone-bar" style={{ width: `${Math.round((item.spent / largest) * 100)}%`, "--d": index } as CSSProperties} /></span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="card phone-card phone-list">
-            <p className="phone-card-title">Últimas transações</p>
-            <ul className="phone-rows">
-              {rows.map(row => (
-                <li key={row.raw} className={row.isNew ? "phone-row is-new" : "phone-row"}>
-                  <div><span>{row.raw}</span><span className="num">−{formatAmount(row.amount)}</span></div>
                 </li>
               ))}
             </ul>
