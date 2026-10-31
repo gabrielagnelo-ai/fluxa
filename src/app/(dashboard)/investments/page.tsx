@@ -26,7 +26,7 @@ export default async function InvestmentsPage({
   const stockList = await getStockList(stockFilters);
 
   return (
-    <div className="fluxa-page">
+    <div className="fluxa-page workspace-page investments-page">
       <PageHeader
         eyebrow="Carteira e mercado"
         title="Investimentos"

@@ -42,7 +42,7 @@ function GoalForm({ goal }: { goal?: GoalItem }) {
         name="markers"
         defaultValue={goal?.markers.join(", ")}
         className="min-h-20 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 md:col-span-5"
-        placeholder="Palavras para identificar deposito: META RESERVA, APLICACAO RESERVA"
+        placeholder="Palavras para identificar depósito: META RESERVA, APLICACAO RESERVA"
       />
       {state?.error && <p className="md:col-span-5 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
       {state?.success && <p className="md:col-span-5 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
@@ -73,7 +73,7 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
       <Card>
         <CardHeader>
           <h2 className="font-semibold">Nova meta</h2>
-          <p className="text-sm text-muted-foreground">O Fluxa cria palavras para reconhecer quando voce guardou dinheiro para essa meta.</p>
+          <p className="text-sm text-muted-foreground">O Fluxa cria palavras para reconhecer quando você guardou dinheiro para essa meta.</p>
         </CardHeader>
         <CardContent>
           <GoalForm />
@@ -126,7 +126,7 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
                     </div>
                     <strong className="mt-1 block text-lg">{formatCurrency(projectedBalance)}</strong>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Projecao sem novos depositos: {formatCurrency(projectedYield)} de rendimento estimado.
+                      Projeção sem novos depósitos: {formatCurrency(projectedYield)} de rendimento estimado.
                     </p>
                   </div>
                 </div>

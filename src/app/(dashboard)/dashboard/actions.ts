@@ -32,7 +32,7 @@ function parseMoneyInput(value: string) {
 
 export async function saveBalanceBaseline(_previousState: unknown, formData: FormData) {
   const parsed = baselineSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Saldo inicial invalido." };
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Saldo inicial inválido." };
 
   const userId = await getCurrentUserId();
   if (!userId) return { error: "Faca login para salvar o saldo inicial." };
@@ -40,7 +40,7 @@ export async function saveBalanceBaseline(_previousState: unknown, formData: For
   const amount = parseMoneyInput(parsed.data.amount);
   const date = new Date(`${parsed.data.date}T00:00:00`);
 
-  if (!Number.isFinite(amount)) return { error: "Informe um valor valido." };
+  if (!Number.isFinite(amount)) return { error: "Informe um valor válido." };
   if (Number.isNaN(date.getTime())) return { error: "Informe uma data valida." };
 
   await prisma.balanceBaseline.upsert({
@@ -62,5 +62,5 @@ export async function saveBalanceBaseline(_previousState: unknown, formData: For
   revalidatePath("/transactions");
   revalidatePath("/insights");
 
-  return { success: "Saldo inicial salvo. O dashboard ja usa esse valor no saldo atual." };
+  return { success: "Saldo inicial salvo. A visão geral já usa esse valor no saldo atual." };
 }

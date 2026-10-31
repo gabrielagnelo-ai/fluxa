@@ -6,15 +6,15 @@ import { getCategoriesForCurrentUser } from "@/services/finance-data-service";
 
 const integrationStatus = [
   {
-    title: "Categorias automaticas",
-    description: "Ativa na importacao para sugerir onde cada gasto entra.",
+    title: "Categorias automáticas",
+    description: "Ativa na importação para sugerir onde cada gasto entra.",
     status: "Ativo",
     icon: CheckCircle2,
     tone: "bg-emerald-500/10 text-emerald-500"
   },
   {
     title: "Avisos de orçamento e metas",
-    description: "Ativos no dashboard para mostrar limites, metas e pontos de atencao.",
+    description: "Ativos no dashboard para mostrar limites, metas e pontos de atenção.",
     status: "Ativo",
     icon: CheckCircle2,
     tone: "bg-emerald-500/10 text-emerald-500"
@@ -36,7 +36,7 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Regras do Fluxa"
         title="Ajustes"
-        description="Ajuste como o Fluxa reconhece seus gastos e veja o que ja esta ativo."
+        description="Ajuste como o Fluxa reconhece seus gastos e veja o que já está ativo."
       />
 
       <CategoryKeywordsManager

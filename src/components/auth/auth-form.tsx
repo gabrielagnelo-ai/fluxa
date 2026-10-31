@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { PasswordInput } from "./password-input";
 import { signIn, signUp, resetPassword, resendConfirmation, updatePassword } from "@/app/actions";
 import { safeAuthDestination, type AuthActionState } from "@/lib/supabase/auth-flow";
@@ -31,6 +31,7 @@ export function AuthForm({ mode, next = "/dashboard", notice, confirmation = fal
   const [resendState, resendAction, resendPending] = useActionState(
     async (_previousState: AuthActionState | undefined, formData: FormData) => resendConfirmation(formData), undefined
   );
+  const [localError, setLocalError] = useState<{ field: string; message: string } | null>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
   const text = copy[mode];
   const newPassword = mode === "signup" || mode === "new-password";
@@ -38,22 +39,40 @@ export function AuthForm({ mode, next = "/dashboard", notice, confirmation = fal
   useEffect(() => {
     if (state?.error || state?.success) messageRef.current?.focus();
   }, [state]);
+  useEffect(() => { if (localError) messageRef.current?.focus(); }, [localError]);
+  const invalidField = localError?.field ?? state?.field;
+  const feedback = localError ? { error: localError.message } : state;
+
+  // Same inline error as the server's, instead of the browser bubble (form uses noValidate).
+  function validate(event: FormEvent<HTMLFormElement>) {
+    const checks: [boolean, string, string][] = [
+      [mode === "signup" && name.trim().length < 2, "name", "Digite seu nome."],
+      [mode !== "new-password" && !email.trim(), "email", "Digite seu e-mail."],
+      [mode !== "new-password" && Boolean(email.trim()) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()), "email", "Digite um e-mail válido, como nome@exemplo.com."],
+      [mode !== "reset" && !password, "password", "Digite sua senha."],
+      [newPassword && Boolean(password) && password.length < 8, "password", "A senha precisa ter pelo menos 8 caracteres."],
+      [mode === "new-password" && confirmPassword !== password, "confirmPassword", "As duas senhas precisam ser iguais."]
+    ];
+    const failed = checks.find(([condition]) => condition);
+    if (failed) { event.preventDefault(); setLocalError({ field: failed[1], message: failed[2] }); }
+    else setLocalError(null);
+  }
 
   return (
     <section className="auth-card" aria-labelledby="auth-title">
       <h1 id="auth-title" className="auth-title">{text.title}</h1>
       <p className="auth-description">{text.description}</p>
       {notice && <p role="status" className="auth-notice">{notice}</p>}
-      <form action={action} onReset={event => event.preventDefault()} aria-busy={pending}>
+      <form action={action} noValidate onSubmit={validate} onReset={event => event.preventDefault()} aria-busy={pending}>
         <input type="hidden" name="next" value={safeAuthDestination(next)} />
         <div className="auth-fields">
-          {mode === "signup" && <div className="auth-field"><label htmlFor="name">Nome</label><div className="auth-field-control"><input id="name" name="name" value={name} onChange={event => setName(event.target.value)} autoComplete="name" minLength={2} required aria-invalid={state?.field === "name"} aria-describedby={state?.field === "name" ? "auth-feedback" : undefined} /></div></div>}
-          {mode !== "new-password" && <div className="auth-field"><label htmlFor="email">E-mail</label><div className="auth-field-control"><input id="email" name="email" type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required aria-invalid={state?.field === "email"} aria-describedby={state?.field === "email" ? "auth-feedback" : undefined} /></div></div>}
-          {mode !== "reset" && <PasswordInput name="password" label={mode === "new-password" ? "Nova senha" : "Senha"} value={password} onChange={setPassword} newPassword={newPassword} invalid={state?.field === "password"} describedBy={[newPassword ? "password-help" : "", state?.field === "password" ? "auth-feedback" : ""].filter(Boolean).join(" ") || undefined} />}
-          {mode === "new-password" && <PasswordInput name="confirmPassword" label="Confirmar nova senha" value={confirmPassword} onChange={setConfirmPassword} newPassword invalid={state?.field === "confirmPassword"} describedBy={state?.field === "confirmPassword" ? "auth-feedback" : undefined} />}
+          {mode === "signup" && <div className="auth-field"><label htmlFor="name">Nome</label><div className="auth-field-control"><input id="name" name="name" value={name} onChange={event => setName(event.target.value)} autoComplete="name" minLength={2} required aria-invalid={invalidField === "name"} aria-describedby={invalidField === "name" ? "auth-feedback" : undefined} /></div></div>}
+          {mode !== "new-password" && <div className="auth-field"><label htmlFor="email">E-mail</label><div className="auth-field-control"><input id="email" name="email" type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required aria-invalid={invalidField === "email"} aria-describedby={invalidField === "email" ? "auth-feedback" : undefined} /></div></div>}
+          {mode !== "reset" && <PasswordInput name="password" label={mode === "new-password" ? "Nova senha" : "Senha"} value={password} onChange={setPassword} newPassword={newPassword} invalid={invalidField === "password"} describedBy={[newPassword ? "password-help" : "", invalidField === "password" ? "auth-feedback" : ""].filter(Boolean).join(" ") || undefined} />}
+          {mode === "new-password" && <PasswordInput name="confirmPassword" label="Confirmar nova senha" value={confirmPassword} onChange={setConfirmPassword} newPassword invalid={invalidField === "confirmPassword"} describedBy={invalidField === "confirmPassword" ? "auth-feedback" : undefined} />}
         </div>
         {newPassword && <p id="password-help" className="auth-help">Use pelo menos 8 caracteres. Uma frase longa e exclusiva é mais fácil de lembrar.</p>}
-        {(state?.error || state?.success) && <p id="auth-feedback" ref={messageRef} tabIndex={-1} role={state.error ? "alert" : "status"} className={state.error ? "auth-message is-error" : "auth-message"}>{state.error ?? state.success}</p>}
+        {(feedback?.error || feedback?.success) && <p id="auth-feedback" ref={messageRef} tabIndex={-1} role={feedback.error ? "alert" : "status"} className={feedback.error ? "auth-message is-error" : "auth-message"}>{feedback.error ?? feedback.success}</p>}
         <button type="submit" className="btn btn-filled btn-large auth-submit" disabled={pending}>{pending ? "Aguarde..." : text.submit}</button>
       </form>
       {showResend && <form action={resendAction} className="auth-resend">

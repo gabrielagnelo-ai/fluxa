@@ -95,7 +95,7 @@ type PlanningOverview = {
 
 const limitTypeLabels = {
   FIXED: "Fixo",
-  VARIABLE: "Variavel"
+  VARIABLE: "Variável"
 };
 
 const filterLabels: Record<LimitFilter, string> = {
@@ -169,7 +169,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             <Input name="amount" inputMode="decimal" placeholder="Valor" />
             <select name="type" defaultValue="FIXED" className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
               <option value="FIXED">Fixo</option>
-              <option value="VARIABLE">Variavel</option>
+              <option value="VARIABLE">Variável</option>
             </select>
             <Button disabled={plannedExpensePending} className="whitespace-nowrap">
               <Plus className="size-4" />
@@ -180,22 +180,22 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </form>
 
           <section className="grid gap-3 md:grid-cols-4">
-            <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="ja considera vale/adiantamento" />
+            <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="já considera vale ou adiantamento" />
             <CompactMetric icon={WalletCards} label="Contas fixas" value={formatCurrency(overview.paymentPlan.fixedPlanned)} detail={`${fixedBills.length} item(ns) marcado(s) como fixo`} />
-            <CompactMetric icon={SlidersHorizontal} label="Gastos variaveis" value={formatCurrency(overview.paymentPlan.variablePlanned)} detail={`${variableBills.length} item(ns) flexiveis`} />
+            <CompactMetric icon={SlidersHorizontal} label="Gastos variáveis" value={formatCurrency(overview.paymentPlan.variablePlanned)} detail={`${variableBills.length} item(ns) flexíveis`} />
             <CompactMetric
               icon={Target}
               label="Sobra para metas"
               value={formatCurrency(overview.paymentPlan.availableForGoals)}
-              detail="renda menos fixos e variaveis"
+              detail="renda menos fixos e variáveis"
               tone={overview.paymentPlan.availableForGoals < 0 ? "danger" : "success"}
             />
           </section>
 
           <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
             <div className="grid gap-3 md:grid-cols-2">
-              <BillList title="Contas fixas" description="O que costuma ser obrigatorio pagar." items={fixedBills} month={overview.month} year={overview.year} emptyText="Nenhuma conta fixa marcada ainda." />
-              <BillList title="Gastos combinados" description="Limites flexiveis para controlar o mes." items={variableBills} month={overview.month} year={overview.year} emptyText="Nenhum gasto variavel planejado ainda." />
+              <BillList title="Contas fixas" description="O que costuma ser obrigatório pagar." items={fixedBills} month={overview.month} year={overview.year} emptyText="Nenhuma conta fixa marcada ainda." />
+              <BillList title="Gastos combinados" description="Limites flexíveis para controlar o mês." items={variableBills} month={overview.month} year={overview.year} emptyText="Nenhum gasto variável planejado ainda." />
             </div>
             <GoalPlanCard goals={overview.goals} availableForGoals={overview.paymentPlan.availableForGoals} />
           </section>
@@ -205,9 +205,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
       <Card className={cn(overview.nextMonthImpact.hasSalaryAdvance && "border-red-500/30 bg-red-500/[0.04]")}>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="font-semibold">Projecao de {overview.nextMonthImpact.monthLabel}</h2>
+            <h2 className="font-semibold">Projeção de {overview.nextMonthImpact.monthLabel}</h2>
             <p className="text-sm text-muted-foreground">
-              Veja quanto pode sobrar considerando sua renda, vales ou adiantamentos do mes anterior e os gastos previstos.
+              Veja quanto pode sobrar considerando sua renda, vales ou adiantamentos do mês anterior e os gastos previstos.
             </p>
           </div>
           <span className={cn("grid size-10 place-items-center rounded-lg", overview.nextMonthImpact.hasSalaryAdvance ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary")}>
@@ -223,7 +223,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               value={`-${formatCurrency(overview.nextMonthImpact.salaryAdvanceTotal)}`}
               detail={
                 overview.nextMonthImpact.salaryAdvanceCount > 0
-                  ? `${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) no mes anterior`
+                  ? `${overview.nextMonthImpact.salaryAdvanceCount} entrada(s) no mês anterior`
                   : "nenhum vale identificado"
               }
               tone={overview.nextMonthImpact.salaryAdvanceTotal > 0 ? "danger" : "neutral"}
@@ -238,7 +238,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             />
           </section>
           <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-sm text-muted-foreground">
-            Pense assim: renda planejada menos vales/adiantamentos do mes anterior, depois menos todos os valores previstos nas categorias.
+            Pense assim: renda planejada menos vales ou adiantamentos do mês anterior, depois menos todos os valores previstos nas categorias.
           </div>
         </CardContent>
       </Card>
@@ -267,7 +267,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               <option value="custom">Personalizado</option>
             </select>
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-              {isCustom ? "Ajuste os percentuais. A soma precisa ser 100%." : "Necessidades sao contas essenciais. Desejos sao gastos flexiveis. Metas sao dinheiro guardado."}
+              {isCustom ? "Ajuste os percentuais. A soma precisa ser 100%." : "Necessidades são contas essenciais. Desejos são gastos flexíveis. Metas são dinheiro guardado."}
             </div>
             <Input name="needsPercent" defaultValue={needsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Necessidades %" />
             <Input name="wantsPercent" defaultValue={wantsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Desejos %" />
@@ -279,7 +279,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
           {overview.planSource && (
             <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary">
-              Base deste mes: {overview.planSource}. Ajuste os valores e clique em Salvar para gravar o planejamento de {overview.monthLabel}.
+              Base deste mês: {overview.planSource}. Ajuste os valores e clique em Salvar para gravar o planejamento de {overview.monthLabel}.
             </p>
           )}
 
@@ -358,7 +358,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                   </button>
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">Use Todas para definir um valor em uma categoria que ainda nao apareceu no mes.</p>
+              <p className="text-sm text-muted-foreground">Use Todas para definir um valor em uma categoria que ainda não apareceu no mês.</p>
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-border">
@@ -369,7 +369,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
                     <th className="px-4 font-medium">Tipo</th>
                     <th className="px-4 font-medium">Valor previsto</th>
                     <th className="px-4 text-right font-medium">Ja gasto</th>
-                    <th className="px-4 font-medium">Situacao</th>
+                    <th className="px-4 font-medium">Situação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -382,7 +382,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alteracoes..." : "As mudancas salvam ao alterar o tipo ou sair do campo de valor."}</p>
+              <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alterações..." : "As mudanças salvam ao alterar o tipo ou sair do campo de valor."}</p>
               <Button disabled={limitPending}>{limitPending ? "Salvando..." : "Salvar limites"}</Button>
             </div>
             {limitState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{limitState.error}</p>}
@@ -471,11 +471,11 @@ function PlannedExpenseInlineForm({ item, month, year }: { item: PlanningOvervie
           <Input name="amount" defaultValue={item.planned.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} inputMode="decimal" aria-label="Valor planejado" />
           <select name="type" defaultValue={item.type} className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
             <option value="FIXED">Fixo</option>
-            <option value="VARIABLE">Variavel</option>
+            <option value="VARIABLE">Variável</option>
           </select>
         </div>
         <Button disabled={pending} className="h-10 w-full px-3 text-sm">
-          {pending ? "Salvando..." : "Salvar alteracoes"}
+          {pending ? "Salvando..." : "Salvar alterações"}
         </Button>
       </form>
       <div className="mt-2 flex items-center justify-between gap-3">
@@ -497,15 +497,15 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold">Metas de economia</h3>
-          <p className="text-sm text-muted-foreground">Use a sobra do mes para decidir quanto guardar.</p>
+          <p className="text-sm text-muted-foreground">Use a sobra do mês para decidir quanto guardar.</p>
         </div>
         <Target className={cn("size-5", availableForGoals < 0 ? "text-red-500" : "text-emerald-500")} />
       </div>
 
       <div className="mt-4 rounded-lg border border-border/70 bg-card/40 p-3">
-        <p className="text-sm text-muted-foreground">Disponivel para guardar</p>
+        <p className="text-sm text-muted-foreground">Disponível para guardar</p>
         <strong className={cn("mt-1 block text-2xl", availableForGoals < 0 ? "text-red-500" : "text-emerald-500")}>{formatCurrency(availableForGoals)}</strong>
-        <p className="mt-1 text-xs text-muted-foreground">Calculado depois dos gastos fixos e variaveis planejados.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Calculado depois dos gastos fixos e variáveis planejados.</p>
       </div>
 
       <div className="mt-4 space-y-2">
@@ -540,12 +540,12 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
               </div>
               <div className="mt-3 grid gap-2 rounded-lg border border-border/70 bg-background/35 p-2 text-xs text-muted-foreground">
                 <p>
-                  Rendimento estimado: <span className="font-medium text-emerald-400">{formatCurrency(monthlyYield(goal.savedAmount))}</span> no proximo mes.
+                  Rendimento estimado: <span className="font-medium text-emerald-400">{formatCurrency(monthlyYield(goal.savedAmount))}</span> no próximo mês.
                 </p>
                 {suggestion > 0 ? (
                   <>
                     <p>
-                      Sugestao de deposito: <span className="font-medium text-foreground">{formatCurrency(suggestedContribution)}</span> por mes.
+                      Sugestão de depósito: <span className="font-medium text-foreground">{formatCurrency(suggestedContribution)}</span> por mês.
                     </p>
                     <p>
                       Com {DEFAULT_SAVINGS_MONTHLY_RATE_LABEL}, pode chegar em{" "}
@@ -554,7 +554,7 @@ function GoalPlanCard({ goals, availableForGoals }: { goals: PlanningOverview["g
                     <p>Saldo projetado em 12 meses: {formatCurrency(projectedInOneYear)}.</p>
                   </>
                 ) : (
-                  <p>Saldo projetado em 12 meses sem novos depositos: {formatCurrency(projectedInOneYear)}.</p>
+                  <p>Saldo projetado em 12 meses sem novos depósitos: {formatCurrency(projectedInOneYear)}.</p>
                 )}
               </div>
             </div>
@@ -741,7 +741,7 @@ function getLimitStatus(item: PlanningOverview["categoryLimits"][number]) {
   if (item.planned <= 0) {
     return {
       label: "Sem valor",
-      detail: item.actual > 0 ? "Gasto sem valor previsto" : "Sem movimento no mes",
+      detail: item.actual > 0 ? "Gasto sem valor previsto" : "Sem movimento no mês",
       barClass: "bg-muted",
       textClass: "text-muted-foreground"
     };

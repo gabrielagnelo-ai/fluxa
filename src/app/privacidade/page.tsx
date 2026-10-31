@@ -8,7 +8,7 @@ export default function PrivacyPage() {
     <PlainPage label="Privacidade" title="Seus dados no Fluxa">
       <section>
         <h2>Acesso à conta</h2>
-        <p>Você entra com e-mail e senha. A sessão é gerenciada pelo Supabase Auth.</p>
+        <p>Você entra com e-mail e senha. A sessão é gerenciada pelo serviço de login do Fluxa.</p>
       </section>
       <section>
         <h2>Onde ficam os dados financeiros</h2>

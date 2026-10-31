@@ -880,3 +880,30 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 .auth-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; margin-top: 0.75rem; }
 .auth-links .btn-plain { padding-inline: 0.25rem; font-weight: 500; color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .auth-card { animation: fade-in 120ms linear both; } }
+
+/* ── App screens: bring the Tailwind markup of each screen to the system ── */
+/* Accent as text on gray surfaces needs the lighter tint (contrast). */
+.workspace-page .text-primary { color: var(--accent-text); }
+/* Boxes nested inside a card: a quiet fill, no border (Apple grouped style, no cards in cards). */
+.workspace-page .glass-card :is(div, section, form, article, li, label)[class*="border"][class*="rounded"] { border-color: transparent; background-color: var(--surface-2); }
+.workspace-page [class*="border-dashed"] { border-style: solid; }
+/* Buttons become capsules with a 44 px target; segmented-looking groups keep their own shape. */
+.workspace-page button[class*="rounded"]:not(.list-row):not(.icon-btn):not([role="switch"]),
+.workspace-page a[class*="rounded-xl"], .workspace-page a[class*="rounded-md"][class*="border"] {
+  border-radius: 999px; min-height: 2.75rem;
+}
+.workspace-page button[class*="border"][class*="rounded"]:not(.premium-button):not(.btn-primary):not([class*="bg-destructive"]) { border-color: transparent; background-color: var(--fill); color: var(--label); }
+.workspace-page :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select) { min-height: 2.75rem; border-radius: 0.75rem; font-size: max(1rem, 16px); }
+.workspace-page textarea { border-radius: 0.75rem; font-size: max(1rem, 16px); }
+.workspace-page table { font-variant-numeric: tabular-nums; }
+.workspace-page thead { background: transparent; }
+.workspace-page th { font-size: 0.8125rem; font-weight: 600; color: var(--label-2); }
+.workspace-page details > summary { min-height: 2.75rem; display: flex; align-items: center; }
+.workspace-page .glass-card { overflow: hidden; }
+.workspace-page :is(.text-emerald-400, .text-emerald-500) { color: var(--green); }
+.workspace-page :is(.text-red-400, .text-red-500) { color: #ff6b6e; }
+
+/* Cards side by side keep their own height instead of stretching to the tallest. */
+.workspace-page .grid { align-items: start; }
+.workspace-page .glass-card { border-color: transparent; }
+@media (max-width: 639px) { .page-actions > div, .page-actions .period-control { width: 100%; } .page-actions .period-control .segmented { width: 100%; } }

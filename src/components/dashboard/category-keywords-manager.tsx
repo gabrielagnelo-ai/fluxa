@@ -98,13 +98,13 @@ function SyncCategoriesButton() {
         className="bg-destructive/10 text-destructive hover:bg-destructive/20"
         disabled={pending}
         onClick={(event) => {
-          if (!confirm("Restaurar as regras padrao pode recriar categorias que voce removeu. Deseja continuar?")) {
+          if (!confirm("Restaurar as regras padrão pode recriar categorias que você removeu. Deseja continuar?")) {
             event.preventDefault();
           }
         }}
       >
         <RefreshCw className="size-4" />
-        {pending ? "Restaurando..." : "Restaurar regras padrao"}
+        {pending ? "Restaurando..." : "Restaurar regras padrão"}
       </Button>
       <StatusMessage state={state} />
     </form>

@@ -227,7 +227,7 @@ export function StockDiscoveryPanel({
                         <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold", positive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500")}>
                           <Icon className="size-3" />
                           {positive ? "+" : ""}
-                          {stock.changePercent.toFixed(2)}%
+                          {stock.changePercent.toFixed(2).replace(".", ",")}%
                         </span>
                       </td>
                       <td className="px-4 text-right text-muted-foreground">{formatLargeNumber(stock.volume)}</td>
@@ -318,7 +318,7 @@ export function InvestmentManager({
                 <p className="text-sm text-muted-foreground">Rentabilidade</p>
                 <strong className={cn("text-xl", overview.gainPercent >= 0 ? "text-emerald-500" : "text-red-500")}>
                   {overview.gainPercent >= 0 ? "+" : ""}
-                  {overview.gainPercent.toFixed(2)}%
+                  {overview.gainPercent.toFixed(2).replace(".", ",")}%
                 </strong>
               </div>
             </div>
@@ -374,7 +374,7 @@ export function InvestmentManager({
                         </span>
                         <span className={item.gain >= 0 ? "text-emerald-500" : "text-red-500"}>
                           {item.gain >= 0 ? "+" : ""}
-                          {item.gainPercent.toFixed(2)}%
+                          {item.gainPercent.toFixed(2).replace(".", ",")}%
                         </span>
                       </div>
                     </div>
@@ -435,7 +435,7 @@ export function InvestmentManager({
                         <td className="px-4 text-right font-medium">{formatCurrency(asset.currentAmount)}</td>
                         <td className={cn("px-4 text-right font-semibold", gain >= 0 ? "text-emerald-500" : "text-red-500")}>
                           {formatCurrency(gain)} · {gain >= 0 ? "+" : ""}
-                          {gainPercent.toFixed(2)}%
+                          {gainPercent.toFixed(2).replace(".", ",")}%
                         </td>
                         <td className="px-4 text-right">
                           <form
@@ -559,7 +559,7 @@ export function MarketQuotesPanel({
                     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold", positive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500")}>
                       <Icon className="size-3" />
                       {positive ? "+" : ""}
-                      {item.changePercent.toFixed(2)}%
+                      {item.changePercent.toFixed(2).replace(".", ",")}%
                     </span>
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">
