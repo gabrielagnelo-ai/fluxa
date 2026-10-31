@@ -12,7 +12,7 @@ export function RevealObserver() {
   useEffect(() => {
     const root = document.documentElement;
     // Hydrated late (slow network): the CSS safety net has already shown everything, keep it shown.
-    if (!root.dataset.revealReady && performance.now() > 2400) document.querySelectorAll("[data-reveal]").forEach(element => element.classList.add("is-visible"));
+    if (!root.dataset.revealReady && performance.now() > 2400) document.querySelectorAll("[data-reveal], [data-reveal-group]").forEach(element => element.classList.add("is-visible"));
     root.dataset.revealReady = "true";
     const seen = new WeakSet<Element>();
     const io = new IntersectionObserver(entries => {
@@ -22,7 +22,7 @@ export function RevealObserver() {
         io.unobserve(entry.target);
       }
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
-    const track = () => document.querySelectorAll("[data-reveal]:not(.is-visible)").forEach(element => {
+    const track = () => document.querySelectorAll(":is([data-reveal], [data-reveal-group]):not(.is-visible)").forEach(element => {
       if (seen.has(element)) return;
       seen.add(element);
       io.observe(element);

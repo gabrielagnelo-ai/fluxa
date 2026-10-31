@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { FileSpreadsheet, MessageCircle, MonitorSmartphone } from "lucide-react";
 import { RevealObserver } from "@/components/motion/reveal-observer";
 import { PhonePreview } from "@/components/public/phone-preview";
+import { PublicNav } from "@/components/public/public-nav";
 import { exampleCategories, exampleStatement, formatAmount } from "@/components/public/example-month";
 
 export const metadata: Metadata = {
@@ -25,17 +25,7 @@ export default function Home() {
     <div className="landing">
       <RevealObserver />
       <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
-      <header className="landing-nav-wrap">
-        <nav className="landing-nav glass" aria-label="Fluxa">
-          <Link href="/" aria-label="Fluxa, início" className="landing-logo">
-            <Image src="/branding/fluxa-logo.png" alt="Fluxa" width={420} height={160} priority className="h-8 w-auto" />
-          </Link>
-          <div className="landing-nav-actions">
-            <Link href="/login" className="btn btn-plain landing-login">Entrar</Link>
-            <Link href="/signup" className="btn btn-filled landing-nav-cta">Criar conta</Link>
-          </div>
-        </nav>
-      </header>
+      <PublicNav />
 
       <main id="conteudo">
         <section className="landing-hero" aria-labelledby="hero-title">
@@ -63,8 +53,8 @@ export default function Home() {
           </ul>
         </section>
 
-        <section id="importar" className="landing-section" aria-labelledby="importar-title">
-          <div className="landing-section-copy" data-reveal>
+        <section id="importar" className="landing-section" aria-labelledby="importar-title" data-reveal-group>
+          <div className="landing-section-copy" data-stagger style={step(0)}>
             <p className="landing-eyebrow">Importar</p>
             <h2 id="importar-title" className="landing-h2">Você traz o extrato. <span>O Fluxa faz o resto.</span></h2>
             <p className="landing-body">
@@ -73,7 +63,7 @@ export default function Home() {
           </div>
           <div className="landing-section-media">
             <StatementExample />
-            <WhatsAppExample style={step(2)} />
+            <WhatsAppExample style={step(2)} stagger />
           </div>
         </section>
       </main>
@@ -88,7 +78,7 @@ function ExampleHeader({ title, children }: { title: string; children?: ReactNod
 function StatementExample() {
   const duplicate = exampleStatement[2];
   return (
-    <figure className="card example-card" data-reveal style={step(1)}>
+    <figure className="card example-card" data-stagger style={step(1)}>
       <ExampleHeader title="extrato-outubro.csv" />
       <ol className="list">
         {exampleStatement.slice(0, 4).map(row => (
@@ -109,9 +99,9 @@ function StatementExample() {
 }
 
 // Mirrors src/lib/whatsapp/server.ts: text message in, transaction saved, confirmation reply.
-function WhatsAppExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
+function WhatsAppExample({ className = "", style, stagger = false }: { className?: string; style?: CSSProperties; stagger?: boolean }) {
   return (
-    <figure className={`card example-card ${className}`} style={style} data-reveal={className ? undefined : true} aria-label="Exemplo de registro de gasto pelo WhatsApp">
+    <figure className={`card example-card ${className}`} style={style} data-stagger={stagger || undefined} aria-label="Exemplo de registro de gasto pelo WhatsApp">
       <ExampleHeader title="WhatsApp" />
       <div className="chat">
         <p className="chat-out">gastei 32 no mercado</p>

@@ -6,9 +6,9 @@ import { AlertTriangle } from "lucide-react";
 import { useInView } from "@/components/motion/use-in-view";
 import { cn, displayName, formatAxisShort, formatCurrency } from "@/lib/utils";
 
-// Five logo blues (measured in public/branding/fluxa-logo.png) alternating light and dark so neighbours
-// stay apart in luminance; everything after the fifth category is grouped as "Outras" in gray.
-const categoryColors = ["#0080F8", "#B5FFFF", "#024BCF", "#56D1FE", "#0033AF"];
+// Five logo blues (measured in public/branding/fluxa-logo.png), each at least 3:1 against the card,
+// alternating darker and lighter so neighbours stay apart; everything after the fifth category is grouped as "Outras" in gray.
+const categoryColors = ["#0080F8", "#B5FFFF", "#1EA7FD", "#80D8F8", "#33BCFD"];
 const OTHERS_COLOR = "#636366";
 const RING_SLICES = 5;
 const OTHERS = "__outras__";

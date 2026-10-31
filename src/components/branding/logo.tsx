@@ -28,7 +28,7 @@ export function Logo({
           style={{ width: config.mark, height: config.mark }}
         >
           <Image
-            src="/branding/fluxa-fx.png"
+            src="/branding/fluxa-mark.svg"
             alt="Fluxa"
             fill
             sizes={`${config.mark}px`}
@@ -47,7 +47,7 @@ export function Logo({
         style={{ width: config.logoWidth, height: config.logoHeight }}
       >
         <Image
-          src="/branding/fluxa-logo.png"
+          src="/branding/fluxa-logo.svg"
           alt="Fluxa"
           fill
           sizes={`${config.logoWidth}px`}
