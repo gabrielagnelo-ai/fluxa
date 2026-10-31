@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { FileSpreadsheet, MessageCircle, MonitorSmartphone } from "lucide-react";
 import { RevealObserver } from "@/components/motion/reveal-observer";
+import { CategorySwap } from "@/components/public/category-swap";
 import { PhonePreview } from "@/components/public/phone-preview";
 import { PublicNav } from "@/components/public/public-nav";
 import { PublicFooter } from "@/components/public/public-footer";
@@ -45,9 +46,9 @@ export default function Home() {
           </div>
 
           <div className="landing-stage">
-            <LimitExample className="landing-float landing-float-left" style={step(6)} />
+            <div className="landing-float landing-float-left" data-reveal data-loop style={step(6)}><LimitExample className="float-inner" /></div>
             <PhonePreview />
-            <CategoryExample className="landing-float landing-float-right" style={step(8)} />
+            <div className="landing-float landing-float-right" data-reveal data-loop style={step(8)}><CategoryExample className="float-inner" /></div>
           </div>
 
           <ul className="landing-facts" aria-label="O que o Fluxa faz">
@@ -91,17 +92,17 @@ function StatementExample() {
     <figure className="card example-card" data-stagger style={step(1)}>
       <ExampleHeader title="extrato-outubro.csv" />
       <ol className="list">
-        {exampleStatement.slice(0, 4).map(row => (
-          <li key={row.raw} className="list-row example-statement-row">
+        {exampleStatement.slice(0, 4).map((row, index) => (
+          <li key={row.raw} className="list-row example-statement-row row-in" style={{ "--r": index } as CSSProperties}>
             <span className="example-day num">{row.day}</span>
             <span className="row-main row-title">{row.raw}</span>
             <span className="row-value">{row.amount > 0 ? "+" : "−"}{formatAmount(row.amount)}</span>
           </li>
         ))}
-        <li className="list-row example-statement-row is-duplicate">
+        <li className="list-row example-statement-row is-duplicate row-in" style={{ "--r": 4 } as CSSProperties}>
           <span className="example-day num">{duplicate.day}</span>
           <span className="row-main row-title"><s>{duplicate.raw}</s></span>
-          <span className="tag">repetida, fica de fora</span>
+          <span className="tag tag-pop" style={{ "--r": 4 } as CSSProperties}>repetida, fica de fora</span>
         </li>
       </ol>
     </figure>
@@ -115,7 +116,7 @@ function WhatsAppExample({ className = "", style, stagger = false }: { className
       <ExampleHeader title="WhatsApp" />
       <div className="chat">
         <p className="chat-out">gastei 32 no mercado</p>
-        <p className="chat-in">Registrado no Fluxa: gasto de <span className="num">R$ 32,00</span> em Mercado (<span className="num">30/10</span>).</p>
+        <p className="chat-in chat-delay">Registrado no Fluxa: gasto de <span className="num">R$ 32,00</span> em Mercado (<span className="num">30/10</span>).</p>
       </div>
     </figure>
   );
@@ -123,14 +124,9 @@ function WhatsAppExample({ className = "", style, stagger = false }: { className
 
 function CategoryExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
   return (
-    <figure className={`card example-card ${className}`} style={style} data-reveal aria-label="Exemplo de categoria aplicada por regra">
+    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de categoria aplicada por regra ou sugestão">
       <ExampleHeader title="Categoria" />
-      <div className="example-category">
-        <p className="row-sub num">07/10 · COMPRA DEB</p>
-        <p className="example-category-name">Mercado do bairro</p>
-        <p className="example-category-meta"><span className="num">−R$ 620,00</span><span className="tag">Mercado</span></p>
-        <p className="row-sub">Regra: contém “mercado”</p>
-      </div>
+      <CategorySwap />
     </figure>
   );
 }
@@ -139,7 +135,7 @@ function LimitExample({ className = "", style }: { className?: string; style?: C
   const market = exampleCategories.find(item => item.name === "Mercado") ?? exampleCategories[0];
   const usage = Math.round((market.spent / market.planned) * 100);
   return (
-    <figure className={`card example-card ${className}`} style={style} data-reveal aria-label="Exemplo de limite por categoria">
+    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de limite por categoria">
       <ExampleHeader title="Limite do mês" />
       <div className="example-category">
         <p className="example-category-name">{market.name}</p>

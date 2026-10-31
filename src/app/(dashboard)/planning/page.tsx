@@ -30,7 +30,6 @@ export default async function PlanningPage({
   return (
     <div className="fluxa-page workspace-page planning-page">
       <PageHeader
-        eyebrow="Seu plano do mês"
         title={`Planejamento de ${overview.monthLabel}`}
         description="Informe sua renda, defina limites por categoria e depois importe os gastos reais. Um orçamento previsto não registra um pagamento. Se este mês ainda não tiver um plano, o último salvo aparece como sugestão."
         actions={<PlanningMonthSelector month={overview.month} year={overview.year} />}

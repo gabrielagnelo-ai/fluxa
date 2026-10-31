@@ -105,11 +105,11 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
                   <defs>
                     <linearGradient id="goals-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1EA7FD" stopOpacity={0.42} /><stop offset="100%" stopColor="#0033AF" stopOpacity={0} /></linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgb(255 255 255 / 0.06)" vertical={false} />
+                  <CartesianGrid stroke="rgb(255 255 255 / 0.08)" vertical={false} />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={8} padding={{ left: 12, right: 8 }} tick={{ fill: "rgb(235 235 245 / 0.6)", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} width={60} tick={{ fill: "rgb(235 235 245 / 0.6)", fontSize: 11 }} tickFormatter={formatAxisShort} />
                   <Tooltip content={<GoalTooltip />} cursor={{ stroke: "rgb(255 255 255 / 0.22)", strokeDasharray: "3 4" }} />
-                  <Area type="monotone" dataKey="acumulado" name="Guardado" stroke="#1EA7FD" fill="url(#goals-fill)" strokeWidth={2} strokeLinecap="round" activeDot={{ r: 4.5, fill: "#1EA7FD", stroke: "#1c1c1e", strokeWidth: 2 }} isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out" />
+                  <Area type="monotone" dataKey="acumulado" name="Guardado" stroke="#1EA7FD" fill="url(#goals-fill)" strokeWidth={2} strokeLinecap="round" activeDot={{ r: 4.5, fill: "#1EA7FD", stroke: "#3b4b6b", strokeWidth: 2 }} isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out" />
                 </AreaChart>
               </ResponsiveContainer>
             )}

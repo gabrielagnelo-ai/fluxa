@@ -5,7 +5,7 @@ export function PublicFooter() {
   return (
     <footer className="public-footer">
       <div className="public-footer-inner">
-        <Link href="/" aria-label="Fluxa, início" className="landing-logo"><Image src="/branding/fluxa-logo.svg" alt="Fluxa" width={420} height={160} className="h-7 w-auto" /></Link>
+        <Link href="/" aria-label="Fluxa, início" className="landing-logo"><Image unoptimized src="/branding/fluxa-logo.png" alt="Fluxa" width={420} height={160} className="h-7 w-auto" /></Link>
         <nav aria-label="Rodapé" className="public-footer-links">
           <Link href="/demo">Demonstração</Link>
           <Link href="/login">Entrar</Link>

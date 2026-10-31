@@ -5,7 +5,7 @@ import { exampleBalance, exampleCategories, exampleGoal, exampleIncome, exampleP
 
 const brl = (value: number) => `R$\u00a0${formatAmount(value)}`;
 const step = (index: number) => ({ "--i": index }) as CSSProperties;
-const ringColors = ["#0080F8", "#B5FFFF", "#1EA7FD", "#80D8F8", "#33BCFD"];
+const ringColors = ["#1EA7FD", "#B5FFFF", "#33BCFD", "#80D8F8", "#38C0F8"];
 
 function Section({ id, eyebrow, title, accent, body, children, flip = false }: { id: string; eyebrow: string; title: string; accent: string; body: string; children: ReactNode; flip?: boolean }) {
   return (
@@ -36,10 +36,10 @@ export function CategorizeSection() {
       <figure className="card example-card" data-stagger style={step(1)}>
         <ExampleHeader title="Categorias" />
         <ul className="list">
-          {rows.map(row => (
-            <li key={row.raw} className="list-row category-example-row">
+          {rows.map((row, index) => (
+            <li key={row.raw} className="list-row category-example-row row-in" style={{ "--r": index } as CSSProperties}>
               <span className="row-main"><span className="row-title">{row.raw}</span><span className="row-sub">{row.how}</span></span>
-              <span className="tag">{row.category}</span>
+              <span className="tag tag-pop" style={{ "--r": index } as CSSProperties}>{row.category}</span>
             </li>
           ))}
         </ul>
@@ -70,7 +70,7 @@ export function SpendingSection() {
           </svg>
           <ul className="list spending-list">
             {exampleCategories.map((item, index) => (
-              <li key={item.name} className="list-row">
+              <li key={item.name} className="list-row row-in" style={{ "--r": index } as CSSProperties}>
                 <i className="category-dot" style={{ background: ringColors[index], marginTop: 0 }} aria-hidden="true" />
                 <span className="row-main row-title">{item.name}</span>
                 <span className="row-value">{brl(item.spent)}</span>

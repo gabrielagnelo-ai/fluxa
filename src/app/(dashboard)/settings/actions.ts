@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { categorizeDescription, defaultCategoryRules, keywordsFromText } from "@/services/category-service";
 import { getCurrentUserId } from "@/services/finance-data-service";
+import { plural } from "@/lib/utils";
 
 const categorySchema = z.object({
   id: z.string().min(1),
@@ -83,7 +84,7 @@ export async function updateCategoryKeywords(formData: FormData) {
 
   const count = await reprocessTransactions(userId);
   revalidateCategoryPaths();
-  return { success: `Categoria salva. ${count} transação(ões) reprocessada(s).` };
+  return { success: `Categoria salva. ${plural(count, "transação reprocessada", "transações reprocessadas")}.` };
 }
 
 export async function createCategory(formData: FormData) {
@@ -107,7 +108,7 @@ export async function createCategory(formData: FormData) {
 
   const count = await reprocessTransactions(userId);
   revalidateCategoryPaths();
-  return { success: `Categoria criada. ${count} transação(ões) reprocessada(s).` };
+  return { success: `Categoria criada. ${plural(count, "transação reprocessada", "transações reprocessadas")}.` };
 }
 
 export async function deleteCategory(formData: FormData) {
@@ -148,7 +149,7 @@ export async function deleteCategory(formData: FormData) {
 
   const count = await reprocessTransactions(userId);
   revalidateCategoryPaths();
-  return { success: `Categoria removida. ${count} transação(ões) reprocessada(s).` };
+  return { success: `Categoria removida. ${plural(count, "transação reprocessada", "transações reprocessadas")}.` };
 }
 
 export async function syncDefaultCategories() {
@@ -181,5 +182,5 @@ export async function syncDefaultCategories() {
 
   const count = await reprocessTransactions(userId);
   revalidateCategoryPaths();
-  return { success: `Categorias sincronizadas. ${count} transação(ões) reprocessada(s).` };
+  return { success: `Categorias sincronizadas. ${plural(count, "transação reprocessada", "transações reprocessadas")}.` };
 }

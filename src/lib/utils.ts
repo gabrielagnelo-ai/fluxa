@@ -35,3 +35,8 @@ export function formatAxisShort(value: number) {
   if (abs < 1000) return `${sign}${abs.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
   return `${sign}${(abs / 1000).toLocaleString("pt-BR", { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}\u00a0mil`;
 }
+
+/** "1 transação", "3 transações": count with the right word, never "transação(ões)". */
+export function plural(count: number, one: string, many: string) {
+  return `${count} ${count === 1 ? one : many}`;
+}

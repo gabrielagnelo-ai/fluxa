@@ -49,7 +49,7 @@ export function AppSidebar() {
       <div className="sidebar-top">
         <Link href="/dashboard" aria-label="Fluxa, visão geral" className="sidebar-brand">
           <span className="sidebar-logo-full"><Logo size="sm" /></span>
-          <Image src="/branding/fluxa-mark.svg" alt="" width={32} height={32} className="sidebar-logo-mark" />
+          <Image unoptimized src="/branding/fluxa-fx.png" alt="" width={32} height={32} className="sidebar-logo-mark" />
         </Link>
         <button type="button" className="icon-btn sidebar-toggle" onClick={toggle} aria-expanded={!collapsed} aria-label={collapsed ? "Expandir menu (⌘.)" : "Recolher menu (⌘.)"} data-tip={collapsed ? "Expandir menu" : "Recolher menu"}>
           {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}

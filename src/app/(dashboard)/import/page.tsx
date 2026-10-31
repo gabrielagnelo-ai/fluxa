@@ -8,7 +8,6 @@ export default async function ImportPage() {
   return (
     <div className="fluxa-page workspace-page import-page">
       <PageHeader
-        eyebrow="CSV, XLSX e PDF"
         title="Importar extratos"
         description="Envie seus arquivos do banco. Revise os dados, ajuste as categorias e confira duplicadas antes de salvar."
       />

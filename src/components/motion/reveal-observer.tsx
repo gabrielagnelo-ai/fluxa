@@ -28,9 +28,14 @@ export function RevealObserver() {
       io.observe(element);
     });
     track();
+    // Loops (floating cards) pause while off screen.
+    const loops = new IntersectionObserver(entries => {
+      for (const entry of entries) entry.target.classList.toggle("is-paused", !entry.isIntersecting);
+    });
+    document.querySelectorAll("[data-loop]").forEach(element => loops.observe(element));
     const mutations = new MutationObserver(track);
     mutations.observe(document.body, { childList: true, subtree: true });
-    return () => { io.disconnect(); mutations.disconnect(); };
+    return () => { io.disconnect(); loops.disconnect(); mutations.disconnect(); };
   }, [pathname]);
   return null;
 }

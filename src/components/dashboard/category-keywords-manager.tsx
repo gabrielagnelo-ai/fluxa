@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState, useActionState } from "react";
-import { Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronRight, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { createCategory, deleteCategory, syncDefaultCategories, updateCategoryKeywords } from "@/app/(dashboard)/settings/actions";
 import { Button } from "@/components/ui/button";
+import { SheetButton } from "@/components/ui/sheet-button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 
 type CategoryKeywordItem = {
   id: string;
@@ -20,6 +22,7 @@ function StatusMessage({ state }: { state?: { error?: string; success?: string }
 }
 
 function CategoryKeywordRow({ category }: { category: CategoryKeywordItem }) {
+  const sheet = useRef<HTMLDialogElement>(null);
   const [updateState, updateAction, updating] = useActionState(
     async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => updateCategoryKeywords(formData),
     undefined
@@ -28,41 +31,43 @@ function CategoryKeywordRow({ category }: { category: CategoryKeywordItem }) {
     async (_previousState: { error?: string; success?: string } | undefined, formData: FormData) => deleteCategory(formData),
     undefined
   );
+  useEffect(() => { if (updateState?.success) sheet.current?.close(); }, [updateState]);
 
   return (
-    <div className="rounded-lg border border-border bg-background/30 p-3">
-      <form action={updateAction} className="grid gap-3 xl:grid-cols-[220px_1fr_auto] xl:items-start">
-        <input type="hidden" name="id" value={category.id} />
-        <label className="space-y-1">
-          <span className="text-xs font-medium uppercase text-muted-foreground">Categoria</span>
-          <Input name="name" defaultValue={category.name} />
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium uppercase text-muted-foreground">Como aparece no banco</span>
-          <Input name="keywords" defaultValue={category.keywords.join(", ")} placeholder="IFD*, IFOOD, AMI" />
-        </label>
-        <div className="flex gap-2 xl:pt-6">
-          <Button disabled={updating} className="h-10 px-3">
-            <Save className="size-4" />
-            <span className="hidden sm:inline">{updating ? "Salvando..." : "Salvar"}</span>
-          </Button>
-        </div>
-      </form>
-
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-h-4">
-          <StatusMessage state={updateState} />
-          <StatusMessage state={deleteState} />
-        </div>
-        <form action={deleteAction}>
+    <li>
+      <button type="button" className="list-row rule-row" aria-haspopup="dialog" onClick={() => sheet.current?.showModal()}>
+        <span className="row-main">
+          <span className="row-title">{category.name}</span>
+          <span className="row-sub rule-keywords">{category.keywords.length ? category.keywords.join(", ") : "Sem nomes do banco ainda"}</span>
+        </span>
+        <ChevronRight className="row-chevron" aria-hidden="true" />
+      </button>
+      {(updateState?.success || deleteState?.error) && <div className="rule-status"><StatusMessage state={deleteState?.error ? deleteState : updateState} /></div>}
+      <dialog ref={sheet} className="sheet" aria-labelledby={`rule-${category.id}`} onClick={(event) => { if (event.target === event.currentTarget) sheet.current?.close(); }}>
+        <form action={updateAction}>
           <input type="hidden" name="id" value={category.id} />
-          <Button className="h-9 bg-destructive px-3 text-white hover:bg-destructive/90" disabled={deleting}>
-            <Trash2 className="size-4" />
-            {deleting ? "Excluindo..." : "Excluir"}
-          </Button>
+          <div className="sheet-grabber" aria-hidden="true" />
+          <div className="sheet-bar">
+            <button type="button" className="btn btn-plain" onClick={() => sheet.current?.close()}>Cancelar</button>
+            <h2 id={`rule-${category.id}`} className="sheet-title">Categoria</h2>
+            <button type="submit" disabled={updating} className="btn btn-plain btn-plain-strong">{updating ? "Salvando..." : "Salvar"}</button>
+          </div>
+          <div className="field-group">
+            <label className="field-row field-row-stack"><span>Nome</span><input name="name" defaultValue={category.name} required /></label>
+            <label className="field-row field-row-stack"><span>Como aparece no banco</span><input name="keywords" defaultValue={category.keywords.join(", ")} placeholder="IFD*, IFOOD, AMI" /></label>
+          </div>
+          <p className="field-note">Separe os nomes por vírgula. Quando um deles aparecer no extrato ou no WhatsApp, o gasto entra nesta categoria.</p>
+          {updateState?.error && <p className="field-error" role="alert">{updateState.error}</p>}
         </form>
-      </div>
-    </div>
+        <form action={deleteAction} className="rule-delete">
+          <input type="hidden" name="id" value={category.id} />
+          <button type="submit" className="btn btn-plain is-destructive" disabled={deleting} onClick={(event) => { if (!confirm(`Excluir a categoria ${category.name}?`)) event.preventDefault(); }}>
+            <Trash2 className="size-4" aria-hidden="true" />{deleting ? "Excluindo..." : "Excluir categoria"}
+          </button>
+          {deleteState?.error && <p className="field-error" role="alert">{deleteState.error}</p>}
+        </form>
+      </dialog>
+    </li>
   );
 }
 
@@ -74,9 +79,9 @@ function NewCategoryForm() {
 
   return (
     <form action={action} className="rounded-lg border border-border bg-muted/20 p-3">
-      <div className="grid gap-3 lg:grid-cols-[240px_1fr_auto]">
-        <Input name="name" placeholder="Nova categoria" required />
-        <Input name="keywords" placeholder="Como aparece no banco: IFD*, AMI, SMART FIT" />
+      <div className="grid items-end gap-3 lg:grid-cols-[240px_1fr_auto]">
+        <Field label="Nova categoria"><Input name="name" placeholder="Ex.: Academia" required /></Field>
+        <Field label="Como aparece no banco"><Input name="keywords" placeholder="Ex.: IFD*, AMI, SMART FIT" /></Field>
         <Button disabled={pending}>
           <Plus className="size-4" />
           {pending ? "Criando..." : "Criar"}
@@ -93,9 +98,10 @@ function SyncCategoriesButton() {
   const [state, action, pending] = useActionState(async () => syncDefaultCategories(), undefined);
 
   return (
-    <form action={action} className="space-y-2">
-      <Button
-        className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+    <form action={action}>
+      <button
+        type="submit"
+        className="btn btn-plain is-destructive"
         disabled={pending}
         onClick={(event) => {
           if (!confirm("Restaurar as regras padrão pode recriar categorias que você removeu. Deseja continuar?")) {
@@ -105,7 +111,7 @@ function SyncCategoriesButton() {
       >
         <RefreshCw className="size-4" />
         {pending ? "Restaurando..." : "Restaurar regras padrão"}
-      </Button>
+      </button>
       <StatusMessage state={state} />
     </form>
   );
@@ -124,38 +130,45 @@ export function CategoryKeywordsManager({ categories }: { categories: CategoryKe
   }, [categories, query]);
 
   return (
-    <Card>
-      <CardHeader className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h2 className="font-semibold">Como o banco escreve seus gastos</h2>
-            <p className="text-sm text-muted-foreground">Diga ao Fluxa quais nomes do extrato ou WhatsApp viram cada categoria. Ex.: IFD* vira iFood.</p>
-          </div>
-          <SyncCategoriesButton />
-        </div>
+    <>
+    <section className="card summary-strip" aria-label="Resumo das categorias">
+      <div><p className="overview-label">Categorias</p><strong className="summary-strip-main num">{categories.length}</strong></div>
+      <div><p className="overview-label">Nomes do banco</p><strong className="num">{categories.reduce((sum, item) => sum + item.keywords.length, 0)}</strong></div>
+      <div><p className="overview-label">Sem nome do banco</p><strong className="num">{categories.filter((item) => item.keywords.length === 0).length}</strong></div>
+    </section>
+    <div className="screen-actions">
+      <SheetButton label="Nova categoria" title="Nova categoria" filled icon={<Plus className="size-4" aria-hidden="true" />}>
         <NewCategoryForm />
+      </SheetButton>
+      <SyncCategoriesButton />
+    </div>
+    <Card>
+      <CardHeader>
+        <h2 className="font-semibold">Como o banco escreve seus gastos</h2>
+        <p className="text-sm text-muted-foreground">Quais nomes do extrato ou do WhatsApp viram cada categoria. Ex.: IFD* vira iFood.</p>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label className="relative block w-full sm:max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar categoria ou nome do banco" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar categoria ou nome do banco" aria-label="Buscar categoria ou nome do banco" />
           </label>
           <p className="text-sm text-muted-foreground">
-            {filteredCategories.length} de {categories.length} categoria(s)
+            {filteredCategories.length} de {categories.length} {categories.length === 1 ? "categoria" : "categorias"}
           </p>
         </div>
 
-        <div className="space-y-2">
+        <div>
           {categories.length === 0 ? (
             <p className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">Faça login para editar suas categorias.</p>
           ) : filteredCategories.length === 0 ? (
             <p className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">Nenhuma categoria encontrada.</p>
           ) : (
-            filteredCategories.map((category) => <CategoryKeywordRow key={category.id} category={category} />)
+            <ul className="list rule-list">{filteredCategories.map((category) => <CategoryKeywordRow key={category.id} category={category} />)}</ul>
           )}
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

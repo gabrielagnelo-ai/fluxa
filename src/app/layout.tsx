@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { AberturaLogo } from "@/components/brand/abertura-logo";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: "(function(){var d=document.documentElement;d.classList.add('js');try{if(localStorage.getItem('fluxa-sidebar')==='collapsed')d.dataset.sidebar='collapsed'}catch(e){}})()" }} />
       </head>
       <body>
+        <AberturaLogo />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

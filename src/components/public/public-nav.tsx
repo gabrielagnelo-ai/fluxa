@@ -7,7 +7,7 @@ export function PublicNav({ cta = { href: "/signup", label: "Criar conta" } }: {
     <header className="landing-nav-wrap">
       <nav className="landing-nav glass" aria-label="Fluxa">
         <Link href="/" aria-label="Fluxa, início" className="landing-logo">
-          <Image src="/branding/fluxa-logo.svg" alt="Fluxa" width={420} height={160} priority className="h-8 w-auto" />
+          <Image unoptimized src="/branding/fluxa-logo.png" alt="Fluxa" width={420} height={160} priority className="h-8 w-auto" />
         </Link>
         <div className="landing-nav-actions">
           <Link href="/login" className="btn btn-plain landing-login">Entrar</Link>

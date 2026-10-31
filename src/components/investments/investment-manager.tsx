@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { investmentTypeLabels } from "@/constants/investments";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, plural } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 
 type InvestmentAsset = {
   id: string;
@@ -176,7 +177,7 @@ export function StockDiscoveryPanel({
           </label>
 
           <div className="flex items-end">
-            <Button className="w-full lg:w-auto">Filtrar</Button>
+            <Button className="btn-quiet w-full lg:w-auto">Filtrar</Button>
           </div>
 
           {hasActiveFilters && (
@@ -195,8 +196,8 @@ export function StockDiscoveryPanel({
             Nenhum ativo encontrado para os filtros atuais.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full min-w-[900px] text-sm">
+          <div className="stack-table-wrap overflow-x-auto rounded-xl border border-border">
+            <table className="stack-table stack-compact w-full min-w-[900px] text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="border-b border-border">
                   <th className="px-4 py-3 font-medium">Ativo</th>
@@ -216,23 +217,23 @@ export function StockDiscoveryPanel({
 
                   return (
                     <tr key={stock.symbol} className="border-b border-border/60 last:border-0">
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" data-cell="a">
                         <strong className="text-base">{stock.symbol}</strong>
                         <p className="mt-1 line-clamp-1 max-w-[260px] text-xs text-muted-foreground">{stock.name}</p>
                       </td>
-                      <td className="px-4 text-muted-foreground">{stockTypeLabels[stock.type ?? ""] ?? stock.type ?? "Ativo"}</td>
-                      <td className="px-4 text-muted-foreground">{stock.sector ? sectorLabels[stock.sector] ?? stock.sector : "-"}</td>
-                      <td className="px-4 text-right font-semibold">{formatCurrency(stock.price)}</td>
-                      <td className="px-4 text-right">
+                      <td className="px-4 text-muted-foreground" data-cell="c" data-label="Tipo">{stockTypeLabels[stock.type ?? ""] ?? stock.type ?? "Ativo"}</td>
+                      <td className="px-4 text-muted-foreground" data-cell="f" data-label="Setor">{stock.sector ? sectorLabels[stock.sector] ?? stock.sector : "-"}</td>
+                      <td className="px-4 text-right font-semibold" data-cell="b">{formatCurrency(stock.price)}</td>
+                      <td className="px-4 text-right" data-cell="d">
                         <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold", positive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500")}>
                           <Icon className="size-3" />
                           {positive ? "+" : ""}
                           {stock.changePercent.toFixed(2).replace(".", ",")}%
                         </span>
                       </td>
-                      <td className="px-4 text-right text-muted-foreground">{formatLargeNumber(stock.volume)}</td>
-                      <td className="px-4 text-right text-muted-foreground">{formatLargeNumber(stock.marketCap)}</td>
-                      <td className="px-4 text-right">
+                      <td className="px-4 text-right text-muted-foreground" data-cell="g" data-label="Volume">{formatLargeNumber(stock.volume)}</td>
+                      <td className="px-4 text-right text-muted-foreground" data-cell="h" data-label="Valor de mercado">{formatLargeNumber(stock.marketCap)}</td>
+                      <td className="px-4 text-right" data-cell="e">
                         <a href={getAddAssetHref(stock.symbol, stock.name)} className="inline-flex h-8 items-center justify-center rounded-md bg-primary/10 px-3 text-xs font-semibold text-primary transition hover:bg-primary hover:text-primary-foreground">
                           Adicionar
                         </a>
@@ -301,7 +302,7 @@ export function InvestmentManager({
               <p className="text-sm text-muted-foreground">Patrimônio investido</p>
               <h2 className="mt-1 text-3xl font-semibold">{formatCurrency(overview.totalCurrent)}</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {overview.assetCount} ativo(s) cadastrados · aplicado: {formatCurrency(overview.totalInvested)}
+                {plural(overview.assetCount, "ativo cadastrado", "ativos cadastrados")} · aplicado: {formatCurrency(overview.totalInvested)}
               </p>
             </div>
             <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -370,7 +371,7 @@ export function InvestmentManager({
                       </div>
                       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                         <span>
-                          {item.count} ativo(s) · {item.share}% da carteira
+                          {plural(item.count, "ativo", "ativos")} · {item.share}% da carteira
                         </span>
                         <span className={item.gain >= 0 ? "text-emerald-500" : "text-red-500"}>
                           {item.gain >= 0 ? "+" : ""}
@@ -478,29 +479,28 @@ export function InvestmentManager({
               </Button>
             </div>
           )}
-          <form key={draftKey} action={action} className="grid gap-3 lg:grid-cols-4">
+          <form key={draftKey} action={action} className="grid items-end gap-3 lg:grid-cols-4">
             <input type="hidden" name="id" value={selectedAsset?.id ?? ""} />
-            <Input name="name" defaultValue={defaultName} placeholder="Nome do ativo" required />
-            <Input name="ticker" defaultValue={defaultTicker} placeholder="Ticker, ex: PETR4" />
-            <select name="type" defaultValue={selectedAsset?.type ?? "FIXED_INCOME"} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+            <Field label="Nome do ativo"><Input name="name" defaultValue={defaultName} placeholder="Ex.: CDB Banco X" required /></Field>
+            <Field label="Ticker (opcional)"><Input name="ticker" defaultValue={defaultTicker} placeholder="Ex.: PETR4" /></Field>
+            <Field label="Tipo"><select name="type" defaultValue={selectedAsset?.type ?? "FIXED_INCOME"} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
               {Object.entries(investmentTypeLabels).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
-            <Input name="institution" defaultValue={selectedAsset?.institution ?? ""} placeholder="Banco/corretora" />
-            <Input name="investedAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.investedAmount ?? ""} placeholder="Valor aplicado" required />
-            <Input name="currentAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.currentAmount ?? ""} placeholder="Valor atual" required />
-            <Input name="quantity" type="number" min="0" step="0.00000001" defaultValue={selectedAsset?.quantity ?? ""} placeholder="Quantidade" />
-            <Input name="averagePrice" type="number" min="0" step="0.01" defaultValue={selectedAsset?.averagePrice ?? ""} placeholder="Preço médio" />
-            <Input name="acquiredAt" type="date" defaultValue={selectedAsset?.acquiredAt?.slice(0, 10) ?? ""} />
-            <textarea
+            </select></Field>
+            <Field label="Banco ou corretora"><Input name="institution" defaultValue={selectedAsset?.institution ?? ""} placeholder="Ex.: Nubank" /></Field>
+            <Field label="Valor aplicado (R$)"><Input name="investedAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.investedAmount ?? ""} placeholder="0,00" required /></Field>
+            <Field label="Valor atual (R$)"><Input name="currentAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.currentAmount ?? ""} placeholder="0,00" required /></Field>
+            <Field label="Quantidade (opcional)"><Input name="quantity" type="number" min="0" step="0.00000001" defaultValue={selectedAsset?.quantity ?? ""} /></Field>
+            <Field label="Preço médio (opcional)"><Input name="averagePrice" type="number" min="0" step="0.01" defaultValue={selectedAsset?.averagePrice ?? ""} placeholder="0,00" /></Field>
+            <Field label="Data da compra (opcional)"><Input name="acquiredAt" type="date" defaultValue={selectedAsset?.acquiredAt?.slice(0, 10) ?? ""} /></Field>
+            <Field label="Observações (opcional)" className="lg:col-span-2"><textarea
               name="notes"
               defaultValue={selectedAsset?.notes ?? ""}
-              placeholder="Observações"
-              className="min-h-10 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 lg:col-span-2"
-            />
+              className="min-h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+            /></Field>
             <Button disabled={pending}>{pending ? "Salvando..." : selectedAsset ? "Salvar alterações" : "Salvar investimento"}</Button>
             {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive lg:col-span-4">{state.error}</p>}
             {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary lg:col-span-4">{state.success}</p>}

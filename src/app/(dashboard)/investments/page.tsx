@@ -28,7 +28,6 @@ export default async function InvestmentsPage({
   return (
     <div className="fluxa-page workspace-page investments-page">
       <PageHeader
-        eyebrow="Carteira e mercado"
         title="Investimentos"
         description="Cadastre sua carteira, acompanhe alocação por classe de ativo e veja ativos de referência para apoiar suas decisões."
       />

@@ -9,7 +9,7 @@ export default async function GoalsPage() {
     <div className="fluxa-page workspace-page goals-page">
       <PageHeader
         title="Metas"
-        description="Crie metas, acompanhe o dinheiro guardado e ensine o Fluxa como reconhecer depósitos para cada meta."
+        description="Quanto você já guardou para cada objetivo."
       />
       <GoalsManager
         goals={goals.map((goal) => ({

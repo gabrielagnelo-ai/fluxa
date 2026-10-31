@@ -27,8 +27,8 @@ export function Logo({
           className="relative shrink-0"
           style={{ width: config.mark, height: config.mark }}
         >
-          <Image
-            src="/branding/fluxa-mark.svg"
+          <Image unoptimized
+            src="/branding/fluxa-fx.png"
             alt="Fluxa"
             fill
             sizes={`${config.mark}px`}
@@ -46,8 +46,8 @@ export function Logo({
         className="relative shrink-0 overflow-hidden"
         style={{ width: config.logoWidth, height: config.logoHeight }}
       >
-        <Image
-          src="/branding/fluxa-logo.svg"
+        <Image unoptimized
+          src="/branding/fluxa-logo.png"
           alt="Fluxa"
           fill
           sizes={`${config.logoWidth}px`}
