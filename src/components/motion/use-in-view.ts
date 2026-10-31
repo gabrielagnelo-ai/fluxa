@@ -8,6 +8,8 @@ export function useInView(ref: RefObject<Element | null>) {
   useEffect(() => {
     const element = ref.current;
     if (!element || inView) return;
+    // No draw-in to watch with reduced motion (or without IntersectionObserver): show the final chart at once.
+    if (prefersReducedMotion() || typeof IntersectionObserver === "undefined") { setInView(true); return; }
     const io = new IntersectionObserver(([entry]) => {
       if (entry?.isIntersecting) { setInView(true); io.disconnect(); }
     }, { threshold: 0.2 });

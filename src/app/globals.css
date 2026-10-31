@@ -1144,3 +1144,5 @@ dialog.alert-dialog::backdrop { background: var(--overlay); }
 /* While the WhatsApp banner is on the phone, the title under it steps aside (no text over text). */
 .phone-title { transition: opacity 200ms linear; }
 .phone[data-stage="3"] .phone-title, .phone[data-stage="4"] .phone-title { opacity: 0; }
+/* Logo on the lit glass: a wide, faint shade behind it (no visible edge) keeps the blues readable. */
+.glass .landing-logo { padding-inline: 1.25rem; margin-left: -1.25rem; background: radial-gradient(closest-side, rgb(8 14 28 / 0.22), rgb(8 14 28 / 0.1) 55%, transparent 100%); }
