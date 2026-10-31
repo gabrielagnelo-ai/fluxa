@@ -17,7 +17,7 @@ export function CreditAnalysis({ origins }: { origins: CreditOrigin[] }) {
         <div>
           <h2 id="credit-title" className="card-title">De onde veio o dinheiro</h2>
           <p className="card-subtitle">Principais entradas e quanto cada uma representa no período.</p>
-          {origins.length > 0 && <p className="card-subtitle num">{recurringCount} de {origins.length} {origins.length === 1 ? "origem" : "origens"} {recurringCount === 1 ? "aparece" : "aparecem"} com frequência.</p>}
+          {origins.length > 0 && <p className="card-subtitle num">{recurringCount === 0 ? "Nenhuma origem se repete no período." : `${recurringCount} de ${origins.length} ${origins.length === 1 ? "origem" : "origens"} ${recurringCount === 1 ? "aparece" : "aparecem"} com frequência.`}</p>}
         </div>
       </div>
       {origins.length === 0 ? (

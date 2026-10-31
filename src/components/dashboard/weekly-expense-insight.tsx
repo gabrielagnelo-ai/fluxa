@@ -18,6 +18,7 @@ type WeeklyExpenseInsightProps = {
 
 export function WeeklyExpenseInsight({ total, previousTotal, difference, trendPercent, increased, decreased, days }: WeeklyExpenseInsightProps) {
   const maxDay = Math.max(...days.map(day => day.amount), 1);
+  // The percentage only reads well against a real previous week; the line below always gives the difference in reais.
   const TrendIcon = increased ? ArrowUpRight : ArrowDownRight;
 
   return (
@@ -32,7 +33,7 @@ export function WeeklyExpenseInsight({ total, previousTotal, difference, trendPe
       <div className="card-body">
         <div className="weekly-total">
           <strong className="projection-value num">{formatCurrency(total)}</strong>
-          {previousTotal > 0 && trendPercent > 0 && (increased || decreased) && <span className={increased ? "tag is-danger" : "tag"}><TrendIcon aria-hidden="true" />{increased ? "+" : "−"}{trendPercent}%</span>}
+          {previousTotal >= 100 && trendPercent > 0 && trendPercent <= 200 && (increased || decreased) && <span className={increased ? "tag is-danger" : "tag"}><TrendIcon aria-hidden="true" />{increased ? "+" : "−"}{trendPercent}%</span>}
         </div>
         <p className="projection-note">
           {previousTotal > 0 ? `${formatCurrency(Math.abs(difference))} ${increased ? "acima" : "abaixo"} da semana anterior.` : "O comparativo aparece quando houver uma semana anterior registrada."}

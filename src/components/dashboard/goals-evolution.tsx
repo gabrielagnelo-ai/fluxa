@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatAxisCurrency, formatCurrency } from "@/lib/utils";
+import { formatAxisShort, formatCurrency } from "@/lib/utils";
 
 type GoalEvolutionItem = {
   id: string;
@@ -104,8 +104,8 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
                     <linearGradient id="goals-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0080F8" stopOpacity={0.35} /><stop offset="100%" stopColor="#0080F8" stopOpacity={0} /></linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgb(84 84 88 / 0.6)" vertical={false} />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} width={84} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisCurrency} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={8} padding={{ left: 12, right: 8 }} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} width={60} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisShort} />
                   <Tooltip content={<GoalTooltip />} cursor={{ stroke: "rgb(235 235 245 / 0.3)" }} />
                   <Area type="monotone" dataKey="acumulado" name="Guardado" stroke="#0080F8" fill="url(#goals-fill)" strokeWidth={2.5} isAnimationActive={animate} animationDuration={400} />
                 </AreaChart>

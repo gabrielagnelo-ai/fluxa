@@ -28,10 +28,10 @@ export function displayName(value: string) {
   return lower.charAt(0).toLocaleUpperCase("pt-BR") + lower.slice(1);
 }
 
-/** Short currency for chart axes: R$ 150, R$ 1,5 mil, R$ 12 mil. */
-export function formatAxisCurrency(value: number) {
+/** Short amounts for chart axes (the card says the unit): 150, 1,5 mil, −2,5 mil. */
+export function formatAxisShort(value: number) {
   const abs = Math.abs(Number(value));
   const sign = Number(value) < 0 ? "−" : "";
-  if (abs < 1000) return `${sign}R$ ${abs.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
-  return `${sign}R$ ${(abs / 1000).toLocaleString("pt-BR", { maximumFractionDigits: abs >= 10000 ? 0 : 1 })} mil`;
+  if (abs < 1000) return `${sign}${abs.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+  return `${sign}${(abs / 1000).toLocaleString("pt-BR", { maximumFractionDigits: abs >= 10000 ? 0 : 1 })}\u00a0mil`;
 }

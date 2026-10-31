@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Area, Bar, ComposedChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlertTriangle, Repeat2 } from "lucide-react";
-import { cn, displayName, formatAxisCurrency, formatCurrency } from "@/lib/utils";
+import { AlertTriangle } from "lucide-react";
+import { cn, displayName, formatAxisShort, formatCurrency } from "@/lib/utils";
 
 // Category tones come from the logo blues (measured in public/branding/fluxa-logo.png), plus one neutral.
 const categoryColors = ["#0080F8", "#56D1FE", "#024BCF", "#B5FFFF", "#1EA7FD", "#0033AF", "#80D8F8", "#8E8E93"];
@@ -40,6 +40,15 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
       ))}
     </div>
   );
+}
+
+/** One line under the name: share of spending, then the limit, then the projection only when it adds something. */
+function categoryDetail(value: number, total: number, limit?: CategoryLimit) {
+  const parts = [`${percentOf(value, total)}% dos gastos`];
+  if (limit && limit.planned > 0) parts.push(`${limit.projectedUsage}% de ${formatCurrency(limit.planned)}`);
+  else if (limit) parts.push("sem limite");
+  if (limit && Math.round(limit.projected) !== Math.round(value)) parts.push(`pode fechar em ${formatCurrency(limit.projected)}`);
+  return parts.join(" · ");
 }
 
 function percentOf(value: number, total: number) {
@@ -137,16 +146,14 @@ export function FinanceCharts({
                           onClick={() => setSelectedCategory(current => current === item.name ? null : item.name)}>
                           <i className="category-dot" style={{ background: item.value > 0 ? colorOf(item.name) : "var(--fill-2)" }} aria-hidden="true" />
                           <span className="row-main">
-                            <span className="row-title">{displayName(item.name)}</span>
-                            {limit && (over || near || limit.recurring) && <span className="forecast-tags">
-                              {over && <span className="tag is-danger"><AlertTriangle aria-hidden="true" />acima do previsto</span>}
-                              {near && <span className="tag is-warning">perto do limite</span>}
-                              {limit.recurring && <span className="tag"><Repeat2 aria-hidden="true" />aparece sempre</span>}
-                            </span>}
-                            {limit && <span className="row-sub num">{hasLimit ? `${limit.projectedUsage}% de ${formatCurrency(limit.planned)} · pode fechar em ${formatCurrency(limit.projected)}` : `Sem limite · pode fechar em ${formatCurrency(limit.projected)}`}</span>}
+                            <span className="category-row-top">
+                              <span className="row-title">{displayName(item.name)}</span>
+                              {over ? <span className="tag is-danger"><AlertTriangle aria-hidden="true" />acima do previsto</span> : near ? <span className="tag is-warning">perto do limite</span> : null}
+                              <span className="row-value">{formatCurrency(item.value)}</span>
+                            </span>
+                            <span className="row-sub num">{categoryDetail(item.value, totalExpenses, limit)}</span>
                             {hasLimit && limit && <span className="meter" aria-hidden="true"><span className={over ? "is-danger" : near ? "is-warning" : undefined} style={{ width: `${Math.min(100, limit.projectedUsage)}%` }} /></span>}
                           </span>
-                          <span className="row-value">{formatCurrency(item.value)}<small>{percentOf(item.value, totalExpenses)}%</small></span>
                         </button>
                       </li>
                     );
@@ -168,7 +175,7 @@ export function FinanceCharts({
         <div className="card-header">
           <div>
             <h2 id="evolution-title" className="card-title">Evolução por mês</h2>
-            <p className="card-subtitle">Entradas, saídas e resultado de cada mês, sem o saldo inicial.</p>
+            <p className="card-subtitle">Entradas, saídas e resultado de cada mês em reais, sem o saldo inicial.</p>
             {lastMonth && previousMonth && <p className="card-subtitle num">O resultado de {lastMonth.month} ficou {saldoTrend >= 0 ? "+" : ""}{formatCurrency(saldoTrend)} em relação a {previousMonth.month}.</p>}
           </div>
         </div>
@@ -191,7 +198,7 @@ export function FinanceCharts({
             ))}
           </div>
         </div>}
-        <div className="evolution-canvas">
+        <div className={evolutionData.length ? "evolution-canvas" : "evolution-canvas is-empty"}>
           {evolutionData.length === 0 ? (
             <div className="chart-empty"><p>Seu histórico aparece aqui</p><span>Com um extrato importado, cada mês mostra entradas, saídas e resultado.</span></div>
           ) : !mounted ? <div className="skeleton h-full" /> : (
@@ -206,8 +213,8 @@ export function FinanceCharts({
                   ))}
                 </defs>
                 <CartesianGrid stroke="rgb(84 84 88 / 0.6)" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisCurrency} width={84} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={8} padding={{ left: 12, right: 8 }} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisShort} width={60} />
                 <Tooltip content={<ChartTooltip />} cursor={{ stroke: "rgb(235 235 245 / 0.3)", fill: "rgb(118 118 128 / 0.12)" }} />
                 {series.map(item => chartStyle === "area" ? (
                   <Area key={item.key} hide={hiddenSeries.includes(item.key)} type="monotone" dataKey={item.key} name={item.label} stroke={item.color} fill={`url(#evolution-${item.key})`} strokeWidth={2.5}
