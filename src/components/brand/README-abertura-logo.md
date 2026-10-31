@@ -23,7 +23,7 @@ import { AberturaLogo } from "@/components/brand/abertura-logo";
 
 ## Arquivos
 - `abertura-logo.tsx`: componente; põe inline só o porteiro (< 1 KB) e aponta para o motor.
-- `abertura-logo-versao.ts` e `public/abertura/motor.<hash>.js`: **gerados**, não editar à mão. O hash no nome muda quando o conteúdo muda. Fonte e ferramentas no projeto de motion `~/Documents/Projetos/fluxa-abertura-logo` (`node tools/integracao.mjs <pasta do app>`).
+- `abertura-logo-versao.ts` e `public/abertura/motor.<hash>.js`: **gerados**, não editar à mão. O hash no nome muda quando o conteúdo muda. O motor leva o PNG original embutido (base64), por isso tem cerca de 54 KB comprimido; o componente declara o preload dele no HTML, para baixar junto com o JS da página. Fonte e ferramentas no projeto de motion `~/Documents/Projetos/fluxa-abertura-logo` (`node tools/integracao.mjs <pasta do app>`).
 - `public/branding/fluxa-logo.svg`: logo vetorial, fiel ao PNG (sobreposição no projeto de motion). As camadas da abertura saem dele.
 
 ## Desempenho
