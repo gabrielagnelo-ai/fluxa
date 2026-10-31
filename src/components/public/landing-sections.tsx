@@ -5,7 +5,7 @@ import { exampleBalance, exampleCategories, exampleGoal, exampleIncome, exampleP
 
 const brl = (value: number) => `R$\u00a0${formatAmount(value)}`;
 const step = (index: number) => ({ "--i": index }) as CSSProperties;
-const ringColors = ["#0080F8", "#B5FFFF", "#1EA7FD", "#80D8F8", "#33BCFD"];
+const ringColors = ["#1EA7FD", "#B5FFFF", "#33BCFD", "#80D8F8", "#38C0F8"];
 
 function Section({ id, eyebrow, title, accent, body, children, flip = false }: { id: string; eyebrow: string; title: string; accent: string; body: string; children: ReactNode; flip?: boolean }) {
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { CategoryLimitsCard } from "@/components/dashboard/category-limits-card";
 import { CreditAnalysis } from "@/components/dashboard/credit-analysis";
 import { FinanceCharts } from "@/components/dashboard/finance-charts";
 import { GoalsEvolution } from "@/components/dashboard/goals-evolution";
@@ -50,7 +51,8 @@ export function DemoExplorer() {
             </div>
             <h2 className="section-title dashboard-section-heading">Para onde o dinheiro foi</h2>
             <div className="dashboard-grid">
-              <div data-reveal className="span-12"><FinanceCharts categoryData={categoryData} evolutionData={[]} limits={limits} view="categories" /></div>
+              <div data-reveal className="span-7"><FinanceCharts categoryData={categoryData} evolutionData={[]} view="categories" /></div>
+              <div data-reveal className="span-5" style={step(1)}><CategoryLimitsCard limits={limits} /></div>
               <div data-reveal className="span-12"><FinanceCharts categoryData={categoryData} evolutionData={exampleHistory} view="evolution" /></div>
               <div data-reveal className="span-12"><CreditAnalysis origins={[{ name: "Salário", amount: exampleIncome, count: 1, share: 100, recurring: true }]} /></div>
             </div>
