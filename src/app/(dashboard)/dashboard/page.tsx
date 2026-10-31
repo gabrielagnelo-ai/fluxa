@@ -72,24 +72,24 @@ export default async function DashboardPage({
       <PageHeader title="Visão geral" description={describePeriod(period)} actions={<PeriodFilter start={period.start} end={period.end} />} />
 
       <div className="dashboard-grid">
-        <div className="span-7 rise" style={{ "--i": 0 } as CSSProperties}>
+        <div data-reveal className="span-7" style={{ "--i": 0 } as CSSProperties}>
           <OverviewPanels balance={currentBalance} estimated={!balanceBaseline} income={periodSummary.income} expenses={periodSummary.expenses} hasData={hasData} />
         </div>
-        <div className="span-5 rise" style={{ "--i": 1 } as CSSProperties}><ProjectionCard {...projection} /></div>
-        <div className="span-7 rise" style={{ "--i": 2 } as CSSProperties}><InternalAlertsCard alerts={alerts} /></div>
-        <div className="span-5 rise" style={{ "--i": 3 } as CSSProperties}><WeeklyExpenseInsight {...weeklyInsight} /></div>
+        <div data-reveal className="span-5" style={{ "--i": 1 } as CSSProperties}><ProjectionCard {...projection} /></div>
+        <div data-reveal className="span-7" style={{ "--i": 2 } as CSSProperties}><InternalAlertsCard alerts={alerts} /></div>
+        <div data-reveal className="span-5" style={{ "--i": 3 } as CSSProperties}><WeeklyExpenseInsight {...weeklyInsight} /></div>
       </div>
 
       <div className="dashboard-section-heading"><h2 className="section-title">Para onde o dinheiro foi</h2></div>
       <div className="dashboard-grid">
-        <div className="span-12"><FinanceCharts categoryData={categories} evolutionData={[]} limits={forecasts.filter(item => item.actual > 0 || item.planned > 0)} view="categories" /></div>
-        <div className="span-12"><FinanceCharts categoryData={categories} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} view="evolution" /></div>
-        <div className="span-12"><CreditAnalysis origins={creditOrigins(transactions)} /></div>
+        <div data-reveal className="span-12" style={{ "--i": 0 } as CSSProperties}><FinanceCharts categoryData={categories} evolutionData={[]} limits={forecasts.filter(item => item.actual > 0 || item.planned > 0)} view="categories" /></div>
+        <div data-reveal className="span-12" style={{ "--i": 0 } as CSSProperties}><FinanceCharts categoryData={categories} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} view="evolution" /></div>
+        <div data-reveal className="span-12" style={{ "--i": 0 } as CSSProperties}><CreditAnalysis origins={creditOrigins(transactions)} /></div>
       </div>
 
       <div className="dashboard-section-heading"><h2 className="section-title">Metas e conta</h2></div>
       <div className="dashboard-grid">
-        <div className="span-12">
+        <div data-reveal className="span-12" style={{ "--i": 0 } as CSSProperties}>
           <GoalsEvolution
             goals={goals.map((goal) => ({
               id: goal.id,
@@ -103,7 +103,7 @@ export default async function DashboardPage({
             }))}
           />
         </div>
-        <div className="span-12"><BalanceBaselineCard baseline={balanceBaseline} currentBalance={currentBalance} defaultDate={period.start} /></div>
+        <div data-reveal className="span-12" style={{ "--i": 0 } as CSSProperties}><BalanceBaselineCard baseline={balanceBaseline} currentBalance={currentBalance} defaultDate={period.start} /></div>
       </div>
     </div>
   );

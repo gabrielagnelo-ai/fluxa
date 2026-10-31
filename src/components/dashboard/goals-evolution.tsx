@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CountUp } from "@/components/motion/count-up";
+import { useInView } from "@/components/motion/use-in-view";
 import { formatAxisShort, formatCurrency } from "@/lib/utils";
 
 type GoalEvolutionItem = {
@@ -41,7 +43,8 @@ function buildEvolutionData(goals: GoalEvolutionItem[]) {
 }
 
 export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
-  const [mounted, setMounted] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(chartRef);
   const [animate, setAnimate] = useState(false);
   const evolutionData = useMemo(() => buildEvolutionData(goals), [goals]);
   const totalContributed = goals.reduce((sum, goal) => sum + goal.contributedAmount, 0);
@@ -50,7 +53,6 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
 
   useEffect(() => {
     setAnimate(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    setMounted(true);
   }, []);
 
   return (
@@ -72,7 +74,7 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
           <div>
             <div className="card-body goals-total-block">
               <p className="overview-label">Guardado</p>
-              <strong className="projection-value num">{formatCurrency(totalContributed)}</strong>
+              <strong className="projection-value"><CountUp value={totalContributed} /></strong>
               <p className="projection-note num">{totalProgress}% de {formatCurrency(totalTarget)}</p>
               <div className="meter" aria-hidden="true"><span style={{ width: `${totalProgress}%` }} /></div>
             </div>
@@ -94,20 +96,20 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
               })}
             </ul>
           </div>
-          {evolutionData.length >= 2 && <div className="goals-chart" role="img" aria-label={`Dinheiro guardado acumulado: ${formatCurrency(totalContributed)}`}>
-            {!mounted ? (
-              <div className="skeleton h-full" />
+          {evolutionData.length >= 2 && <div ref={chartRef} className="goals-chart" role="img" aria-label={`Dinheiro guardado acumulado: ${formatCurrency(totalContributed)}`}>
+            {!inView ? (
+              <div className="h-full" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={evolutionData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="goals-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0080F8" stopOpacity={0.35} /><stop offset="100%" stopColor="#0080F8" stopOpacity={0} /></linearGradient>
+                    <linearGradient id="goals-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1EA7FD" stopOpacity={0.42} /><stop offset="100%" stopColor="#0033AF" stopOpacity={0} /></linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgb(84 84 88 / 0.6)" vertical={false} />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={8} padding={{ left: 12, right: 8 }} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} width={60} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisShort} />
-                  <Tooltip content={<GoalTooltip />} cursor={{ stroke: "rgb(235 235 245 / 0.3)" }} />
-                  <Area type="monotone" dataKey="acumulado" name="Guardado" stroke="#0080F8" fill="url(#goals-fill)" strokeWidth={2.5} isAnimationActive={animate} animationDuration={400} />
+                  <CartesianGrid stroke="rgb(255 255 255 / 0.06)" vertical={false} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={8} padding={{ left: 12, right: 8 }} tick={{ fill: "rgb(235 235 245 / 0.6)", fontSize: 11 }} />
+                  <YAxis axisLine={false} tickLine={false} width={60} tick={{ fill: "rgb(235 235 245 / 0.6)", fontSize: 11 }} tickFormatter={formatAxisShort} />
+                  <Tooltip content={<GoalTooltip />} cursor={{ stroke: "rgb(255 255 255 / 0.22)", strokeDasharray: "3 4" }} />
+                  <Area type="monotone" dataKey="acumulado" name="Guardado" stroke="#1EA7FD" fill="url(#goals-fill)" strokeWidth={2} strokeLinecap="round" activeDot={{ r: 4.5, fill: "#1EA7FD", stroke: "#1c1c1e", strokeWidth: 2 }} isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out" />
                 </AreaChart>
               </ResponsiveContainer>
             )}

@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FileSpreadsheet, MessageCircle, MonitorSmartphone } from "lucide-react";
+import { RevealObserver } from "@/components/motion/reveal-observer";
 import { PhonePreview } from "@/components/public/phone-preview";
 import { exampleCategories, exampleStatement, formatAmount } from "@/components/public/example-month";
 
@@ -22,6 +23,7 @@ const step = (index: number) => ({ "--i": index }) as CSSProperties;
 export default function Home() {
   return (
     <div className="landing">
+      <RevealObserver />
       <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
       <header className="landing-nav-wrap">
         <nav className="landing-nav glass" aria-label="Fluxa">
@@ -51,27 +53,27 @@ export default function Home() {
           </div>
 
           <div className="landing-stage rise" style={step(4)}>
-            <LimitExample className="landing-float landing-float-left" />
+            <LimitExample className="landing-float landing-float-left rise" style={step(10)} />
             <PhonePreview />
-            <CategoryExample className="landing-float landing-float-right" />
+            <CategoryExample className="landing-float landing-float-right rise" style={step(13)} />
           </div>
 
           <ul className="landing-facts" aria-label="O que o Fluxa faz">
-            {facts.map(fact => <li key={fact.text}><span className="row-icon" aria-hidden="true"><fact.icon /></span>{fact.text}</li>)}
+            {facts.map((fact, index) => <li key={fact.text} data-reveal style={step(index)}><span className="row-icon" aria-hidden="true"><fact.icon /></span>{fact.text}</li>)}
           </ul>
         </section>
 
         <section id="importar" className="landing-section" aria-labelledby="importar-title">
-          <div className="landing-section-copy reveal">
+          <div className="landing-section-copy" data-reveal>
             <p className="landing-eyebrow">Importar</p>
             <h2 id="importar-title" className="landing-h2">Você traz o extrato. <span>O Fluxa faz o resto.</span></h2>
             <p className="landing-body">
               Envie o arquivo do banco em CSV, XLSX ou PDF; linhas já importadas ficam de fora. No dia a dia, mande o gasto por mensagem no WhatsApp, com o número vinculado à sua conta.
             </p>
           </div>
-          <div className="landing-section-media reveal">
+          <div className="landing-section-media">
             <StatementExample />
-            <WhatsAppExample />
+            <WhatsAppExample style={step(2)} />
           </div>
         </section>
       </main>
@@ -86,7 +88,7 @@ function ExampleHeader({ title, children }: { title: string; children?: ReactNod
 function StatementExample() {
   const duplicate = exampleStatement[2];
   return (
-    <figure className="card example-card">
+    <figure className="card example-card" data-reveal style={step(1)}>
       <ExampleHeader title="extrato-outubro.csv" />
       <ol className="list">
         {exampleStatement.slice(0, 4).map(row => (
@@ -107,9 +109,9 @@ function StatementExample() {
 }
 
 // Mirrors src/lib/whatsapp/server.ts: text message in, transaction saved, confirmation reply.
-function WhatsAppExample({ className = "" }: { className?: string }) {
+function WhatsAppExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
   return (
-    <figure className={`card example-card ${className}`} aria-label="Exemplo de registro de gasto pelo WhatsApp">
+    <figure className={`card example-card ${className}`} style={style} data-reveal={className ? undefined : true} aria-label="Exemplo de registro de gasto pelo WhatsApp">
       <ExampleHeader title="WhatsApp" />
       <div className="chat">
         <p className="chat-out">gastei 32 no mercado</p>
@@ -119,9 +121,9 @@ function WhatsAppExample({ className = "" }: { className?: string }) {
   );
 }
 
-function CategoryExample({ className = "" }: { className?: string }) {
+function CategoryExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
   return (
-    <figure className={`card example-card ${className}`} aria-label="Exemplo de categoria aplicada por regra">
+    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de categoria aplicada por regra">
       <ExampleHeader title="Categoria" />
       <div className="example-category">
         <p className="row-sub num">07/10 · COMPRA DEB</p>
@@ -133,11 +135,11 @@ function CategoryExample({ className = "" }: { className?: string }) {
   );
 }
 
-function LimitExample({ className = "" }: { className?: string }) {
+function LimitExample({ className = "", style }: { className?: string; style?: CSSProperties }) {
   const market = exampleCategories.find(item => item.name === "Mercado") ?? exampleCategories[0];
   const usage = Math.round((market.spent / market.planned) * 100);
   return (
-    <figure className={`card example-card ${className}`} aria-label="Exemplo de limite por categoria">
+    <figure className={`card example-card ${className}`} style={style} aria-label="Exemplo de limite por categoria">
       <ExampleHeader title="Limite do mês" />
       <div className="example-category">
         <p className="example-category-name">{market.name}</p>

@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Area, Bar, ComposedChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AlertTriangle } from "lucide-react";
+import { useInView } from "@/components/motion/use-in-view";
 import { cn, displayName, formatAxisShort, formatCurrency } from "@/lib/utils";
 
 // Category tones come from the logo blues (measured in public/branding/fluxa-logo.png), plus one neutral.
 const categoryColors = ["#0080F8", "#56D1FE", "#024BCF", "#B5FFFF", "#1EA7FD", "#0033AF", "#80D8F8", "#8E8E93"];
 const series = [
-  { key: "receitas", label: "Entradas", color: "#30D158" },
-  { key: "despesas", label: "Saídas", color: "#FF4245" },
-  { key: "saldo", label: "Resultado", color: "#0080F8" }
+  { key: "receitas", label: "Entradas", color: "#30D158", fill: 0.1 },
+  { key: "despesas", label: "Saídas", color: "#FF4245", fill: 0.08 },
+  { key: "saldo", label: "Resultado", color: "#1EA7FD", fill: 0.42 }
 ] as const;
 const VISIBLE_CATEGORIES = 6;
+const axisTick = { fill: "rgb(235 235 245 / 0.6)", fontSize: 11, fontFamily: "inherit" };
+const gridStroke = "rgb(255 255 255 / 0.06)";
 
 type CategoryData = { name: string; value: number };
 type EvolutionData = { month: string; receitas: number; despesas: number; saldo: number };
@@ -67,7 +70,10 @@ export function FinanceCharts({
   view?: "both" | "categories" | "evolution";
 }) {
   const [chartStyle, setChartStyle] = useState<"area" | "bar">("area");
-  const [mounted, setMounted] = useState(false);
+  const donutRef = useRef<HTMLDivElement>(null);
+  const evolutionRef = useRef<HTMLDivElement>(null);
+  const donutInView = useInView(donutRef);
+  const evolutionInView = useInView(evolutionRef);
   const [animate, setAnimate] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -95,7 +101,6 @@ export function FinanceCharts({
     const update = () => setAnimate(!media.matches);
     update();
     media.addEventListener("change", update);
-    setMounted(true);
     return () => media.removeEventListener("change", update);
   }, []);
 
@@ -116,12 +121,12 @@ export function FinanceCharts({
             <p className="empty-state">Suas categorias aparecem aqui depois de importar um extrato.</p>
           ) : (
             <div className="category-layout">
-              <div className="category-donut" role="img" aria-label={`Distribuição dos gastos em ${sortedCategories.length} categorias. A lista ao lado traz os valores.`}>
-                {mounted ? (
+              <div ref={donutRef} className="category-donut" role="img" aria-label={`Distribuição dos gastos em ${sortedCategories.length} categorias. A lista ao lado traz os valores.`}>
+                {donutInView ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart accessibilityLayer={false}>
-                      <Pie data={sortedCategories} dataKey="value" nameKey="name" innerRadius="66%" outerRadius="94%" paddingAngle={1.5} cornerRadius={4} stroke="transparent"
-                        isAnimationActive={animate} animationDuration={420}
+                      <Pie data={sortedCategories} dataKey="value" nameKey="name" innerRadius="70%" outerRadius="96%" paddingAngle={2.5} cornerRadius={8} stroke="transparent"
+                        startAngle={90} endAngle={-270} isAnimationActive={animate} animationDuration={1100} animationEasing="ease-out"
                         onMouseEnter={entry => setHoveredCategory(entry.name ?? null)} onMouseLeave={() => setHoveredCategory(null)}
                         onClick={entry => setSelectedCategory(current => current === entry.name ? null : entry.name ?? null)}>
                         {sortedCategories.map((entry, index) => (
@@ -130,7 +135,7 @@ export function FinanceCharts({
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>
-                ) : <div className="skeleton h-full rounded-full" />}
+                ) : <div className="category-donut-placeholder" />}
               </div>
               <div className="min-w-0">
                 <ul className="list category-list">
@@ -199,29 +204,32 @@ export function FinanceCharts({
             ))}
           </div>
         </div>}
-        <div className={evolutionData.length ? "evolution-canvas" : "evolution-canvas is-empty"}>
+        <div ref={evolutionRef} className={evolutionData.length ? "evolution-canvas" : "evolution-canvas is-empty"}>
           {evolutionData.length === 0 ? (
             <div className="chart-empty"><p>Seu histórico aparece aqui</p><span>Com um extrato importado, cada mês mostra entradas, saídas e resultado.</span></div>
-          ) : !mounted ? <div className="skeleton h-full" /> : (
+          ) : !evolutionInView ? <div className="h-full" /> : (
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartEvolution} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+              <ComposedChart data={chartEvolution} margin={{ top: 12, right: 12, left: 0, bottom: 4 }} barGap={4} barCategoryGap="28%">
                 <defs>
                   {series.map(item => (
                     <linearGradient key={item.key} id={`evolution-${item.key}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={item.color} stopOpacity={chartStyle === "bar" ? 1 : 0.28} />
-                      <stop offset="100%" stopColor={item.color} stopOpacity={chartStyle === "bar" ? 0.85 : 0} />
+                      <stop offset="0%" stopColor={item.color} stopOpacity={chartStyle === "bar" ? 1 : item.fill} />
+                      <stop offset="100%" stopColor={item.key === "saldo" && chartStyle === "bar" ? "#0033AF" : item.color} stopOpacity={chartStyle === "bar" ? 0.7 : 0} />
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid stroke="rgb(84 84 88 / 0.6)" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={8} padding={{ left: 12, right: 8 }} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisShort} width={60} />
-                <Tooltip content={<ChartTooltip />} cursor={{ stroke: "rgb(235 235 245 / 0.3)", fill: "rgb(118 118 128 / 0.12)" }} />
-                {series.map(item => chartStyle === "area" ? (
-                  <Area key={item.key} hide={hiddenSeries.includes(item.key)} type="monotone" dataKey={item.key} name={item.label} stroke={item.color} fill={`url(#evolution-${item.key})`} strokeWidth={2.5}
-                    dot={chartEvolution.length === 1 ? { r: 4 } : false} activeDot={{ r: 5 }} isAnimationActive={animate} animationDuration={400} />
+                <CartesianGrid stroke={gridStroke} vertical={false} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={10} padding={{ left: 12, right: 12 }} tick={axisTick} />
+                <YAxis axisLine={false} tickLine={false} tick={axisTick} tickFormatter={formatAxisShort} width={56} tickCount={5} />
+                <Tooltip content={<ChartTooltip />} cursor={chartStyle === "bar" ? { fill: "rgb(255 255 255 / 0.04)" } : { stroke: "rgb(255 255 255 / 0.22)", strokeWidth: 1, strokeDasharray: "3 4" }} />
+                {series.map((item, index) => chartStyle === "area" ? (
+                  <Area key={item.key} hide={hiddenSeries.includes(item.key)} type="monotone" dataKey={item.key} name={item.label} stroke={item.color} fill={`url(#evolution-${item.key})`} strokeWidth={2} strokeLinecap="round"
+                    dot={chartEvolution.length === 1 ? { r: 3.5, fill: item.color, strokeWidth: 0 } : false}
+                    activeDot={{ r: 4.5, fill: item.color, stroke: "#1c1c1e", strokeWidth: 2 }}
+                    isAnimationActive={animate} animationBegin={index * 140} animationDuration={1100} animationEasing="ease-out" />
                 ) : (
-                  <Bar key={item.key} hide={hiddenSeries.includes(item.key)} dataKey={item.key} name={item.label} fill={`url(#evolution-${item.key})`} radius={[6, 6, 0, 0]} maxBarSize={24} isAnimationActive={animate} animationDuration={400} />
+                  <Bar key={item.key} hide={hiddenSeries.includes(item.key)} dataKey={item.key} name={item.label} fill={`url(#evolution-${item.key})`} radius={[6, 6, 6, 6]} maxBarSize={18}
+                    isAnimationActive={animate} animationBegin={index * 90} animationDuration={800} animationEasing="ease-out" />
                 ))}
               </ComposedChart>
             </ResponsiveContainer>

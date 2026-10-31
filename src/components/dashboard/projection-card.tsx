@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/motion/count-up";
 import { cn, formatCurrency } from "@/lib/utils";
 
 export function ProjectionCard({
@@ -25,7 +26,7 @@ export function ProjectionCard({
       </div>
       <div className="card-body">
         <p className="overview-label">Sobra provável</p>
-        <strong className={cn("projection-value num", projectedSavings < 0 && "is-negative")}>{formatCurrency(projectedSavings)}</strong>
+        <strong className={cn("projection-value", projectedSavings < 0 && "is-negative")}><CountUp value={projectedSavings} /></strong>
         <p className="projection-note num">Entradas do período menos {formatCurrency(projectedExpenses)} de gastos previstos até o fim.</p>
         <div className="meter projection-meter" role="img" aria-label={`${elapsedDays} de ${totalDays} dias do período`}><span style={{ width: `${progress}%` }} /></div>
         <p className="projection-note num">{elapsedDays} de {totalDays} dias do período · confiança {confidence.toLocaleLowerCase("pt-BR")}</p>

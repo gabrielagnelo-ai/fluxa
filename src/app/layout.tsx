@@ -52,6 +52,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className="dark" suppressHydrationWarning>
+      <head>
+        {/* Before first paint: mark JS (motion can start from a hidden state) and restore the collapsed sidebar. */}
+        <script dangerouslySetInnerHTML={{ __html: "(function(){var d=document.documentElement;d.classList.add('js');try{if(localStorage.getItem('fluxa-sidebar')==='collapsed')d.dataset.sidebar='collapsed'}catch(e){}})()" }} />
+      </head>
       <body>
         <ThemeProvider>{children}</ThemeProvider>
       </body>

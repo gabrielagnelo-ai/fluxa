@@ -1,10 +1,11 @@
+import type { CSSProperties } from "react";
 import { Calculator, Ellipsis, Home, Upload, WalletCards } from "lucide-react";
 import { exampleBalance, exampleCategories, exampleIncome, exampleSpent, formatAmount } from "./example-month";
 
 const tabs = [
   { label: "Início", icon: Home, active: true },
   { label: "Transações", icon: WalletCards },
-  { label: "Planejamento", icon: Calculator },
+  { label: "Planejar", icon: Calculator },
   { label: "Importar", icon: Upload },
   { label: "Mais", icon: Ellipsis }
 ];
@@ -14,7 +15,7 @@ export function PhonePreview() {
   const result = exampleIncome - exampleSpent;
   const largest = Math.max(...exampleCategories.map(item => item.spent));
   return (
-    <figure className="phone" aria-label="Tela de visão geral do Fluxa com dados fictícios">
+    <figure className="phone" data-reveal style={{ "--i": 3 } as CSSProperties} aria-label="Tela de visão geral do Fluxa com dados fictícios">
       <div className="phone-screen" aria-hidden="true">
         <div className="phone-status"><span className="num">9:41</span></div>
         <div className="phone-content">

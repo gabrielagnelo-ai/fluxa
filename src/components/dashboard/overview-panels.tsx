@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Upload } from "lucide-react";
+import { CountUp } from "@/components/motion/count-up";
 import { cn, formatCurrency } from "@/lib/utils";
 
 type OverviewProps = { balance: number; estimated: boolean; income: number; expenses: number; hasData: boolean };
@@ -14,7 +15,7 @@ export function OverviewPanels({ balance, estimated, income, expenses, hasData }
           <p id="overview-balance-label" className="overview-label">{estimated ? "Saldo estimado" : "Saldo atual"}</p>
           {estimated && <span className="tag">sem saldo inicial</span>}
         </div>
-        <strong className={cn("overview-balance num", balance < 0 && "is-negative")}>{formatCurrency(balance)}</strong>
+        <strong className={cn("overview-balance", balance < 0 && "is-negative")}><CountUp value={balance} /></strong>
         <p className="overview-caption">{estimated ? "Soma das movimentações importadas. Informe o saldo inicial, no fim da página, para chegar perto do banco." : "Saldo inicial mais entradas, menos saídas."}</p>
       </div>
       <dl className="overview-period">
