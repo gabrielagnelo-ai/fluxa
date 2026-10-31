@@ -29,7 +29,7 @@ export default async function InvestmentsPage({
     <div className="fluxa-page workspace-page investments-page">
       <PageHeader
         title="Investimentos"
-        description="Cadastre sua carteira, acompanhe alocação por classe de ativo e veja ativos de referência para apoiar suas decisões."
+        description="Quanto você tem investido e como a carteira se divide."
       />
       <InvestmentManager
         draftAsset={draftAsset}

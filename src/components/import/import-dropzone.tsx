@@ -263,7 +263,7 @@ export function ImportDropzone({
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><h2 className="font-semibold">Importar extratos</h2><p className="text-sm text-muted-foreground">Envie, revise e confira duplicadas antes de salvar. Até 5.000 transações por lote.</p></CardHeader>
+        <CardHeader><h2 className="font-semibold">Envie o arquivo</h2><p className="text-sm text-muted-foreground">Até 5.000 transações por lote.</p></CardHeader>
         <CardContent>
           <label className="mb-4 block text-sm font-medium">Conta de origem<Input value={account} disabled={busy} maxLength={80} onChange={(event) => { setAccount(event.target.value); setReview(null); }} placeholder="Ex.: Nubank final 1234" className="mt-1 block max-w-md" /></label>
           <p className="mb-4 text-sm text-muted-foreground">Use sempre o mesmo nome para esta conta. Contas diferentes podem ter pagamentos iguais.</p>

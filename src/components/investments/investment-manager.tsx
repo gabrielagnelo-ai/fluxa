@@ -398,7 +398,7 @@ export function InvestmentManager({
               <div>
                 <p className="font-semibold">Sua carteira ainda está vazia.</p>
                 <p className="mt-1 text-sm text-muted-foreground">Cadastre um CDB, Tesouro, ação ou fundo para acompanhar patrimônio e rentabilidade.</p>
-                <a href="#novo-investimento" className="mt-4 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90">
+                <a href="#novo-investimento" className="btn btn-gray mt-4">
                   Adicionar primeiro ativo
                 </a>
               </div>
@@ -460,14 +460,14 @@ export function InvestmentManager({
         </CardContent>
       </Card>
 
-      <details id="novo-investimento" className="group rounded-xl border border-border bg-card p-6" open={assets.length === 0 || Boolean(draftAsset?.ticker) || Boolean(selectedAsset)}>
+      <details id="novo-investimento" className="glass-card group rounded-xl p-6" open={assets.length === 0 || Boolean(draftAsset?.ticker) || Boolean(selectedAsset)}>
         <summary className="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <span>
             <span className="block font-semibold">{selectedAsset ? "Editar investimento" : "Novo investimento"}</span>
             <span className="mt-1 block text-sm text-muted-foreground">Preencha o essencial agora. Quantidade, preço médio e observações podem ficar vazios.</span>
           </span>
-          <span className="inline-flex h-10 items-center justify-center rounded-md border border-border px-4 text-sm font-semibold text-muted-foreground transition group-open:bg-primary/10 group-open:text-primary">
-            {selectedAsset ? "Editando" : "Abrir cadastro"}
+          <span className="btn btn-gray shrink-0">
+            {selectedAsset ? "Editando" : <><span className="group-open:hidden">Abrir cadastro</span><span className="hidden group-open:inline">Recolher</span></>}
           </span>
         </summary>
         <div className="mt-5 border-t border-border pt-5">

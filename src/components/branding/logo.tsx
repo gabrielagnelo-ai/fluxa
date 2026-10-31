@@ -33,7 +33,7 @@ export function Logo({
             fill
             sizes={`${config.mark}px`}
             className="object-contain"
-            priority={size !== "sm"}
+            priority
           />
         </div>
       </div>
@@ -52,7 +52,7 @@ export function Logo({
           fill
           sizes={`${config.logoWidth}px`}
           className="object-contain"
-          priority={size !== "sm"}
+          priority
         />
       </div>
       {showSlogan && <span className="hidden min-w-0 text-xs leading-snug text-muted-foreground sm:block">Entenda para onde seu dinheiro vai.</span>}

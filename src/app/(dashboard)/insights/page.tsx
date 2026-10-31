@@ -18,7 +18,7 @@ export default async function InsightsPage({
     <div className="fluxa-page workspace-page insights-page">
       <PageHeader
         title="Inteligência financeira"
-        description={`Análise baseada no mesmo fluxo filtrado do dashboard: ${getPeriodLabel(period)}.`}
+        description={`O que os números de ${getPeriodLabel(period)} dizem.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
       />
       <AiInsightsPanel localAnalysis={localAnalysis} notifications={notifications} start={period.start} end={period.end} />

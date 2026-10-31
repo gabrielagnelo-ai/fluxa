@@ -1134,3 +1134,4 @@ dialog.alert-dialog::backdrop { background: var(--overlay); }
 @media (prefers-reduced-motion: reduce) { .motion-toggle-row { display: none; } }
 [data-motion="paused"] .landing-float .float-inner { animation-play-state: paused !important; }
 .phone-period-inline { font-size: 0.75rem; font-weight: 500; color: var(--label-2); }
+.insights-analysis { font-size: 1rem; max-width: 72ch; }

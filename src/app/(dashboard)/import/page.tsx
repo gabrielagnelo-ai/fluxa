@@ -9,7 +9,7 @@ export default async function ImportPage() {
     <div className="fluxa-page workspace-page import-page">
       <PageHeader
         title="Importar extratos"
-        description="Envie seus arquivos do banco. Revise os dados, ajuste as categorias e confira duplicadas antes de salvar."
+        description="Envie o extrato do banco. Você revisa as categorias e as duplicadas antes de salvar."
       />
       <div data-tour="import-upload"><ImportDropzone
         categoryOptions={categories.map((category) => ({
