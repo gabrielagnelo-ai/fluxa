@@ -8,6 +8,7 @@ import { MotionToggle } from "@/components/public/motion-toggle";
 import { PhonePreview } from "@/components/public/phone-preview";
 import { PublicNav } from "@/components/public/public-nav";
 import { PublicFooter } from "@/components/public/public-footer";
+import { WhatsAppExample } from "@/components/public/whatsapp-example";
 import { CategorizeSection, FaqSection, FinalCta, LimitsSection, SafetySection, SpendingSection } from "@/components/public/landing-sections";
 import { exampleCategories, exampleStatement, formatAmount } from "@/components/public/example-month";
 
@@ -108,19 +109,6 @@ function StatementExample() {
           <span className="tag tag-pop" style={{ "--r": 4 } as CSSProperties}>repetida, fica de fora</span>
         </li>
       </ol>
-    </figure>
-  );
-}
-
-// Mirrors src/lib/whatsapp/server.ts: text message in, transaction saved, confirmation reply.
-function WhatsAppExample({ className = "", style, stagger = false }: { className?: string; style?: CSSProperties; stagger?: boolean }) {
-  return (
-    <figure className={`card example-card ${className}`} style={style} data-stagger={stagger || undefined} aria-label="Exemplo de registro de gasto pelo WhatsApp">
-      <ExampleHeader title="WhatsApp" />
-      <div className="chat">
-        <p className="chat-out">gastei 32 no mercado</p>
-        <p className="chat-in chat-delay">Registrado no Fluxa: gasto de <span className="num">R$ 32,00</span> em Mercado (<span className="num">30/10</span>).</p>
-      </div>
     </figure>
   );
 }

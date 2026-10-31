@@ -9,6 +9,7 @@ import { InternalAlertsCard } from "@/components/dashboard/internal-alerts-card"
 import { OverviewPanels } from "@/components/dashboard/overview-panels";
 import { ProjectionCard } from "@/components/dashboard/projection-card";
 import { WeeklyExpenseInsight } from "@/components/dashboard/weekly-expense-insight";
+import { WhatsAppExample } from "@/components/public/whatsapp-example";
 import { exampleBalance, exampleCategories, exampleGoal, exampleHistory, exampleIncome, exampleOpening, examplePlanned, exampleSpent, exampleStatement } from "@/components/public/example-month";
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -87,6 +88,8 @@ export function DemoExplorer() {
           </section>
         )}
         {view === "transactions" && (
+          <div className="fluxa-page">
+          <WhatsAppExample revealGroup />
           <section className="card" aria-labelledby="demo-transactions-title" data-reveal>
             <div className="card-header"><div>
               <h2 id="demo-transactions-title" className="card-title">De onde vêm os números</h2>
@@ -102,6 +105,7 @@ export function DemoExplorer() {
               ))}
             </ul>
           </section>
+          </div>
         )}
       </div>
     </div>
