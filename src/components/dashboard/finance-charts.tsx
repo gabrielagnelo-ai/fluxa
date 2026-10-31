@@ -148,6 +148,7 @@ export function FinanceCharts({
                           <span className="row-main">
                             <span className="category-row-top">
                               <span className="row-title">{displayName(item.name)}</span>
+                              <span className="row-break" aria-hidden="true" />
                               {over ? <span className="tag is-danger"><AlertTriangle aria-hidden="true" />acima do previsto</span> : near ? <span className="tag is-warning">perto do limite</span> : null}
                               <span className="row-value">{formatCurrency(item.value)}</span>
                             </span>

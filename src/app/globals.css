@@ -557,7 +557,13 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 .category-row-top .tag { order: 2; }
 .category-row-top .row-value { order: 3; margin-left: auto; font-size: 1rem; }
 .category-row .row-sub { margin-top: 0.125rem; }
-@media (max-width: 479px) { .category-row-top .tag { order: 4; } }
+.row-break { display: none; }
+/* Phone: the amount stays at the right edge of the first line; the tag always takes the second line. */
+@media (max-width: 479px) {
+  .category-row-top .row-title { flex: 1 1 0; }
+  .category-row-top .row-break { display: block; order: 4; flex-basis: 100%; height: 0; }
+  .category-row-top .tag { order: 5; }
+}
 .category-dot { display: block; width: 0.75rem; height: 0.75rem; margin-top: 0.3125rem; border-radius: 999px; flex-shrink: 0; }
 .category-row:disabled { cursor: default; }
 .category-row .meter { display: block; }
