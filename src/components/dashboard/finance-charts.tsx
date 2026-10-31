@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Area, Bar, ComposedChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { cn, formatCurrency } from "@/lib/utils";
+import { AlertTriangle, Repeat2 } from "lucide-react";
+import { cn, displayName, formatAxisCurrency, formatCurrency } from "@/lib/utils";
 
 // Category tones come from the logo blues (measured in public/branding/fluxa-logo.png), plus one neutral.
 const categoryColors = ["#0080F8", "#56D1FE", "#024BCF", "#B5FFFF", "#1EA7FD", "#0033AF", "#80D8F8", "#8E8E93"];
@@ -16,6 +16,15 @@ const VISIBLE_CATEGORIES = 6;
 
 type CategoryData = { name: string; value: number };
 type EvolutionData = { month: string; receitas: number; despesas: number; saldo: number };
+type CategoryLimit = {
+  categoryName: string;
+  actual: number;
+  projected: number;
+  planned: number;
+  projectedUsage: number;
+  recurring: boolean;
+  status: "leak" | "over" | "warning" | "ok";
+};
 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color?: string; dataKey?: string }>; label?: string }) {
   if (!active || !payload?.length) return null;
@@ -33,13 +42,6 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-function formatAxisCurrency(value: number) {
-  const abs = Math.abs(Number(value));
-  const prefix = Number(value) < 0 ? "−" : "";
-  if (abs >= 1000) return `${prefix}${(abs / 1000).toLocaleString("pt-BR", { maximumFractionDigits: abs >= 10000 ? 0 : 1 })} mil`;
-  return `${prefix}${abs.toFixed(0)}`;
-}
-
 function percentOf(value: number, total: number) {
   return total ? (value / total * 100).toFixed(1).replace(".", ",") : "0";
 }
@@ -47,10 +49,12 @@ function percentOf(value: number, total: number) {
 export function FinanceCharts({
   categoryData,
   evolutionData,
+  limits = [],
   view = "both"
 }: {
   categoryData: CategoryData[];
   evolutionData: EvolutionData[];
+  limits?: CategoryLimit[];
   view?: "both" | "categories" | "evolution";
 }) {
   const [chartStyle, setChartStyle] = useState<"area" | "bar">("area");
@@ -66,7 +70,12 @@ export function FinanceCharts({
   const totalExpenses = sortedCategories.reduce((sum, category) => sum + category.value, 0);
   const highlighted = hoveredCategory ?? selectedCategory;
   const selectedData = sortedCategories.find(item => item.name === selectedCategory);
-  const visibleCategories = showAll ? sortedCategories : sortedCategories.slice(0, VISIBLE_CATEGORIES);
+  const limitByName = new Map(limits.map(item => [item.categoryName, item]));
+  // Categories with a limit but no spending yet still belong in the list (not in the ring).
+  const listCategories = [...sortedCategories, ...limits.filter(item => item.planned > 0 && !sortedCategories.some(category => category.name === item.categoryName)).map(item => ({ name: item.categoryName, value: 0 }))];
+  const visibleCategories = showAll ? listCategories : listCategories.slice(0, VISIBLE_CATEGORIES);
+  const overCount = limits.filter(item => item.status === "over" || (item.planned > 0 && item.projected > item.planned)).length;
+  const recurringCount = limits.filter(item => item.recurring).length;
   const chartEvolution = range ? evolutionData.slice(-range) : evolutionData;
   const lastMonth = evolutionData.at(-1);
   const previousMonth = evolutionData.at(-2);
@@ -91,10 +100,11 @@ export function FinanceCharts({
             <div>
               <h2 id="categories-title" className="card-title">Gastos por categoria</h2>
               <p className="card-subtitle num">{formatCurrency(totalExpenses)} em {sortedCategories.length} {sortedCategories.length === 1 ? "categoria" : "categorias"} no período</p>
+              {limits.length > 0 && <p className="card-subtitle num">{overCount} acima do previsto · {recurringCount} {recurringCount === 1 ? "frequente" : "frequentes"} · {limits.length} com previsão</p>}
             </div>
           </div>
           {!sortedCategories.length ? (
-            <div className="empty-state">Suas categorias aparecem aqui depois de importar um extrato.<br /><Link href="/import">Importar extrato</Link></div>
+            <p className="empty-state">Suas categorias aparecem aqui depois de importar um extrato.</p>
           ) : (
             <div className="category-layout">
               <div className="category-donut" role="img" aria-label={`Distribuição dos gastos em ${sortedCategories.length} categorias. A lista ao lado traz os valores.`}>
@@ -115,24 +125,39 @@ export function FinanceCharts({
               </div>
               <div className="min-w-0">
                 <ul className="list category-list">
-                  {visibleCategories.map(item => (
-                    <li key={item.name}>
-                      <button type="button" className={cn("list-row category-row", highlighted && highlighted !== item.name && "is-dimmed")} aria-pressed={selectedCategory === item.name}
-                        onMouseEnter={() => setHoveredCategory(item.name)} onMouseLeave={() => setHoveredCategory(null)} onFocus={() => setHoveredCategory(item.name)} onBlur={() => setHoveredCategory(null)}
-                        onClick={() => setSelectedCategory(current => current === item.name ? null : item.name)}>
-                        <i className="category-dot" style={{ background: colorOf(item.name) }} aria-hidden="true" />
-                        <span className="row-main"><span className="row-title truncate">{item.name}</span></span>
-                        <span className="row-value">{formatCurrency(item.value)}<small>{percentOf(item.value, totalExpenses)}%</small></span>
-                      </button>
-                    </li>
-                  ))}
+                  {visibleCategories.map(item => {
+                    const limit = limitByName.get(item.name);
+                    const hasLimit = Boolean(limit && limit.planned > 0);
+                    const over = Boolean(limit && hasLimit && limit.projected > limit.planned);
+                    const near = Boolean(limit && !over && limit.status === "warning");
+                    return (
+                      <li key={item.name}>
+                        <button type="button" className={cn("list-row category-row", highlighted && highlighted !== item.name && "is-dimmed")} aria-pressed={selectedCategory === item.name} disabled={item.value === 0}
+                          onMouseEnter={() => setHoveredCategory(item.name)} onMouseLeave={() => setHoveredCategory(null)} onFocus={() => setHoveredCategory(item.name)} onBlur={() => setHoveredCategory(null)}
+                          onClick={() => setSelectedCategory(current => current === item.name ? null : item.name)}>
+                          <i className="category-dot" style={{ background: item.value > 0 ? colorOf(item.name) : "var(--fill-2)" }} aria-hidden="true" />
+                          <span className="row-main">
+                            <span className="row-title">{displayName(item.name)}</span>
+                            {limit && (over || near || limit.recurring) && <span className="forecast-tags">
+                              {over && <span className="tag is-danger"><AlertTriangle aria-hidden="true" />acima do previsto</span>}
+                              {near && <span className="tag is-warning">perto do limite</span>}
+                              {limit.recurring && <span className="tag"><Repeat2 aria-hidden="true" />aparece sempre</span>}
+                            </span>}
+                            {limit && <span className="row-sub num">{hasLimit ? `${limit.projectedUsage}% de ${formatCurrency(limit.planned)} · pode fechar em ${formatCurrency(limit.projected)}` : `Sem limite · pode fechar em ${formatCurrency(limit.projected)}`}</span>}
+                            {hasLimit && limit && <span className="meter" aria-hidden="true"><span className={over ? "is-danger" : near ? "is-warning" : undefined} style={{ width: `${Math.min(100, limit.projectedUsage)}%` }} /></span>}
+                          </span>
+                          <span className="row-value">{formatCurrency(item.value)}<small>{percentOf(item.value, totalExpenses)}%</small></span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
-                {sortedCategories.length > VISIBLE_CATEGORIES && (
+                {listCategories.length > VISIBLE_CATEGORIES && (
                   <button type="button" className="btn btn-plain category-more" aria-expanded={showAll} onClick={() => setShowAll(value => !value)}>
-                    {showAll ? "Mostrar menos" : `Mostrar todas as ${sortedCategories.length}`}
+                    {showAll ? "Mostrar menos" : `Mostrar todas as ${listCategories.length}`}
                   </button>
                 )}
-                <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{selectedData ? `${selectedData.name}: ${formatCurrency(selectedData.value)}, ${percentOf(selectedData.value, totalExpenses)}% dos gastos.` : ""}</span>
+                <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{selectedData ? `${displayName(selectedData.name)}: ${formatCurrency(selectedData.value)}, ${percentOf(selectedData.value, totalExpenses)}% dos gastos.` : ""}</span>
               </div>
             </div>
           )}
@@ -144,15 +169,9 @@ export function FinanceCharts({
           <div>
             <h2 id="evolution-title" className="card-title">Evolução por mês</h2>
             <p className="card-subtitle">Entradas, saídas e resultado de cada mês, sem o saldo inicial.</p>
+            {lastMonth && previousMonth && <p className="card-subtitle num">O resultado de {lastMonth.month} ficou {saldoTrend >= 0 ? "+" : ""}{formatCurrency(saldoTrend)} em relação a {previousMonth.month}.</p>}
           </div>
         </div>
-        {lastMonth && (
-          <dl className="stat-strip">
-            <div><dt>Entradas em {lastMonth.month}</dt><dd className="num">{formatCurrency(lastMonth.receitas)}</dd></div>
-            <div><dt>Saídas em {lastMonth.month}</dt><dd className="num">{formatCurrency(lastMonth.despesas)}</dd></div>
-            <div><dt>Resultado contra o mês anterior</dt><dd className={cn("num", saldoTrend < 0 && "is-negative")}>{saldoTrend > 0 ? "+" : ""}{formatCurrency(saldoTrend)}</dd></div>
-          </dl>
-        )}
         {evolutionData.length > 0 && <div className="chart-controls">
           <div className="segmented" role="group" aria-label="Meses exibidos">
             {[{ value: 1, label: "1 mês" }, { value: 3, label: "3 meses" }, { value: 6, label: "6 meses" }].map(item => (
@@ -174,7 +193,7 @@ export function FinanceCharts({
         </div>}
         <div className="evolution-canvas">
           {evolutionData.length === 0 ? (
-            <div className="chart-empty"><p>Seu histórico aparece aqui</p><span>Importe um extrato para acompanhar entradas, saídas e resultado ao longo dos meses.</span><Link href="/import">Importar extrato</Link></div>
+            <div className="chart-empty"><p>Seu histórico aparece aqui</p><span>Com um extrato importado, cada mês mostra entradas, saídas e resultado.</span></div>
           ) : !mounted ? <div className="skeleton h-full" /> : (
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartEvolution} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
@@ -188,7 +207,7 @@ export function FinanceCharts({
                 </defs>
                 <CartesianGrid stroke="rgb(84 84 88 / 0.6)" vertical={false} />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisCurrency} width={56} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisCurrency} width={84} />
                 <Tooltip content={<ChartTooltip />} cursor={{ stroke: "rgb(235 235 245 / 0.3)", fill: "rgb(118 118 128 / 0.12)" }} />
                 {series.map(item => chartStyle === "area" ? (
                   <Area key={item.key} hide={hiddenSeries.includes(item.key)} type="monotone" dataKey={item.key} name={item.label} stroke={item.color} fill={`url(#evolution-${item.key})`} strokeWidth={2.5}

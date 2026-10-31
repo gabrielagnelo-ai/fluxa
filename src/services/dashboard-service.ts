@@ -1,5 +1,5 @@
 import type { ParsedTransaction } from "@/types/finance";
-import { normalizeText } from "@/lib/utils";
+import { displayName, normalizeText } from "@/lib/utils";
 import { differenceInCalendarDaysInclusive, type PeriodRange } from "@/utils/period";
 
 type CategoryLimitSnapshot = {
@@ -349,7 +349,7 @@ export function internalAlerts({
     alerts.push({
       id: "salary-advance-income",
       title: "Vale ou adiantamento recebido",
-      description: `${formatMoney(salaryAdvance.total)} entrou agora e pode reduzir o salario disponivel do proximo mes.${examples}`,
+      description: `${formatMoney(salaryAdvance.total)} entrou agora e pode reduzir o salário disponível do próximo mês.${examples}`,
       severity: "danger"
     });
   }
@@ -360,9 +360,9 @@ export function internalAlerts({
     .forEach((item) => {
       alerts.push({
         id: `category-leak-${item.categoryName}`,
-        title: `Crie um limite para ${item.categoryName}`,
-        description: `Voce ja gastou ${formatMoney(item.actual)} nessa categoria, mas ainda nao definiu um valor previsto. Isso ajuda o Fluxa a acompanhar melhor.`,
-        severity: "danger"
+        title: `Crie um limite para ${displayName(item.categoryName)}`,
+        description: `Você já gastou ${formatMoney(item.actual)} nessa categoria, mas ainda não definiu um valor previsto. Isso ajuda o Fluxa a acompanhar melhor.`,
+        severity: "info"
       });
     });
 
@@ -372,7 +372,7 @@ export function internalAlerts({
     .forEach((item) => {
       alerts.push({
         id: `category-over-${item.categoryName}`,
-        title: `${item.categoryName} pode passar do limite`,
+        title: `${displayName(item.categoryName)} pode passar do limite`,
         description: `Se continuar nesse ritmo, pode chegar a ${formatMoney(item.projected)} para um valor previsto de ${formatMoney(item.planned)}.`,
         severity: "danger"
       });
@@ -384,7 +384,7 @@ export function internalAlerts({
     .forEach((item) => {
       alerts.push({
         id: `category-warning-${item.categoryName}`,
-        title: `${item.categoryName} perto do limite`,
+        title: `${displayName(item.categoryName)} perto do limite`,
         description: `Uso estimado de ${item.projectedUsage}% do limite mensal.`,
         severity: "warning"
       });
@@ -396,8 +396,8 @@ export function internalAlerts({
     .forEach((item) => {
       alerts.push({
         id: `recurring-no-limit-${item.categoryName}`,
-        title: `${item.categoryName} aparece com frequencia`,
-        description: `Apareceu em ${item.months} meses recentes. Vale definir um valor previsto no Planejamento.`,
+        title: `${displayName(item.categoryName)} aparece com frequência`,
+        description: `Apareceu em ${item.months} meses recentes. Vale definir um valor previsto no planejamento.`,
         severity: "info"
       });
     });
@@ -409,7 +409,7 @@ export function internalAlerts({
       if (progress >= 100) {
         alerts.push({
           id: `goal-complete-${goal.name}`,
-          title: `Meta ${goal.name} concluida`,
+          title: `Meta ${goal.name} concluída`,
           description: `${formatMoney(goal.contributedAmount)} guardados de ${formatMoney(goal.targetAmount)}.`,
           severity: "success"
         });
@@ -417,7 +417,7 @@ export function internalAlerts({
         alerts.push({
           id: `goal-near-${goal.name}`,
           title: `Meta ${goal.name} está perto`,
-          description: `${progress}% concluido pelo dinheiro guardado identificado.`,
+          description: `${progress}% concluído pelo dinheiro guardado identificado.`,
           severity: "info"
         });
       }
@@ -426,8 +426,8 @@ export function internalAlerts({
   if (projectedIncome > 0 && projectedExpenses > projectedIncome) {
     alerts.unshift({
       id: "projected-deficit",
-      title: "O mes pode terminar no negativo",
-      description: `Os gastos estimados sao ${formatMoney(projectedExpenses)} contra ${formatMoney(projectedIncome)} de dinheiro entrando.`,
+      title: "O mês pode terminar no negativo",
+      description: `Os gastos estimados são ${formatMoney(projectedExpenses)} contra ${formatMoney(projectedIncome)} de dinheiro entrando.`,
       severity: "danger"
     });
   }

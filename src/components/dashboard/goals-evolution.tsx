@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { formatAxisCurrency, formatCurrency } from "@/lib/utils";
 
 type GoalEvolutionItem = {
   id: string;
@@ -68,7 +68,7 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
           <br /><Link href="/goals">Criar minha primeira meta<ChevronRight size={16} aria-hidden="true" /></Link>
         </div>
       ) : (
-        <div className="goals-layout">
+        <div className={evolutionData.length >= 2 ? "goals-layout has-chart" : "goals-layout"}>
           <div>
             <div className="card-body goals-total-block">
               <p className="overview-label">Guardado</p>
@@ -94,11 +94,9 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
               })}
             </ul>
           </div>
-          <div className="goals-chart" role="img" aria-label={`Dinheiro guardado acumulado: ${formatCurrency(totalContributed)}`}>
+          {evolutionData.length >= 2 && <div className="goals-chart" role="img" aria-label={`Dinheiro guardado acumulado: ${formatCurrency(totalContributed)}`}>
             {!mounted ? (
               <div className="skeleton h-full" />
-            ) : evolutionData.length === 0 ? (
-              <p className="chart-empty"><span>Nenhum dinheiro guardado identificado ainda.</span></p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={evolutionData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -107,15 +105,25 @@ export function GoalsEvolution({ goals }: { goals: GoalEvolutionItem[] }) {
                   </defs>
                   <CartesianGrid stroke="rgb(84 84 88 / 0.6)" vertical={false} />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} width={64} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={value => `R$ ${(Number(value) / 1000).toLocaleString("pt-BR")} mil`} />
-                  <Tooltip formatter={value => formatCurrency(Number(value))} />
+                  <YAxis axisLine={false} tickLine={false} width={84} tick={{ fill: "rgb(235 235 245 / 0.7)", fontSize: 12 }} tickFormatter={formatAxisCurrency} />
+                  <Tooltip content={<GoalTooltip />} cursor={{ stroke: "rgb(235 235 245 / 0.3)" }} />
                   <Area type="monotone" dataKey="acumulado" name="Guardado" stroke="#0080F8" fill="url(#goals-fill)" strokeWidth={2.5} isAnimationActive={animate} animationDuration={400} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
-          </div>
+          </div>}
         </div>
       )}
     </section>
+  );
+}
+
+function GoalTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="chart-tooltip">
+      {label && <p className="chart-tooltip-label">{label}</p>}
+      <div className="chart-tooltip-row"><span>Guardado até aqui</span><strong className="num">{formatCurrency(Number(payload[0].value))}</strong></div>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import { BalanceBaselineCard } from "@/components/dashboard/balance-baseline-card";
-import { CategoryForecastCard } from "@/components/dashboard/category-forecast-card";
 import { CreditAnalysis } from "@/components/dashboard/credit-analysis";
 import { FinanceCharts } from "@/components/dashboard/finance-charts";
 import { TutorialStarter } from "@/components/onboarding/guided-tutorial";
@@ -77,14 +76,13 @@ export default async function DashboardPage({
           <OverviewPanels balance={currentBalance} estimated={!balanceBaseline} income={periodSummary.income} expenses={periodSummary.expenses} hasData={hasData} />
         </div>
         <div className="span-5 rise" style={{ "--i": 1 } as CSSProperties}><ProjectionCard {...projection} /></div>
-        <div className="span-6 rise" style={{ "--i": 2 } as CSSProperties}><InternalAlertsCard alerts={alerts} /></div>
-        <div className="span-6 rise" style={{ "--i": 3 } as CSSProperties}><CategoryForecastCard forecasts={forecasts} /></div>
+        <div className="span-7 rise" style={{ "--i": 2 } as CSSProperties}><InternalAlertsCard alerts={alerts} /></div>
+        <div className="span-5 rise" style={{ "--i": 3 } as CSSProperties}><WeeklyExpenseInsight {...weeklyInsight} /></div>
       </div>
 
       <div className="dashboard-section-heading"><h2 className="section-title">Para onde o dinheiro foi</h2></div>
       <div className="dashboard-grid">
-        <div className="span-7"><FinanceCharts categoryData={categories} evolutionData={[]} view="categories" /></div>
-        <div className="span-5"><WeeklyExpenseInsight {...weeklyInsight} /></div>
+        <div className="span-12"><FinanceCharts categoryData={categories} evolutionData={[]} limits={forecasts.filter(item => item.actual > 0 || item.planned > 0)} view="categories" /></div>
         <div className="span-12"><FinanceCharts categoryData={categories} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} view="evolution" /></div>
         <div className="span-12"><CreditAnalysis origins={creditOrigins(transactions)} /></div>
       </div>
