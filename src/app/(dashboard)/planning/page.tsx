@@ -31,7 +31,7 @@ export default async function PlanningPage({
     <div className="fluxa-page workspace-page planning-page">
       <PageHeader
         title={`Planejamento de ${overview.monthLabel}`}
-        description="Informe sua renda, defina limites por categoria e depois importe os gastos reais. Um orçamento previsto não registra um pagamento. Se este mês ainda não tiver um plano, o último salvo aparece como sugestão."
+        description="Renda, limites e metas do mês."
         actions={<PlanningMonthSelector month={overview.month} year={overview.year} />}
       />
       <EconomicPlanManager overview={overview} />

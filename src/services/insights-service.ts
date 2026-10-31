@@ -124,14 +124,14 @@ export function buildLocalInsights(context: InsightContext) {
 
   const overBudget = context.planningGroups.filter((group) => group.planned > 0 && group.actual > group.planned);
   if (overBudget.length > 0) {
-    lines.push(`Voce gastou mais do que planejou em ${overBudget.map((group) => group.name).join(", ")}. Vale revisar esses gastos antes do fim do mes.`);
+    lines.push(`Você gastou mais do que planejou em ${overBudget.map((group) => group.name).join(", ")}. Vale revisar esses gastos antes do fim do mês.`);
   } else if (context.planningGroups.length > 0) {
     lines.push("Nenhum grupo do planejamento passou do limite recomendado até agora.");
   }
 
   const activeGoal = [...context.goals].sort((a, b) => b.progress - a.progress)[0];
   if (activeGoal) {
-    lines.push(`Meta mais avancada: ${activeGoal.name}, com ${activeGoal.progress}% concluido pelo dinheiro guardado identificado.`);
+    lines.push(`Meta mais avançada: ${activeGoal.name}, com ${activeGoal.progress}% concluído pelo dinheiro guardado identificado.`);
   }
 
   return lines.join("\n\n");

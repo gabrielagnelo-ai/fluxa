@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { BriefcaseBusiness, LineChart, Plus, Search, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { LineChart, Plus, Search, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { deleteInvestmentAsset, upsertInvestmentAsset } from "@/app/(dashboard)/investments/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -286,52 +286,44 @@ export function InvestmentManager({
   const defaultName = selectedAsset?.name ?? draftAsset?.name ?? "";
   const defaultTicker = selectedAsset?.ticker ?? draftAsset?.ticker ?? "";
 
+  const sheetRef = useRef<HTMLDialogElement>(null);
+  const openSheet = () => { if (!sheetRef.current?.open) sheetRef.current?.showModal(); };
+
   function startEditing(asset: InvestmentAsset) {
     setSelectedAsset(asset);
-    window.requestAnimationFrame(() => {
-      document.getElementById("novo-investimento")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    openSheet();
   }
+
+  // Coming from the radar ("Adicionar" with a ticker) opens the form directly.
+  useEffect(() => { if (draftAsset?.ticker) openSheet(); }, [draftAsset?.ticker]);
+  useEffect(() => { if (state?.success) sheetRef.current?.close(); }, [state]);
 
   return (
     <div className="space-y-5">
-      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.2fr]">
+      <section className="card summary-strip" aria-label="Resumo da carteira">
+        <div><p className="overview-label">Patrimônio investido</p><strong className="summary-strip-main num">{formatCurrency(overview.totalCurrent)}</strong><p className="summary-strip-note">{plural(overview.assetCount, "ativo", "ativos")} · aplicado {formatCurrency(overview.totalInvested)}</p></div>
+        <div><p className="overview-label">Resultado</p><strong className={cn("num", overview.gain < 0 && "is-negative")}>{overview.gain > 0 ? "+" : ""}{formatCurrency(overview.gain)}</strong></div>
+        <div><p className="overview-label">Rentabilidade</p><strong className={cn("num", overview.gainPercent < 0 && "is-negative")}>{overview.gainPercent >= 0 ? "+" : ""}{overview.gainPercent.toFixed(2).replace(".", ",")}%</strong></div>
+      </section>
+      <div className="screen-actions">
+        <button type="button" className="btn btn-filled" aria-haspopup="dialog" onClick={() => { setSelectedAsset(null); openSheet(); }}><Plus className="size-4" aria-hidden="true" />Novo investimento</button>
+      </div>
+
+      {assets.length === 0 ? (
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Patrimônio investido</p>
-              <h2 className="mt-1 text-3xl font-semibold">{formatCurrency(overview.totalCurrent)}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {plural(overview.assetCount, "ativo cadastrado", "ativos cadastrados")} · aplicado: {formatCurrency(overview.totalInvested)}
-              </p>
-            </div>
-            <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
-              <BriefcaseBusiness className="size-5" />
-            </span>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-border bg-muted/25 p-3">
-                <p className="text-sm text-muted-foreground">Resultado</p>
-                <strong className={cn("text-xl", overview.gain >= 0 ? "text-emerald-500" : "text-red-500")}>{formatCurrency(overview.gain)}</strong>
-              </div>
-              <div className="rounded-lg border border-border bg-muted/25 p-3">
-                <p className="text-sm text-muted-foreground">Rentabilidade</p>
-                <strong className={cn("text-xl", overview.gainPercent >= 0 ? "text-emerald-500" : "text-red-500")}>
-                  {overview.gainPercent >= 0 ? "+" : ""}
-                  {overview.gainPercent.toFixed(2).replace(".", ",")}%
-                </strong>
-              </div>
-            </div>
+          <CardContent className="pt-5">
+            <p className="font-semibold">Sua carteira ainda está vazia.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Cadastre um CDB, Tesouro, ação ou fundo em Novo investimento. A distribuição e a rentabilidade aparecem aqui.</p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <h2 className="font-semibold">Distribuição da carteira</h2>
-            <p className="text-sm text-muted-foreground">Alocação por classe de ativo.</p>
-          </CardHeader>
-          <CardContent>
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <h2 className="font-semibold">Distribuição da carteira</h2>
+              <p className="text-sm text-muted-foreground">Alocação por classe de ativo.</p>
+            </CardHeader>
+            <CardContent>
             {overview.allocation.length === 0 ? (
               <div className="grid h-56 place-items-center rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
                 Cadastre seu primeiro investimento para visualizar a alocação.
@@ -383,27 +375,14 @@ export function InvestmentManager({
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </section>
-
-      <Card>
-        <CardHeader>
-          <h2 className="font-semibold">Minha carteira</h2>
-          <p className="text-sm text-muted-foreground">Ativos cadastrados manualmente. Clique em um ativo para editar.</p>
-        </CardHeader>
-        <CardContent>
-          {assets.length === 0 ? (
-            <div className="grid min-h-36 place-items-center rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center">
-              <div>
-                <p className="font-semibold">Sua carteira ainda está vazia.</p>
-                <p className="mt-1 text-sm text-muted-foreground">Cadastre um CDB, Tesouro, ação ou fundo para acompanhar patrimônio e rentabilidade.</p>
-                <a href="#novo-investimento" className="btn btn-gray mt-4">
-                  Adicionar primeiro ativo
-                </a>
-              </div>
-            </div>
-          ) : (
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <h2 className="font-semibold">Minha carteira</h2>
+              <p className="text-sm text-muted-foreground">Toque no nome de um ativo para editar.</p>
+            </CardHeader>
+            <CardContent>
             <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full min-w-[860px] text-sm">
                 <thead className="bg-background/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -414,7 +393,7 @@ export function InvestmentManager({
                     <th className="px-4 text-right font-medium">Aplicado</th>
                     <th className="px-4 text-right font-medium">Atual</th>
                     <th className="px-4 text-right font-medium">Resultado</th>
-                    <th className="px-4 text-right font-medium">Ações</th>
+                    <th className="px-4 text-right font-medium"><span className="sr-only">Excluir</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -425,7 +404,7 @@ export function InvestmentManager({
                     return (
                       <tr key={asset.id} className="border-b border-border/60 last:border-0">
                         <td className="px-4 py-3">
-                          <button type="button" onClick={() => startEditing(asset)} className="text-left font-semibold transition hover:text-primary">
+                          <button type="button" onClick={() => startEditing(asset)} className="min-h-11 text-left font-semibold transition hover:text-primary" aria-haspopup="dialog">
                             {asset.name}
                           </button>
                           <p className="text-xs text-muted-foreground">{asset.ticker ?? "Sem ticker"}</p>
@@ -443,10 +422,11 @@ export function InvestmentManager({
                             action={async (formData) => {
                               await deleteInvestmentAsset(formData);
                             }}
+                            onSubmit={(event) => { if (!confirm(`Excluir ${asset.name} da carteira?`)) event.preventDefault(); }}
                           >
                             <input type="hidden" name="id" value={asset.id} />
-                            <button className="inline-grid size-8 place-items-center rounded-md text-muted-foreground transition hover:bg-red-500/10 hover:text-red-500" aria-label={`Excluir ${asset.name}`}>
-                              <Trash2 className="size-4" />
+                            <button className="icon-btn is-destructive" aria-label={`Excluir ${asset.name}`}>
+                              <Trash2 aria-hidden="true" />
                             </button>
                           </form>
                         </td>
@@ -456,30 +436,21 @@ export function InvestmentManager({
                 </tbody>
               </table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
-      <details id="novo-investimento" className="glass-card group rounded-xl p-6" open={assets.length === 0 || Boolean(draftAsset?.ticker) || Boolean(selectedAsset)}>
-        <summary className="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <span>
-            <span className="block font-semibold">{selectedAsset ? "Editar investimento" : "Novo investimento"}</span>
-            <span className="mt-1 block text-sm text-muted-foreground">Preencha o essencial agora. Quantidade, preço médio e observações podem ficar vazios.</span>
-          </span>
-          <span className="btn btn-gray shrink-0">
-            {selectedAsset ? "Editando" : <><span className="group-open:hidden">Abrir cadastro</span><span className="hidden group-open:inline">Recolher</span></>}
-          </span>
-        </summary>
-        <div className="mt-5 border-t border-border pt-5">
-          {selectedAsset && (
-            <div className="mb-4 flex justify-end">
-              <Button type="button" onClick={() => setSelectedAsset(null)} className="bg-muted text-foreground hover:shadow-none">
-                <Plus className="mr-2 size-4" />
-                Novo ativo
-              </Button>
-            </div>
-          )}
-          <form key={draftKey} action={action} className="grid items-end gap-3 lg:grid-cols-4">
+      <dialog ref={sheetRef} id="novo-investimento" className="sheet" aria-labelledby="investment-sheet-title" onClick={(event) => { if (event.target === event.currentTarget) sheetRef.current?.close(); }}>
+        <div className="sheet-grabber" aria-hidden="true" />
+        <div className="sheet-bar">
+          <span />
+          <h2 id="investment-sheet-title" className="sheet-title">{selectedAsset ? "Editar investimento" : "Novo investimento"}</h2>
+          <button type="button" className="btn btn-plain btn-plain-strong" onClick={() => sheetRef.current?.close()}>Fechar</button>
+        </div>
+        <div className="sheet-body">
+          <p className="field-note" style={{ margin: "0 0 0.75rem" }}>Preencha o essencial agora. Quantidade, preço médio e observações podem ficar vazios.</p>
+          <form key={draftKey} action={action} className="grid gap-3">
             <input type="hidden" name="id" value={selectedAsset?.id ?? ""} />
             <Field label="Nome do ativo"><Input name="name" defaultValue={defaultName} placeholder="Ex.: CDB Banco X" required /></Field>
             <Field label="Ticker (opcional)"><Input name="ticker" defaultValue={defaultTicker} placeholder="Ex.: PETR4" /></Field>
@@ -496,17 +467,17 @@ export function InvestmentManager({
             <Field label="Quantidade (opcional)"><Input name="quantity" type="number" min="0" step="0.00000001" defaultValue={selectedAsset?.quantity ?? ""} /></Field>
             <Field label="Preço médio (opcional)"><Input name="averagePrice" type="number" min="0" step="0.01" defaultValue={selectedAsset?.averagePrice ?? ""} placeholder="0,00" /></Field>
             <Field label="Data da compra (opcional)"><Input name="acquiredAt" type="date" defaultValue={selectedAsset?.acquiredAt?.slice(0, 10) ?? ""} /></Field>
-            <Field label="Observações (opcional)" className="lg:col-span-2"><textarea
+            <Field label="Observações (opcional)"><textarea
               name="notes"
               defaultValue={selectedAsset?.notes ?? ""}
               className="min-h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
             /></Field>
             <Button disabled={pending}>{pending ? "Salvando..." : selectedAsset ? "Salvar alterações" : "Salvar investimento"}</Button>
-            {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive lg:col-span-4">{state.error}</p>}
-            {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary lg:col-span-4">{state.success}</p>}
+            {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
+            {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
           </form>
         </div>
-      </details>
+      </dialog>
     </div>
   );
 }

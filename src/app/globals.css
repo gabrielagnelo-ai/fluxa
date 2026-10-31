@@ -1046,7 +1046,7 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 .tx-list { list-style: none; margin: 0; padding: 0; }
 .tx-row { padding: 0.75rem 0; }
 .tx-row + .tx-row { border-top: 0.5px solid var(--separator); }
-.tx-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.tx-row-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .tx-row-title { min-width: 0; font-size: 1rem; font-weight: 500; overflow-wrap: anywhere; }
 .tx-row-sub { margin-top: 0.125rem; font-size: 0.875rem; color: var(--label-2); overflow-wrap: anywhere; }
 .tx-row .flex { justify-content: flex-start !important; margin-top: 0.375rem; }
@@ -1135,3 +1135,5 @@ dialog.alert-dialog::backdrop { background: var(--overlay); }
 [data-motion="paused"] .landing-float .float-inner { animation-play-state: paused !important; }
 .phone-period-inline { font-size: 0.75rem; font-weight: 500; color: var(--label-2); }
 .insights-analysis { font-size: 1rem; max-width: 72ch; }
+.tx-edit { color: var(--label-2); margin-right: -0.5rem; }
+.sheet-danger { display: flex; justify-content: center; margin-top: 1rem; }

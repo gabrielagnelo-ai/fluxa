@@ -4,6 +4,8 @@ import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
 import { saveTransaction } from "./actions";
+import { TransactionDeleteButton } from "@/components/dashboard/transaction-delete-button";
+import { formatCurrency } from "@/lib/utils";
 import { formatDateInput } from "@/utils/period";
 import type { ParsedTransaction } from "@/types/finance";
 
@@ -15,9 +17,9 @@ export function TransactionEditor({ transaction, categories }: { transaction?: P
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState<string>();
   return <>
-    <button type="button" className={transaction ? "btn btn-gray tx-action" : "btn btn-filled"}
+    <button type="button" className={transaction ? "icon-btn tx-edit" : "btn btn-filled"}
       onClick={() => { setError(undefined); setSuccess(undefined); dialog.current?.showModal(); }} aria-label={transaction ? `Editar ${transaction.description}` : undefined}>
-      {transaction ? <Pencil className="size-4" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}{transaction ? "Editar" : "Adicionar"}
+      {transaction ? <Pencil aria-hidden="true" /> : <><Plus className="size-4" aria-hidden="true" />Adicionar</>}
     </button>
     {success && <p role="status" className="text-sm text-primary">{success}</p>}
     <dialog ref={dialog} aria-labelledby={heading} className="sheet" onCancel={(event) => { if (pending) event.preventDefault(); }} onClick={(event) => { if (event.target === event.currentTarget && !pending) dialog.current?.close(); }}>
@@ -41,6 +43,7 @@ export function TransactionEditor({ transaction, categories }: { transaction?: P
         </div>
         {error && <p role="alert" className="field-error">{error}</p>}
       </form>
+      {transaction?.id && <div className="sheet-danger"><TransactionDeleteButton id={transaction.id} description={`${transaction.description} (${formatCurrency(transaction.amount)}, ${transaction.date.slice(0, 10).split("-").reverse().join("/")})`} /></div>}
     </dialog>
   </>;
 }
