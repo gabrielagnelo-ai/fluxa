@@ -325,7 +325,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
             <section className="grid gap-3 md:grid-cols-4">
               <CompactMetric icon={CircleDollarSign} label="Previsto" value={formatCurrency(overview.limitSummary.plannedTotal)} detail={`${overview.limitSummary.plannedCount} com valor definido`} />
-              <CompactMetric icon={CheckCircle2} label="Ja gasto" value={formatCurrency(overview.limitSummary.actualWithLimit)} detail="gasto acompanhado" />
+              <CompactMetric icon={CheckCircle2} label="Já gasto" value={formatCurrency(overview.limitSummary.actualWithLimit)} detail="gasto acompanhado" />
               <CompactMetric
                 icon={overview.limitSummary.difference < 0 ? AlertTriangle : CheckCircle2}
                 label="Saldo"
@@ -343,16 +343,13 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             </section>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex w-fit flex-wrap gap-1 rounded-lg border border-border bg-background/50 p-1">
+              <div className="segmented self-start" role="group" aria-label="Filtrar categorias">
                 {(Object.keys(filterLabels) as LimitFilter[]).map((filter) => (
                   <button
                     key={filter}
                     type="button"
                     onClick={() => setLimitFilter(filter)}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground",
-                      limitFilter === filter && "bg-primary text-primary-foreground hover:text-primary-foreground"
-                    )}
+                    aria-pressed={limitFilter === filter}
                   >
                     {filterLabels[filter]}
                   </button>
@@ -361,14 +358,14 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
               <p className="text-sm text-muted-foreground">Use Todas para definir um valor em uma categoria que ainda não apareceu no mês.</p>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[760px] text-sm">
+            <div className="stack-table-wrap overflow-x-auto rounded-xl border border-border">
+              <table className="stack-table w-full min-w-[760px] text-sm">
                 <thead className="bg-background/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="px-4 py-3 font-medium">Categoria</th>
                     <th className="px-4 font-medium">Tipo</th>
                     <th className="px-4 font-medium">Valor previsto</th>
-                    <th className="px-4 text-right font-medium">Ja gasto</th>
+                    <th className="px-4 text-right font-medium">Já gasto</th>
                     <th className="px-4 font-medium">Situação</th>
                   </tr>
                 </thead>
@@ -656,12 +653,12 @@ function CategoryLimitRow({
 
   return (
     <tr className="border-b border-border/60 last:border-0">
-      <td className="px-4 py-3">
+      <td className="px-4 py-3" data-cell="a">
         <input type="hidden" name="categoryId" value={item.categoryId} />
         <p className="font-medium">{item.categoryName}</p>
         <p className={cn("mt-1 text-xs", error ? "text-red-400" : "text-muted-foreground")}>{error ?? status.detail}</p>
       </td>
-      <td className="px-4">
+      <td className="px-4" data-cell="c" data-label="Tipo">
         <select
           name="type"
           value={type}
@@ -680,7 +677,7 @@ function CategoryLimitRow({
           ))}
         </select>
       </td>
-      <td className="px-4">
+      <td className="px-4" data-cell="b" data-label="Valor previsto">
         <Input
           name="amount"
           type="text"
@@ -699,8 +696,8 @@ function CategoryLimitRow({
           className="max-w-32 disabled:opacity-60"
         />
       </td>
-      <td className="px-4 text-right font-semibold">{formatCurrency(item.actual)}</td>
-      <td className="min-w-56 px-4">
+      <td className="px-4 text-right font-semibold" data-cell="d" data-label="Já gasto">{formatCurrency(item.actual)}</td>
+      <td className="min-w-56 px-4" data-cell="e">
         <div className="flex items-center gap-3">
           <div className="h-2 flex-1 rounded-full bg-background">
             <div className={cn("h-2 rounded-full", status.barClass)} style={{ width: `${item.planned > 0 ? Math.min(100, item.usage) : 0}%` }} />

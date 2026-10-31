@@ -941,3 +941,37 @@ dialog.sheet:not([open])::backdrop { opacity: 0; }
 .rule-list { border-radius: var(--r-card); background: var(--surface-2); overflow: hidden; }
 .rule-keywords { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .rule-status { padding: 0 1.25rem 0.5rem; }
+
+/* Wide tables become stacked rows on phones: nothing scrolls sideways inside a card. */
+@media (max-width: 767px) {
+  .stack-table-wrap { overflow: visible !important; border-color: transparent !important; background: transparent !important; }
+  .stack-table { min-width: 0 !important; }
+  .stack-table thead { display: none; }
+  .stack-table, .stack-table tbody { display: block; }
+  .stack-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem 1rem; align-items: center; padding: 0.875rem 0.25rem; border-bottom: 0.5px solid var(--separator); }
+  .stack-table td { display: block; padding: 0 !important; min-width: 0 !important; text-align: left; }
+  .stack-table td[data-cell="a"] { grid-column: 1; grid-row: 1; }
+  .stack-table td[data-cell="b"] { grid-column: 2; grid-row: 1; text-align: right; }
+  .stack-table td[data-cell="c"] { grid-column: 1; grid-row: 2; }
+  .stack-table td[data-cell="d"] { grid-column: 2; grid-row: 2; text-align: right; }
+  .stack-table td[data-cell="f"] { grid-column: 1; }
+  .stack-table td[data-cell="g"] { grid-column: 1; }
+  .stack-table td[data-cell="h"] { grid-column: 2; text-align: right; }
+  .stack-table td[data-cell="e"] { grid-column: 1 / -1; }
+  .stack-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 0.125rem; font-size: 0.75rem; font-weight: 600; color: var(--label-2); }
+  .stack-table td[data-cell="b"] input { max-width: 8.5rem; text-align: right; }
+}
+.goal-editor > summary { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1rem; border-radius: 999px; background: var(--fill); color: var(--label); font-size: 0.9375rem; font-weight: 600; cursor: pointer; list-style: none; }
+.goal-editor > summary::-webkit-details-marker { display: none; }
+.goal-editor[open] > summary { background: var(--fill-2); }
+.goal-editor-body { margin-top: 0.75rem; }
+@media (max-width: 767px) {
+  .stack-compact tr { gap: 0.25rem 1rem; }
+  .stack-compact td[data-cell="c"], .stack-compact td[data-cell="f"] { font-size: 0.875rem; }
+  .stack-compact td[data-cell="c"]::before, .stack-compact td[data-cell="f"]::before { display: none; }
+  .stack-compact td[data-cell="f"] { grid-column: 1; grid-row: 3; }
+  .stack-compact td[data-cell="e"] { grid-column: 2; grid-row: 3; text-align: right; }
+  .stack-compact td[data-cell="g"], .stack-compact td[data-cell="h"] { grid-row: 4; font-size: 0.8125rem; }
+  .stack-compact td[data-cell="g"]::before, .stack-compact td[data-cell="h"]::before { display: inline; content: attr(data-label) " "; font-size: inherit; }
+  .stack-compact td[data-cell="e"] a { min-height: 2.75rem; }
+}

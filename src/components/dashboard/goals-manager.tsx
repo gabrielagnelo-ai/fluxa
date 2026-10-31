@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { CalendarClock, TrendingUp, Trash2 } from "lucide-react";
+import { CalendarClock, Pencil, TrendingUp, Trash2 } from "lucide-react";
 import { deleteGoal, upsertGoal } from "@/app/(dashboard)/goals/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -130,7 +130,10 @@ export function GoalsManager({ goals }: { goals: GoalItem[] }) {
                     </p>
                   </div>
                 </div>
-                <GoalForm goal={goal} />
+                <details className="goal-editor">
+                  <summary><Pencil className="size-4" aria-hidden="true" />Editar meta</summary>
+                  <div className="goal-editor-body"><GoalForm goal={goal} /></div>
+                </details>
               </CardContent>
             </Card>
           );

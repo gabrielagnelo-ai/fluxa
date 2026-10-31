@@ -176,7 +176,7 @@ export function StockDiscoveryPanel({
           </label>
 
           <div className="flex items-end">
-            <Button className="w-full lg:w-auto">Filtrar</Button>
+            <Button className="btn-quiet w-full lg:w-auto">Filtrar</Button>
           </div>
 
           {hasActiveFilters && (
@@ -195,8 +195,8 @@ export function StockDiscoveryPanel({
             Nenhum ativo encontrado para os filtros atuais.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full min-w-[900px] text-sm">
+          <div className="stack-table-wrap overflow-x-auto rounded-xl border border-border">
+            <table className="stack-table stack-compact w-full min-w-[900px] text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="border-b border-border">
                   <th className="px-4 py-3 font-medium">Ativo</th>
@@ -216,23 +216,23 @@ export function StockDiscoveryPanel({
 
                   return (
                     <tr key={stock.symbol} className="border-b border-border/60 last:border-0">
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" data-cell="a">
                         <strong className="text-base">{stock.symbol}</strong>
                         <p className="mt-1 line-clamp-1 max-w-[260px] text-xs text-muted-foreground">{stock.name}</p>
                       </td>
-                      <td className="px-4 text-muted-foreground">{stockTypeLabels[stock.type ?? ""] ?? stock.type ?? "Ativo"}</td>
-                      <td className="px-4 text-muted-foreground">{stock.sector ? sectorLabels[stock.sector] ?? stock.sector : "-"}</td>
-                      <td className="px-4 text-right font-semibold">{formatCurrency(stock.price)}</td>
-                      <td className="px-4 text-right">
+                      <td className="px-4 text-muted-foreground" data-cell="c" data-label="Tipo">{stockTypeLabels[stock.type ?? ""] ?? stock.type ?? "Ativo"}</td>
+                      <td className="px-4 text-muted-foreground" data-cell="f" data-label="Setor">{stock.sector ? sectorLabels[stock.sector] ?? stock.sector : "-"}</td>
+                      <td className="px-4 text-right font-semibold" data-cell="b">{formatCurrency(stock.price)}</td>
+                      <td className="px-4 text-right" data-cell="d">
                         <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold", positive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500")}>
                           <Icon className="size-3" />
                           {positive ? "+" : ""}
                           {stock.changePercent.toFixed(2).replace(".", ",")}%
                         </span>
                       </td>
-                      <td className="px-4 text-right text-muted-foreground">{formatLargeNumber(stock.volume)}</td>
-                      <td className="px-4 text-right text-muted-foreground">{formatLargeNumber(stock.marketCap)}</td>
-                      <td className="px-4 text-right">
+                      <td className="px-4 text-right text-muted-foreground" data-cell="g" data-label="Volume">{formatLargeNumber(stock.volume)}</td>
+                      <td className="px-4 text-right text-muted-foreground" data-cell="h" data-label="Valor de mercado">{formatLargeNumber(stock.marketCap)}</td>
+                      <td className="px-4 text-right" data-cell="e">
                         <a href={getAddAssetHref(stock.symbol, stock.name)} className="inline-flex h-8 items-center justify-center rounded-md bg-primary/10 px-3 text-xs font-semibold text-primary transition hover:bg-primary hover:text-primary-foreground">
                           Adicionar
                         </a>
