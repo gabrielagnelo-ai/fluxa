@@ -83,8 +83,8 @@ export default async function DashboardPage({
 
       <div className="dashboard-section-heading"><h2 className="section-title">Para onde o dinheiro foi</h2></div>
       <div className="dashboard-grid">
-        <div data-reveal className="span-7" style={{ "--i": 0 } as CSSProperties}><FinanceCharts categoryData={categories} evolutionData={[]} view="categories" /></div>
-        <div data-reveal className="span-5" style={{ "--i": 1 } as CSSProperties}><CategoryLimitsCard limits={forecasts.filter(item => item.actual > 0 || item.planned > 0)} /></div>
+        <div data-reveal className="span-7 natural" style={{ "--i": 0 } as CSSProperties}><FinanceCharts categoryData={categories} evolutionData={[]} view="categories" /></div>
+        <div data-reveal className="span-5 natural" style={{ "--i": 1 } as CSSProperties}><CategoryLimitsCard limits={forecasts.filter(item => item.actual > 0 || item.planned > 0)} /></div>
         <div data-reveal className="span-12" style={{ "--i": 0 } as CSSProperties}><FinanceCharts categoryData={categories} evolutionData={monthlyEvolutionFromTransactions(evolutionTransactions)} view="evolution" /></div>
         <div data-reveal className="span-12" style={{ "--i": 0 } as CSSProperties}><CreditAnalysis origins={creditOrigins(transactions)} /></div>
       </div>

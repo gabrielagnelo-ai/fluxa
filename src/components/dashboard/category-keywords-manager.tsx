@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { createCategory, deleteCategory, syncDefaultCategories, updateCategoryKeywords } from "@/app/(dashboard)/settings/actions";
 import { Button } from "@/components/ui/button";
+import { SheetButton } from "@/components/ui/sheet-button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
@@ -97,7 +98,7 @@ function SyncCategoriesButton() {
   const [state, action, pending] = useActionState(async () => syncDefaultCategories(), undefined);
 
   return (
-    <form action={action} className="space-y-2">
+    <form action={action}>
       <button
         type="submit"
         className="btn btn-plain is-destructive"
@@ -129,16 +130,22 @@ export function CategoryKeywordsManager({ categories }: { categories: CategoryKe
   }, [categories, query]);
 
   return (
-    <Card>
-      <CardHeader className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h2 className="font-semibold">Como o banco escreve seus gastos</h2>
-            <p className="text-sm text-muted-foreground">Diga ao Fluxa quais nomes do extrato ou WhatsApp viram cada categoria. Ex.: IFD* vira iFood.</p>
-          </div>
-          <SyncCategoriesButton />
-        </div>
+    <>
+    <section className="card summary-strip" aria-label="Resumo das categorias">
+      <div><p className="overview-label">Categorias</p><strong className="summary-strip-main num">{categories.length}</strong></div>
+      <div><p className="overview-label">Nomes do banco</p><strong className="num">{categories.reduce((sum, item) => sum + item.keywords.length, 0)}</strong></div>
+      <div><p className="overview-label">Sem nome do banco</p><strong className="num">{categories.filter((item) => item.keywords.length === 0).length}</strong></div>
+    </section>
+    <div className="screen-actions">
+      <SheetButton label="Nova categoria" title="Nova categoria" filled icon={<Plus className="size-4" aria-hidden="true" />}>
         <NewCategoryForm />
+      </SheetButton>
+      <SyncCategoriesButton />
+    </div>
+    <Card>
+      <CardHeader>
+        <h2 className="font-semibold">Como o banco escreve seus gastos</h2>
+        <p className="text-sm text-muted-foreground">Quais nomes do extrato ou do WhatsApp viram cada categoria. Ex.: IFD* vira iFood.</p>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -162,5 +169,6 @@ export function CategoryKeywordsManager({ categories }: { categories: CategoryKe
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

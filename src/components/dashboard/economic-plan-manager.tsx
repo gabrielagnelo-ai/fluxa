@@ -11,6 +11,7 @@ import { economicModels } from "@/constants/economic-models";
 import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, formatMonthDistance, monthlyYield, monthsToReachTarget, projectCompoundBalance } from "@/lib/savings-projection";
 import { cn, formatCurrency, plural } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
+import { SheetButton } from "@/components/ui/sheet-button";
 
 type LimitFilter = "active" | "planned" | "over" | "all";
 
@@ -152,6 +153,11 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
   return (
     <div className="space-y-4">
+      <section className="card summary-strip" aria-label="Resumo do planejamento">
+        <div><p className="overview-label">Sobra para metas</p><strong className={cn("summary-strip-main num", overview.paymentPlan.availableForGoals < 0 && "is-negative")}>{formatCurrency(overview.paymentPlan.availableForGoals)}</strong><p className="summary-strip-note">renda menos fixos e variáveis</p></div>
+        <div><p className="overview-label">Renda planejada</p><strong className="num">{formatCurrency(overview.nextMonthImpact.adjustedIncome)}</strong><p className="summary-strip-note">já considera vale ou adiantamento</p></div>
+        <div><p className="overview-label">Previsto</p><strong className="num">{formatCurrency(overview.paymentPlan.fixedPlanned + overview.paymentPlan.variablePlanned)}</strong><p className="summary-strip-note">{plural(fixedBills.length, "fixo", "fixos")} · {plural(variableBills.length, "variável", "variáveis")}</p></div>
+      </section>
       <Card>
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -163,7 +169,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form action={plannedExpenseAction} className="grid items-end gap-3 rounded-xl border border-border bg-background/35 p-3 xl:grid-cols-[1fr_150px_150px_auto]">
+          <div className="screen-actions">
+            <SheetButton label="Adicionar conta" title="Nova conta" icon={<Plus className="size-4" aria-hidden="true" />}>
+          <form action={plannedExpenseAction} className="grid gap-3">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
             <Field label="Nova conta"><Input name="name" placeholder="Ex: Apple Watch parcela" /></Field>
@@ -179,19 +187,9 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
             {plannedExpenseState?.error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive xl:col-span-4">{plannedExpenseState.error}</p>}
             {plannedExpenseState?.success && <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary xl:col-span-4">{plannedExpenseState.success}</p>}
           </form>
+            </SheetButton>
+          </div>
 
-          <section className="grid gap-3 md:grid-cols-4">
-            <CompactMetric icon={CircleDollarSign} label="Renda planejada" value={formatCurrency(overview.nextMonthImpact.adjustedIncome)} detail="já considera vale ou adiantamento" />
-            <CompactMetric icon={WalletCards} label="Contas fixas" value={formatCurrency(overview.paymentPlan.fixedPlanned)} detail={`${plural(fixedBills.length, "item marcado", "itens marcados")} como fixo`} />
-            <CompactMetric icon={SlidersHorizontal} label="Gastos variáveis" value={formatCurrency(overview.paymentPlan.variablePlanned)} detail={plural(variableBills.length, "item flexível", "itens flexíveis")} />
-            <CompactMetric
-              icon={Target}
-              label="Sobra para metas"
-              value={formatCurrency(overview.paymentPlan.availableForGoals)}
-              detail="renda menos fixos e variáveis"
-              tone={overview.paymentPlan.availableForGoals < 0 ? "danger" : "success"}
-            />
-          </section>
 
           <section className="planning-columns">
             <div className="planning-bills">
@@ -381,7 +379,7 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">{limitPending ? "Salvando alterações..." : "As mudanças salvam ao alterar o tipo ou sair do campo de valor."}</p>
-              <Button disabled={limitPending}>{limitPending ? "Salvando..." : "Salvar limites"}</Button>
+              <Button disabled={limitPending} className="btn-quiet">{limitPending ? "Salvando..." : "Salvar limites"}</Button>
             </div>
             {limitState?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{limitState.error}</p>}
             {limitState?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{limitState.success}</p>}

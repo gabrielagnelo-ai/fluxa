@@ -51,8 +51,8 @@ export function DemoExplorer() {
             </div>
             <h2 className="section-title dashboard-section-heading">Para onde o dinheiro foi</h2>
             <div className="dashboard-grid">
-              <div data-reveal className="span-7"><FinanceCharts categoryData={categoryData} evolutionData={[]} view="categories" /></div>
-              <div data-reveal className="span-5" style={step(1)}><CategoryLimitsCard limits={limits} /></div>
+              <div data-reveal className="span-7 natural"><FinanceCharts categoryData={categoryData} evolutionData={[]} view="categories" /></div>
+              <div data-reveal className="span-5 natural" style={step(1)}><CategoryLimitsCard limits={limits} /></div>
               <div data-reveal className="span-12"><FinanceCharts categoryData={categoryData} evolutionData={exampleHistory} view="evolution" /></div>
               <div data-reveal className="span-12"><CreditAnalysis origins={[{ name: "Salário", amount: exampleIncome, count: 1, share: 100, recurring: true }]} /></div>
             </div>

@@ -80,14 +80,14 @@ function CategoryRing({ categoryData }: { categoryData: CategoryData[] }) {
       <div className="card-header">
         <div>
           <h2 id="categories-title" className="card-title">Gastos por categoria</h2>
-          <p className="card-subtitle">{sorted.length ? `${sorted.length} ${sorted.length === 1 ? "categoria" : "categorias"} no período` : "Nenhum gasto no período"}</p>
+          <p className="card-subtitle num">{sorted.length ? `${formatCurrency(total)} em ${sorted.length} ${sorted.length === 1 ? "categoria" : "categorias"} no período` : "Nenhum gasto no período"}</p>
         </div>
       </div>
       {!sorted.length ? (
         <p className="empty-state">Suas categorias aparecem aqui depois de importar um extrato.</p>
       ) : (
-        <div className="ring-layout">
-          <div ref={ringRef} className="ring" role="img" aria-label={`Distribuição dos gastos: as ${Math.min(RING_SLICES, sorted.length)} maiores categorias${othersValue > 0 ? " e as outras somadas" : ""}, na ordem da lista, a partir do topo no sentido horário.`}>
+        <div className="cat-ring-layout">
+          <div ref={ringRef} className="cat-ring" role="img" aria-label={`Distribuição dos gastos: as ${Math.min(RING_SLICES, sorted.length)} maiores categorias${othersValue > 0 ? " e as outras somadas" : ""}, na ordem da lista, a partir do topo no sentido horário.`}>
             {inView ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart accessibilityLayer={false}>
@@ -100,24 +100,19 @@ function CategoryRing({ categoryData }: { categoryData: CategoryData[] }) {
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-            ) : <div className="ring-placeholder" />}
-            {/* The spending of the period: the one number the ring is about. */}
-            <div className="ring-center" aria-hidden="true">
-              <strong className="num">{formatCurrency(focus?.value ?? total)}</strong>
-              <span>{focus ? displayName(focus.name) : "gastos no período"}</span>
-            </div>
+            ) : <div className="cat-ring-placeholder" />}
           </div>
           <div className="min-w-0">
-            <ul className="ring-legend">
+            <ul className="cat-ring-legend">
               {visible.map(item => (
                 <li key={item.name}>
-                  <button type="button" className={cn("ring-legend-row", highlightedRing && highlightedRing !== ringKeyOf(item.name) && "is-dimmed")} aria-pressed={selected === item.name}
+                  <button type="button" className={cn("cat-ring-legend-row", highlightedRing && highlightedRing !== ringKeyOf(item.name) && "is-dimmed")} aria-pressed={selected === item.name}
                     onMouseEnter={() => setHovered(item.name)} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered(item.name)} onBlur={() => setHovered(null)}
                     onClick={() => setSelected(current => current === item.name ? null : item.name)}>
                     <i style={{ background: colorOf(item.name) }} aria-hidden="true" />
-                    <span className="ring-legend-name">{displayName(item.name)}</span>
-                    <span className="ring-legend-value num">{formatCurrency(item.value)}</span>
-                    <span className="ring-legend-share num">{percentOf(item.value, total)}%</span>
+                    <span className="cat-ring-legend-name">{displayName(item.name)}</span>
+                    <span className="cat-ring-legend-value num">{formatCurrency(item.value)}</span>
+                    <span className="cat-ring-legend-share num">{percentOf(item.value, total)}%</span>
                   </button>
                 </li>
               ))}

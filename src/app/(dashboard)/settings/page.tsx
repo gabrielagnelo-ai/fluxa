@@ -34,9 +34,8 @@ export default async function SettingsPage() {
   return (
     <div className="fluxa-page workspace-page settings-page">
       <PageHeader
-        eyebrow="Regras do Fluxa"
         title="Ajustes"
-        description="Ajuste como o Fluxa reconhece seus gastos e veja o que já está ativo."
+        description="Como o Fluxa reconhece seus gastos e o que já está ativo."
       />
 
       <CategoryKeywordsManager

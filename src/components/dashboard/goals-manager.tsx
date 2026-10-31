@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { CalendarClock, Pencil, TrendingUp, Trash2 } from "lucide-react";
+import { CalendarClock, Pencil, Plus, TrendingUp, Trash2 } from "lucide-react";
+import { SheetButton } from "@/components/ui/sheet-button";
 import { deleteGoal, upsertGoal } from "@/app/(dashboard)/goals/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -69,21 +70,26 @@ function DeleteGoalButton({ id }: { id: string }) {
 }
 
 export function GoalsManager({ goals }: { goals: GoalItem[] }) {
+  const totalSaved = goals.reduce((sum, goal) => sum + goal.savedAmount, 0);
+  const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+  const activeCount = goals.filter((goal) => goal.status === "ACTIVE").length;
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <h2 className="font-semibold">Nova meta</h2>
-          <p className="text-sm text-muted-foreground">O Fluxa cria palavras para reconhecer quando você guardou dinheiro para essa meta.</p>
-        </CardHeader>
-        <CardContent>
+      <section className="card summary-strip" aria-label="Resumo das metas">
+        <div><p className="overview-label">Guardado</p><strong className="summary-strip-main num">{formatCurrency(totalSaved)}</strong></div>
+        <div><p className="overview-label">Alvo somado</p><strong className="num">{formatCurrency(totalTarget)}</strong></div>
+        <div><p className="overview-label">Metas ativas</p><strong className="num">{activeCount}</strong></div>
+      </section>
+      <div className="screen-actions">
+        <SheetButton label="Nova meta" title="Nova meta" filled icon={<Plus className="size-4" aria-hidden="true" />}>
+          <p className="field-note" style={{ margin: "0 0 0.75rem" }}>O Fluxa cria palavras para reconhecer quando você guardou dinheiro para essa meta.</p>
           <GoalForm />
-        </CardContent>
-      </Card>
+        </SheetButton>
+      </div>
 
       {goals.length === 0 ? (
         <Card>
-          <CardContent className="pt-5 text-sm text-muted-foreground">Nenhuma meta cadastrada para este usuário.</CardContent>
+          <CardContent className="pt-5 text-sm text-muted-foreground">Nenhuma meta ainda. Toque em Nova meta para criar a primeira.</CardContent>
         </Card>
       ) : (
         goals.map((goal) => {

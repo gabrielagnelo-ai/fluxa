@@ -17,7 +17,6 @@ export default async function InsightsPage({
   return (
     <div className="fluxa-page workspace-page insights-page">
       <PageHeader
-        eyebrow="IA e alertas"
         title="Inteligência financeira"
         description={`Análise baseada no mesmo fluxo filtrado do dashboard: ${getPeriodLabel(period)}.`}
         actions={<PeriodFilter start={period.start} end={period.end} />}
