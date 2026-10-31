@@ -36,7 +36,7 @@
 
   /* Liquid Glass recipe for the web (Fluxa Vault, 2026-10-31): milky fill lighter than what is behind,
      specular edges (light top and left, darker bottom), inner glow on top and inner shadow below. */
-  --glass-bg: rgb(255 255 255 / 0.14);
+  --glass-bg: rgb(255 255 255 / 0.08);
   --glass-edge: rgb(255 255 255 / 0.3);
   --glass-shadow:
     inset 1px 1px 0 rgb(255 255 255 / 0.38),
@@ -44,7 +44,7 @@
     inset 0 14px 22px -14px rgb(255 255 255 / 0.4),
     inset 0 -12px 20px -14px rgb(8 14 28 / 0.42),
     0 10px 28px rgb(8 14 28 / 0.2);
-  --glass-filter: blur(16px) saturate(200%) brightness(1.1);
+  --glass-filter: blur(16px) saturate(200%) brightness(1);
 
   --font: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
@@ -114,7 +114,8 @@ input, select, textarea { font-size: max(1rem, 16px); }
 .glass {
   position: relative;
   background: linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.02) 55%, rgb(255 255 255 / 0.05)), var(--glass-bg);
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  /* Vibrancy: a soft dark halo behind labels keeps 4.5:1 whatever passes under the glass. */
+  text-shadow: 0 0 10px rgb(8 14 28 / 0.6), 0 0 3px rgb(8 14 28 / 0.55), 0 1px 2px rgb(8 14 28 / 0.5);
   border: 0.5px solid var(--glass-edge);
   box-shadow: var(--glass-shadow);
   -webkit-backdrop-filter: var(--glass-filter);
@@ -1068,3 +1069,10 @@ dialog.alert-dialog::backdrop { background: var(--overlay); }
 .sheet-body .grid { grid-template-columns: 1fr !important; }
 .sheet-body :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { background: rgb(51 66 95 / 0.94); border-color: rgb(255 255 255 / 0.12); }
 .summary-strip-note { margin-top: 0.125rem; font-size: 0.8125rem; color: var(--label-2); }
+
+/* Vibrancy for marks on glass: the logo and icons get the same soft halo as the labels. */
+.glass svg { filter: drop-shadow(0 0 6px rgb(8 14 28 / 0.55)); }
+/* The logo stays exactly the PNG (principle 17): no filter on it. */
+.glass img { filter: none; }
+.glass .btn-filled, .glass .btn-filled * { text-shadow: none; }
+.glass .btn-filled svg { filter: none; }
