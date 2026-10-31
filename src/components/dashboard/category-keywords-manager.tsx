@@ -6,6 +6,7 @@ import { createCategory, deleteCategory, syncDefaultCategories, updateCategoryKe
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 
 type CategoryKeywordItem = {
   id: string;
@@ -77,9 +78,9 @@ function NewCategoryForm() {
 
   return (
     <form action={action} className="rounded-lg border border-border bg-muted/20 p-3">
-      <div className="grid gap-3 lg:grid-cols-[240px_1fr_auto]">
-        <Input name="name" placeholder="Nova categoria" required />
-        <Input name="keywords" placeholder="Como aparece no banco: IFD*, AMI, SMART FIT" />
+      <div className="grid items-end gap-3 lg:grid-cols-[240px_1fr_auto]">
+        <Field label="Nova categoria"><Input name="name" placeholder="Ex.: Academia" required /></Field>
+        <Field label="Como aparece no banco"><Input name="keywords" placeholder="Ex.: IFD*, AMI, SMART FIT" /></Field>
         <Button disabled={pending}>
           <Plus className="size-4" />
           {pending ? "Criando..." : "Criar"}
@@ -143,7 +144,7 @@ export function CategoryKeywordsManager({ categories }: { categories: CategoryKe
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label className="relative block w-full sm:max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar categoria ou nome do banco" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-9" placeholder="Buscar categoria ou nome do banco" aria-label="Buscar categoria ou nome do banco" />
           </label>
           <p className="text-sm text-muted-foreground">
             {filteredCategories.length} de {categories.length} {categories.length === 1 ? "categoria" : "categorias"}

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, monthlyYield, monthsUntilDate, projectCompoundBalance } from "@/lib/savings-projection";
 import { formatCurrency } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 
 type GoalItem = {
   id: string;
@@ -27,25 +28,25 @@ function GoalForm({ goal }: { goal?: GoalItem }) {
   );
 
   return (
-    <form action={action} className="grid gap-3 md:grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_auto]">
+    <form action={action} className="grid items-end gap-3 md:grid-cols-4">
       {goal?.id && <input type="hidden" name="id" value={goal.id} />}
-      <Input name="name" defaultValue={goal?.name} placeholder="Nome da meta" required />
-      <Input name="targetAmount" defaultValue={goal?.targetAmount} type="number" min="0" step="0.01" placeholder="Valor alvo" required />
-      <Input name="dueDate" defaultValue={goal?.dueDate?.slice(0, 10)} type="date" />
-      <select name="status" defaultValue={goal?.status ?? "ACTIVE"} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+      <Field label="Nome da meta"><Input name="name" defaultValue={goal?.name} placeholder="Ex.: Reserva de emergência" required /></Field>
+      <Field label="Valor alvo (R$)"><Input name="targetAmount" defaultValue={goal?.targetAmount} type="number" min="0" step="0.01" placeholder="0,00" required /></Field>
+      <Field label="Data da meta (opcional)"><Input name="dueDate" defaultValue={goal?.dueDate?.slice(0, 10)} type="date" /></Field>
+      <Field label="Situação"><select name="status" defaultValue={goal?.status ?? "ACTIVE"} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
         <option value="ACTIVE">Ativa</option>
         <option value="PAUSED">Pausada</option>
         <option value="COMPLETED">Concluída</option>
-      </select>
-      <Button disabled={pending}>{pending ? "Salvando..." : goal ? "Atualizar" : "Criar"}</Button>
-      <textarea
+      </select></Field>
+      <Field label="Palavras para identificar o depósito" className="md:col-span-4"><textarea
         name="markers"
         defaultValue={goal?.markers.join(", ")}
-        className="min-h-20 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 md:col-span-5"
-        placeholder="Palavras para identificar depósito: META RESERVA, APLICACAO RESERVA"
-      />
-      {state?.error && <p className="md:col-span-5 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
-      {state?.success && <p className="md:col-span-5 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
+        className="min-h-20 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        placeholder="Ex.: META RESERVA, APLICACAO RESERVA"
+      /></Field>
+      <Button disabled={pending} className="md:col-span-4 md:justify-self-end">{pending ? "Salvando..." : goal ? "Atualizar meta" : "Criar meta"}</Button>
+      {state?.error && <p className="md:col-span-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>}
+      {state?.success && <p className="md:col-span-4 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{state.success}</p>}
     </form>
   );
 }

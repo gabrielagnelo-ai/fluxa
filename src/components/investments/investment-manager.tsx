@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { investmentTypeLabels } from "@/constants/investments";
 import { cn, formatCurrency, plural } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 
 type InvestmentAsset = {
   id: string;
@@ -478,29 +479,28 @@ export function InvestmentManager({
               </Button>
             </div>
           )}
-          <form key={draftKey} action={action} className="grid gap-3 lg:grid-cols-4">
+          <form key={draftKey} action={action} className="grid items-end gap-3 lg:grid-cols-4">
             <input type="hidden" name="id" value={selectedAsset?.id ?? ""} />
-            <Input name="name" defaultValue={defaultName} placeholder="Nome do ativo" required />
-            <Input name="ticker" defaultValue={defaultTicker} placeholder="Ticker, ex: PETR4" />
-            <select name="type" defaultValue={selectedAsset?.type ?? "FIXED_INCOME"} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+            <Field label="Nome do ativo"><Input name="name" defaultValue={defaultName} placeholder="Ex.: CDB Banco X" required /></Field>
+            <Field label="Ticker (opcional)"><Input name="ticker" defaultValue={defaultTicker} placeholder="Ex.: PETR4" /></Field>
+            <Field label="Tipo"><select name="type" defaultValue={selectedAsset?.type ?? "FIXED_INCOME"} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
               {Object.entries(investmentTypeLabels).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
-            <Input name="institution" defaultValue={selectedAsset?.institution ?? ""} placeholder="Banco/corretora" />
-            <Input name="investedAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.investedAmount ?? ""} placeholder="Valor aplicado" required />
-            <Input name="currentAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.currentAmount ?? ""} placeholder="Valor atual" required />
-            <Input name="quantity" type="number" min="0" step="0.00000001" defaultValue={selectedAsset?.quantity ?? ""} placeholder="Quantidade" />
-            <Input name="averagePrice" type="number" min="0" step="0.01" defaultValue={selectedAsset?.averagePrice ?? ""} placeholder="Preço médio" />
-            <Input name="acquiredAt" type="date" defaultValue={selectedAsset?.acquiredAt?.slice(0, 10) ?? ""} />
-            <textarea
+            </select></Field>
+            <Field label="Banco ou corretora"><Input name="institution" defaultValue={selectedAsset?.institution ?? ""} placeholder="Ex.: Nubank" /></Field>
+            <Field label="Valor aplicado (R$)"><Input name="investedAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.investedAmount ?? ""} placeholder="0,00" required /></Field>
+            <Field label="Valor atual (R$)"><Input name="currentAmount" type="number" min="0" step="0.01" defaultValue={selectedAsset?.currentAmount ?? ""} placeholder="0,00" required /></Field>
+            <Field label="Quantidade (opcional)"><Input name="quantity" type="number" min="0" step="0.00000001" defaultValue={selectedAsset?.quantity ?? ""} /></Field>
+            <Field label="Preço médio (opcional)"><Input name="averagePrice" type="number" min="0" step="0.01" defaultValue={selectedAsset?.averagePrice ?? ""} placeholder="0,00" /></Field>
+            <Field label="Data da compra (opcional)"><Input name="acquiredAt" type="date" defaultValue={selectedAsset?.acquiredAt?.slice(0, 10) ?? ""} /></Field>
+            <Field label="Observações (opcional)" className="lg:col-span-2"><textarea
               name="notes"
               defaultValue={selectedAsset?.notes ?? ""}
-              placeholder="Observações"
-              className="min-h-10 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 lg:col-span-2"
-            />
+              className="min-h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+            /></Field>
             <Button disabled={pending}>{pending ? "Salvando..." : selectedAsset ? "Salvar alterações" : "Salvar investimento"}</Button>
             {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive lg:col-span-4">{state.error}</p>}
             {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary lg:col-span-4">{state.success}</p>}

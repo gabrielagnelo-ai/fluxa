@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { economicModels } from "@/constants/economic-models";
 import { DEFAULT_SAVINGS_MONTHLY_RATE_LABEL, formatMonthDistance, monthlyYield, monthsToReachTarget, projectCompoundBalance } from "@/lib/savings-projection";
 import { cn, formatCurrency, plural } from "@/lib/utils";
+import { Field } from "@/components/ui/field";
 
 type LimitFilter = "active" | "planned" | "over" | "all";
 
@@ -162,15 +163,15 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form action={plannedExpenseAction} className="grid gap-3 rounded-xl border border-border bg-background/35 p-3 xl:grid-cols-[1fr_150px_150px_auto]">
+          <form action={plannedExpenseAction} className="grid items-end gap-3 rounded-xl border border-border bg-background/35 p-3 xl:grid-cols-[1fr_150px_150px_auto]">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
-            <Input name="name" placeholder="Ex: Apple Watch parcela" />
-            <Input name="amount" inputMode="decimal" placeholder="Valor" />
-            <select name="type" defaultValue="FIXED" className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
+            <Field label="Nova conta"><Input name="name" placeholder="Ex: Apple Watch parcela" /></Field>
+            <Field label="Valor (R$)"><Input name="amount" inputMode="decimal" placeholder="0,00" /></Field>
+            <Field label="Tipo"><select name="type" defaultValue="FIXED" className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm">
               <option value="FIXED">Fixo</option>
               <option value="VARIABLE">Variável</option>
-            </select>
+            </select></Field>
             <Button disabled={plannedExpensePending} className="whitespace-nowrap">
               <Plus className="size-4" />
               {plannedExpensePending ? "Adicionando..." : "Adicionar conta"}
@@ -254,24 +255,24 @@ export function EconomicPlanManager({ overview }: { overview: PlanningOverview }
           </span>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form action={action} onReset={(event) => event.preventDefault()} className="grid gap-3 xl:grid-cols-[180px_180px_1fr_90px_90px_90px_auto]">
+          <form action={action} onReset={(event) => event.preventDefault()} className="grid items-end gap-3 xl:grid-cols-[180px_180px_1fr_90px_90px_90px_auto]">
             <input type="hidden" name="month" value={overview.month} />
             <input type="hidden" name="year" value={overview.year} />
-            <Input name="monthlyIncome" defaultValue={overview.plan?.monthlyIncome ?? overview.actualIncome} type="number" min="0" step="0.01" placeholder="Renda mensal" />
-            <select name="model" value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+            <Field label="Renda mensal (R$)"><Input name="monthlyIncome" defaultValue={overview.plan?.monthlyIncome ?? overview.actualIncome} type="number" min="0" step="0.01" placeholder="0,00" /></Field>
+            <Field label="Divisão da renda"><select name="model" value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm">
               {economicModels.map((model) => (
                 <option key={model.id} value={model.id}>
                   {model.name}
                 </option>
               ))}
               <option value="custom">Personalizado</option>
-            </select>
+            </select></Field>
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
               {isCustom ? "Ajuste os percentuais. A soma precisa ser 100%." : "Necessidades são contas essenciais. Desejos são gastos flexíveis. Metas são dinheiro guardado."}
             </div>
-            <Input name="needsPercent" defaultValue={needsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Necessidades %" />
-            <Input name="wantsPercent" defaultValue={wantsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Desejos %" />
-            <Input name="savingsPercent" defaultValue={savingsPercent} type="number" min="0" max="100" disabled={!isCustom} aria-label="Metas %" />
+            <Field label="Necessidades (%)"><Input name="needsPercent" defaultValue={needsPercent} type="number" min="0" max="100" disabled={!isCustom} /></Field>
+            <Field label="Desejos (%)"><Input name="wantsPercent" defaultValue={wantsPercent} type="number" min="0" max="100" disabled={!isCustom} /></Field>
+            <Field label="Metas (%)"><Input name="savingsPercent" defaultValue={savingsPercent} type="number" min="0" max="100" disabled={!isCustom} /></Field>
             <Button disabled={pending}>{pending ? "Salvando..." : "Salvar"}</Button>
             {state?.error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive xl:col-span-7">{state.error}</p>}
             {state?.success && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary xl:col-span-7">{state.success}</p>}
@@ -463,13 +464,13 @@ function PlannedExpenseInlineForm({ item, month, year }: { item: PlanningOvervie
         <input type="hidden" name="month" value={month} />
         <input type="hidden" name="year" value={year} />
         <input type="hidden" name="note" value={item.note ?? ""} />
-        <Input name="name" defaultValue={item.name} aria-label="Nome da conta planejada" placeholder="Nome da conta" />
-        <div className="grid grid-cols-[1fr_120px] gap-2">
-          <Input name="amount" defaultValue={item.planned.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} inputMode="decimal" aria-label="Valor planejado" />
-          <select name="type" defaultValue={item.type} className="h-10 rounded-xl border border-border bg-background px-3 text-sm">
+        <Field label="Nome da conta"><Input name="name" defaultValue={item.name} placeholder="Nome da conta" /></Field>
+        <div className="grid grid-cols-[1fr_120px] items-end gap-2">
+          <Field label="Valor (R$)"><Input name="amount" defaultValue={item.planned.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} inputMode="decimal" /></Field>
+          <Field label="Tipo"><select name="type" defaultValue={item.type} className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm">
             <option value="FIXED">Fixo</option>
             <option value="VARIABLE">Variável</option>
-          </select>
+          </select></Field>
         </div>
         <Button disabled={pending} className="h-10 w-full px-3 text-sm">
           {pending ? "Salvando..." : "Salvar alterações"}
@@ -668,6 +669,7 @@ function CategoryLimitRow({
             save({ type: nextType });
           }}
           disabled={isSaving}
+          aria-label={`Tipo de ${item.categoryName}`}
           className="h-9 w-32 rounded-md border border-border bg-background px-2 disabled:opacity-60"
         >
           {Object.entries(limitTypeLabels).map(([value, label]) => (
@@ -693,6 +695,7 @@ function CategoryLimitRow({
           }}
           disabled={isSaving}
           placeholder="0,00"
+          aria-label={`Valor previsto para ${item.categoryName}`}
           className="max-w-32 disabled:opacity-60"
         />
       </td>
